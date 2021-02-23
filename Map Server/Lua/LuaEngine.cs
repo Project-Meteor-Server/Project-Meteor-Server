@@ -37,6 +37,7 @@ using Meteor.Map.actors.area;
 using System.Threading;
 using Meteor.Map.actors.chara.ai;
 using Meteor.Map.actors.chara.ai.controllers;
+using Meteor.Map.DataObjects;
 
 namespace Meteor.Map.lua
 {
@@ -850,6 +851,7 @@ namespace Meteor.Map.lua
             script.Globals["GetWorldMaster"] = (Func<Actor>)Server.GetWorldManager().GetActor;
             script.Globals["GetItemGamedata"] = (Func<uint, ItemData>)Server.GetItemGamedata;
             script.Globals["GetGuildleveGamedata"] = (Func<uint, GuildleveData>)Server.GetGuildleveGamedata;
+            script.Globals["GetRecipeResolver"] = (Func<RecipeResolver>)Server.ResolveRecipe;
             script.Globals["GetLuaInstance"] = (Func<LuaEngine>)LuaEngine.GetInstance;
 
             script.Options.DebugPrint = s => { Program.Log.Debug(s); };

@@ -33,6 +33,8 @@ using Meteor.Map.packets.receive.supportdesk;
 using Meteor.Map.actors.chara.npc;
 using Meteor.Map.actors.chara.ai;
 using Meteor.Map.packets.send.actor.battle;
+using Meteor.Map.DataObjects;
+using System.Security.Cryptography;
 
 namespace Meteor.Map
 {
@@ -165,6 +167,99 @@ namespace Meteor.Map
                 }
 
                 return gamedataGuildleves;
+            }
+        }
+
+        public static bool GetRecipeGamedata(Dictionary<uint, Recipe> recipeList, Dictionary<string, List<Recipe>> matToRecipe)
+        {
+            using (var conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
+            {
+                try
+                {
+                    conn.Open();
+
+                    string query = @"
+                                SELECT
+                                id,
+                                craftedItem,   
+                                craftedQuantity,
+
+                                crystal0ID,
+                                crystal0Quantity,
+                                crystal1ID,
+                                crystal1Quantity,
+
+                                material0,
+                                material1,
+                                material2,
+                                material3,
+                                material4,
+                                material5,
+                                material6,
+                                material7
+                                FROM gamedata_recipes
+                                ORDER BY craftedItem ASC
+                                ";
+
+                    MySqlCommand cmd = new MySqlCommand(query, conn);
+
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            uint recipeID = reader.GetUInt32("id");
+
+                            uint craftedItem = reader.GetUInt32("craftedItem");
+                            uint craftedQuantity = reader.GetUInt32("craftedQuantity");
+
+                            uint crystal0ID = reader.GetUInt32("crystal0ID");
+                            uint crystal0Quantity = reader.GetUInt32("crystal0Quantity");
+                            uint crystal1ID = reader.GetUInt32("crystal1ID");
+                            uint crystal1Quantity = reader.GetUInt32("crystal1Quantity");
+
+                            uint[] mats = new uint[8];
+                            mats[0] = reader.GetUInt32("material0");
+                            mats[1] = reader.GetUInt32("material1");
+                            mats[2] = reader.GetUInt32("material2");
+                            mats[3] = reader.GetUInt32("material3");
+                            mats[4] = reader.GetUInt32("material4");
+                            mats[5] = reader.GetUInt32("material5");
+                            mats[6] = reader.GetUInt32("material6");
+                            mats[7] = reader.GetUInt32("material7");
+
+                            Array.Sort(mats);
+
+                            Recipe recipe = new Recipe(craftedItem, craftedQuantity, new byte[] { }, 1);
+
+                            //Hash for the Mat -> Recipe Dictionary                            
+                            byte[] result = new byte[8 * sizeof(int)];
+                            Buffer.BlockCopy(mats, 0, result, 0, result.Length);
+                            string hash;
+                            using (MD5 md5 = MD5.Create())
+                            {
+                                hash = BitConverter.ToString(md5.ComputeHash(result));
+                            }
+
+                            if (!matToRecipe.ContainsKey(hash))
+                                matToRecipe.Add(hash, new List<Recipe>());
+
+                            //Add to both Dictionaries
+                            recipeList.Add(recipeID, new Recipe(craftedItem, craftedQuantity, new byte[] { }, 1));
+                            matToRecipe[hash].Add(new Recipe(craftedItem, craftedQuantity, new byte[] { }, 1));
+                        }
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Program.Log.Error(e.ToString());
+                    return false;
+                }
+                finally
+                {
+                    conn.Dispose();
+                }
+
+                return true;
             }
         }
 
@@ -2777,6 +2872,6 @@ namespace Meteor.Map
                 }
             }
         }
-
+        
     }
 }

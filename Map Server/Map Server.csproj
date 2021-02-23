@@ -199,6 +199,8 @@
     <Compile Include="Actors\StaticActors.cs" />
     <Compile Include="Actors\World\WorldMaster.cs" />
     <Compile Include="DataObjects\GuildleveData.cs" />
+    <Compile Include="DataObjects\Recipe.cs" />
+    <Compile Include="DataObjects\RecipeResolver.cs" />
     <Compile Include="DataObjects\TradeTransaction.cs" />
     <Compile Include="DataObjects\ZoneConnection.cs" />
     <Compile Include="CommandProcessor.cs" />
