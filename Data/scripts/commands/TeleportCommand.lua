@@ -52,7 +52,7 @@ teleportMenuToAetheryte = {
 	}
 }
 
-function onEventStarted(player, actor, triggerName, isTeleport)
+function onEventStarted(player, actor, eventType, eventName, isTeleport)
 
 	local worldMaster = GetWorldMaster();
 

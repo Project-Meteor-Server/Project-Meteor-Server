@@ -207,9 +207,9 @@ namespace Meteor.Map
                             //Is it a instance actor?
                             if (ownerActor == null)
                                 ownerActor = session.GetActor().zone.FindActorInArea(eventStart.ownerActorID);
+                            //Is it a Director?
                             if (ownerActor == null)
                             {
-                                //Is it a Director?
                                 Director director = session.GetActor().GetDirector(eventStart.ownerActorID);
                                 if (director != null)
                                     ownerActor = director;

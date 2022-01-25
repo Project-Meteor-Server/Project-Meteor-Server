@@ -31,6 +31,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using Meteor.Map.actors.chara.ai;
+using Meteor.Map.packets.send.actor.events;
 
 namespace Meteor.Map.Actors
 {
@@ -420,7 +421,7 @@ namespace Meteor.Map.Actors
 
         public void DoOnActorSpawn(Player player)
         {
-            LuaEngine.GetInstance().CallLuaFunction(player, this, "onSpawn", true);           
+            LuaEngine.GetInstance().CallLuaFunction(player, this, "onSpawn", true);
         }
 
         public void PlayMapObjAnimation(Player player, string animationName)

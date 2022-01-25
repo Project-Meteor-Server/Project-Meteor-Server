@@ -1,23 +1,30 @@
 --[[
 
+RequestQuestJournalCommand Script
+
+Functions: None
+
+Notes:
+
+Fires when the player looks at a quest's journal entry and the map section. Check the quest sheet and quest_marker sheet
+for valid entries for your quest.
 
 --]]
 
-function onEventStarted(player, actor, trigger, questId, mapCode)
-
-	quest = player:GetQuest(questId);
+function onEventStarted(player, command, eventType, eventName, questId, mapCode)
+	local quest = player:GetQuest(questId);
 	
-	if (quest == nil) then	
-		player:EndEvent();
-		return;
+	if (quest ~= nil) then	
+		if (mapCode == nil) then
+			-- Get Quest Journal Data
+			local journalInfo = quest:GetJournalInformation();
+			player:SendDataPacket("requestedData", "qtdata", quest:GetQuestId(), quest:GetSequence(), unpack(journalInfo));
+		else
+			-- Get Quest Map Data
+			local mapMarkers = quest:GetJournalMapMarkerList();
+			player:SendDataPacket("requestedData", "qtmap", quest:GetQuestId(), unpack(mapMarkers));
+		end
 	end
 	
-	if (mapCode == nil) then	
-		player:SendDataPacket("requestedData", "qtdata", quest:GetQuestId(), quest:GetPhase());
-		player:EndEvent();
-	else
-		player:SendDataPacket("requestedData", "qtmap", quest:GetQuestId());
-		player:EndEvent();
-	end
-	
+	player:EndEvent();
 end

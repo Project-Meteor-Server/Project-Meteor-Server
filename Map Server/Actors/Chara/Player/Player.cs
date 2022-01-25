@@ -1456,27 +1456,24 @@ namespace Meteor.Map.Actors
 
         public void AddQuest(string name, bool isSilent = false)
         {
-            Actor actor = Server.GetStaticActors(name);
+            Quest baseQuest = (Quest) Server.GetStaticActors(name);
 
-            if (actor == null)
+            if (baseQuest == null)
                 return;
-
-            uint id = actor.actorId;
 
             int freeSlot = GetFreeQuestSlot();
 
             if (freeSlot == -1)
                 return;
 
-            playerWork.questScenario[freeSlot] = id;
-            questScenario[freeSlot] = new Quest(this, playerWork.questScenario[freeSlot], name, null, 0, 0);
+            playerWork.questScenario[freeSlot] = baseQuest.actorId;
+            questScenario[freeSlot] = new Quest(this, baseQuest);
             Database.SaveQuest(this, questScenario[freeSlot]);
             SendQuestClientUpdate(freeSlot);
 
             if (!isSilent)
             {
                 SendGameMessage(Server.GetWorldManager().GetActor(), 25224, 0x20, (object)questScenario[freeSlot].GetQuestId());
-                questScenario[freeSlot].NextPhase(0);
             }
         }        
 
@@ -1541,9 +1538,9 @@ namespace Meteor.Map.Actors
                 {
                     if (questScenario[i] != null && questScenario[i].GetQuestId() == oldId)
                     {
-                        Actor actor = Server.GetStaticActors((0xA0F00000 | newId));
+                        Quest baseQuest = (Quest) Server.GetStaticActors((0xA0F00000 | newId));
                         playerWork.questScenario[i] = (0xA0F00000 | newId);
-                        questScenario[i] = new Quest(this, playerWork.questScenario[i], actor.actorName, null, 0, 0);
+                        questScenario[i] = new Quest(this, baseQuest);
                         Database.SaveQuest(this, questScenario[i]);
                         SendQuestClientUpdate(i);
                         break;
@@ -1641,6 +1638,65 @@ namespace Meteor.Map.Actors
             }
 
             return -1;
+        }
+
+        public Quest GetDefaultTalkQuest(Npc npc)
+        {
+            Quest defaultTalk = null;
+
+            switch (npc.zone.regionId)
+            {
+                case 101:
+                    defaultTalk = (Quest) Server.GetStaticActors("DftSea");
+                    break;
+                case 102:
+                    defaultTalk = (Quest) Server.GetStaticActors("DftRoc");
+                    break;
+                case 103:
+                    defaultTalk = (Quest) Server.GetStaticActors("DftFst");
+                    break;
+                case 104:
+                    defaultTalk = (Quest) Server.GetStaticActors("DftWil");
+                    break;
+                case 105:
+                    defaultTalk = (Quest) Server.GetStaticActors("DftLak");
+                    break;
+                case 805:
+                    defaultTalk = (Quest) Server.GetStaticActors("DftSrt");
+                    break;
+            }
+
+            if (defaultTalk != null && defaultTalk.IsQuestENPC(this, npc))
+                return defaultTalk;
+            return null;
+        }
+
+        public Quest GetTutorialQuest(Npc npc)
+        {
+            switch (npc.GetActorClassId())
+            {
+                case 1000137:
+                    return (Quest)Server.GetStaticActors("Trl0l1");
+                case 1000230:
+                    return (Quest)Server.GetStaticActors("Trl0g1");
+                case 1000841:
+                    return (Quest)Server.GetStaticActors("Trl0u1");
+            }
+            return null;
+        }
+
+        public Quest[] GetQuestsForNpc(Npc npc)
+        {
+            return Array.FindAll(questScenario, e => e != null && e.IsQuestENPC(this, npc));
+        }
+
+        public void HandleNpcLS(uint id)
+        {
+            foreach (Quest quest in questScenario)
+            {
+                if (quest != null)
+                    quest.OnNpcLS(this, id);
+            }
         }
 
         public void SetNpcLS(uint npcLSId, uint state)
@@ -1847,7 +1903,7 @@ namespace Meteor.Map.Actors
 
         public void SetEventStatus(Actor actor, string conditionName, bool enabled, byte type)
         {
-            SetEventStatusPacket.BuildPacket(actor.actorId, enabled, type, conditionName);
+            QueuePacket(SetEventStatusPacket.BuildPacket(actor.actorId, enabled, type, conditionName));
         }       
 
         public void RunEventFunction(string functionName, params object[] parameters)

@@ -256,7 +256,7 @@ namespace Meteor.Map.Actors
             return subpackets;
         }
 
-        public List<SubPacket> GetSetEventStatusPackets()
+        public List<SubPacket> GetSetEventStatusPackets(bool talkEnabled = true, bool emoteEnabled = true, bool pushEnabled = true, bool noticeEnabled = true)
         {
             List<SubPacket> subpackets = new List<SubPacket>();
 
@@ -267,37 +267,37 @@ namespace Meteor.Map.Actors
             if (eventConditions.talkEventConditions != null)
             {
                 foreach (EventList.TalkEventCondition condition in eventConditions.talkEventConditions)
-                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, true, 1, condition.conditionName));
+                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, talkEnabled, 1, condition.conditionName));
             }
 
             if (eventConditions.noticeEventConditions != null)
             {
                 foreach (EventList.NoticeEventCondition condition in eventConditions.noticeEventConditions)
-                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, true, 5, condition.conditionName));
+                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, noticeEnabled, 5, condition.conditionName));
             }
 
             if (eventConditions.emoteEventConditions != null)
             {
                 foreach (EventList.EmoteEventCondition condition in eventConditions.emoteEventConditions)
-                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, true, 3, condition.conditionName));
+                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, emoteEnabled, 3, condition.conditionName));
             }
 
             if (eventConditions.pushWithCircleEventConditions != null)
             {
                 foreach (EventList.PushCircleEventCondition condition in eventConditions.pushWithCircleEventConditions)
-                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, true, 2, condition.conditionName));
+                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, pushEnabled, 2, condition.conditionName));
             }
 
             if (eventConditions.pushWithFanEventConditions != null)
             {
                 foreach (EventList.PushFanEventCondition condition in eventConditions.pushWithFanEventConditions)
-                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, true, 2, condition.conditionName));
+                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, pushEnabled, 2, condition.conditionName));
             }
 
             if (eventConditions.pushWithBoxEventConditions != null)
             {
                 foreach (EventList.PushBoxEventCondition condition in eventConditions.pushWithBoxEventConditions)
-                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, true, 2, condition.conditionName));
+                    subpackets.Add(SetEventStatusPacket.BuildPacket(actorId, pushEnabled, 2, condition.conditionName));
             }
 
             return subpackets;

@@ -283,17 +283,19 @@ namespace Meteor.Map.actors.director
 
         private void LoadLuaScript()
         {
+            string errorMsg = "";
             string luaPath = String.Format(LuaEngine.FILEPATH_DIRECTORS, GetScriptPath());
-            directorScript = LuaEngine.LoadScript(luaPath);
+            directorScript = LuaEngine.LoadScript(luaPath, ref errorMsg);
             if (directorScript == null)
-                Program.Log.Error("Could not find script for director {0}.", GetName());
+                Program.Log.Error("Could not find script for director {0}.", GetName());          
         }
 
         private List<LuaParam> CallLuaScript(string funcName, params object[] args)
         {
             if (directorScript != null)
             {
-                directorScript = LuaEngine.LoadScript(String.Format(LuaEngine.FILEPATH_DIRECTORS, directorScriptPath));
+                string errorMsg = "";
+                directorScript = LuaEngine.LoadScript(String.Format(LuaEngine.FILEPATH_DIRECTORS, directorScriptPath), ref errorMsg);
                 if (!directorScript.Globals.Get(funcName).IsNil())
                 {
                     DynValue result = directorScript.Call(directorScript.Globals[funcName], args);

@@ -32,6 +32,7 @@ local npcLsHandlers = {
 }
 
 function onEventStarted(player, command, triggerName, npcLsId)		
+	player:OnNpcLS(npcLsId);
 	
 	if (npcLsHandlers[npcLsId] ~= nil) then
 		npcLsHandlers[npcLsId](player);

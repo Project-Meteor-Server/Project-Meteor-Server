@@ -502,20 +502,22 @@ namespace Meteor.Map
 
                     query = @"
                     INSERT INTO characters_quest_scenario 
-                    (characterId, slot, questId, currentPhase, questData, questFlags)
+                    (characterId, slot, questId, sequence, flags, counter1, counter2, counter3)
                     VALUES
-                    (@charaId, @slot, @questId, @phase, @questData, @questFlags)
+                    (@charaId, @slot, @questId, @sequence, @flags, @counter1, @counter2, @counter3)
                     ON DUPLICATE KEY UPDATE
-                    questId = @questId, currentPhase = @phase, questData = @questData, questFlags = @questFlags
+                    questId = @questId, sequence = @sequence, flags = @flags, counter1 = @counter1, counter2 = @counter2, counter3 = @counter3
                     ";
 
                     cmd = new MySqlCommand(query, conn);
                     cmd.Parameters.AddWithValue("@charaId", player.actorId);
                     cmd.Parameters.AddWithValue("@slot", slot);
                     cmd.Parameters.AddWithValue("@questId", 0xFFFFF & quest.actorId);
-                    cmd.Parameters.AddWithValue("@phase", quest.GetPhase());
-                    cmd.Parameters.AddWithValue("@questData", quest.GetSerializedQuestData());
-                    cmd.Parameters.AddWithValue("@questFlags", quest.GetQuestFlags());
+                    cmd.Parameters.AddWithValue("@sequence", quest.GetSequence());
+                    cmd.Parameters.AddWithValue("@flags", quest.GetFlags());
+                    cmd.Parameters.AddWithValue("@counter1", quest.GetCounter(1));
+                    cmd.Parameters.AddWithValue("@counter2", quest.GetCounter(2));
+                    cmd.Parameters.AddWithValue("@counter3", quest.GetCounter(3));
 
                     cmd.ExecuteNonQuery();
                 }
@@ -1145,9 +1147,11 @@ namespace Meteor.Map
                         SELECT 
                         slot,
                         questId,
-                        questData,
-                        questFlags,
-                        currentPhase
+                        sequence,
+                        flags,
+                        counter1,
+                        counter2,
+                        counter3
                         FROM characters_quest_scenario WHERE characterId = @charId";
 
                     cmd = new MySqlCommand(query, conn);
@@ -1156,27 +1160,18 @@ namespace Meteor.Map
                     {
                         while (reader.Read())
                         {
-                            int index = reader.GetUInt16(0);
-                            player.playerWork.questScenario[index] = 0xA0F00000 | reader.GetUInt32(1);
-                            string questData = null;
-                            uint questFlags = 0;
-                            uint currentPhase = 0;
+                            int index = reader.GetUInt16("slot");
+                            uint questId = 0xA0F00000 | reader.GetUInt32("questId");
+                            ushort sequence = reader.GetUInt16("sequence");
+                            uint flags = reader.GetUInt32("flags");
+                            ushort counter1 = reader.GetUInt16("counter1");
+                            ushort counter2 = reader.GetUInt16("counter2");
+                            ushort counter3 = reader.GetUInt16("counter3");
 
-                            if (!reader.IsDBNull(2))
-                                questData = reader.GetString(2);
-                            else
-                                questData = "{}";
+                            Quest baseQuest = (Quest) Server.GetStaticActors(questId);
 
-                            if (!reader.IsDBNull(3))
-                                questFlags = reader.GetUInt32(3);
-                            else
-                                questFlags = 0;
-
-                            if (!reader.IsDBNull(4))
-                                currentPhase = reader.GetUInt32(4);
-
-                            string questName = Server.GetStaticActors(player.playerWork.questScenario[index]).actorName;
-                            player.questScenario[index] = new Quest(player, player.playerWork.questScenario[index], questName, questData, questFlags, currentPhase);
+                            player.playerWork.questScenario[index] = questId;
+                            player.questScenario[index] = new Quest(player, baseQuest, sequence, flags, counter1, counter2, counter3);
                         }
                     }
 

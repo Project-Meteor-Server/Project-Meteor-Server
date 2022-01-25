@@ -132,13 +132,13 @@ CLASSID_THM = 22;
 CLASSID_CNJ = 23;
 
 -- SPAWNS
-SPAWN_NO_ANIM = 0x00;
+SPAWN_NO_ANIM1 = 0x00;
 SPAWN_ANIM1 = 0x02;
 SPAWN_RETAINER = 0x03;
 SPAWN_POPMOB = 0x4;
 SPAWN_UKN1 = 0x5;
 SPAWN_UKN2 = 0x7;
-SPAWN_LOADING1 = 0x0F;
+SPAWN_NO_ANIM = 0x0F;
 SPAWN_LOADING2 = 0x10;
 SPAWN_INSTANCE_ERROR = 0x12;
 SPAWN_CHOCOBO_GET = 0x13;
@@ -146,8 +146,13 @@ SPAWN_CHOCOBO_RENTAL = 0x14;
 SPAWN_CUTTER_SANDS = 0x17;
 SPAWN_NIGHTMARE = 0x18;
 
---UTILS
+-- Common Helper Functions
+function attentionMessage(player, textId, ...)
+	player:SendGameMessage(GetWorldMaster(), textId, 0x20, ...);
+	player:SendDataPacket("attention", GetWorldMaster(), "", textId, ...);
+end
 
+-- Core Event Functions
 function kickEventContinue(player, actor, trigger, ...)
 	player:kickEvent(actor, trigger, ...);
 	return coroutine.yield("_WAIT_EVENT", player);

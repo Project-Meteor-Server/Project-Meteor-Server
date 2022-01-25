@@ -25,6 +25,7 @@ using Meteor.Map.Actors;
 using Meteor.Map.packets.send.actor;
 using System.Collections.Generic;
 using Meteor.Map.actors.chara.npc;
+using static Meteor.Map.Actors.Quest;
 
 namespace Meteor.Map.dataobjects
 {
@@ -110,10 +111,6 @@ namespace Meteor.Map.dataobjects
             if (isUpdatesLocked && !force)
                 return;
 
-            List<BasePacket> basePackets = new List<BasePacket>();
-            List<SubPacket> RemoveActorSubpackets = new List<SubPacket>();
-            List<SubPacket> posUpdateSubpackets = new List<SubPacket>();
-
             //Remove missing actors
             for (int i = 0; i < actorInstanceList.Count; i++)
             {
@@ -155,28 +152,55 @@ namespace Meteor.Map.dataobjects
 
                 }
                 else
-                {   
+                {
                     QueuePacket(actor.GetSpawnPackets(playerActor, 1));
-
                     QueuePacket(actor.GetInitPackets());
                     QueuePacket(actor.GetSetEventStatusPackets());
-                    actorInstanceList.Add(actor);
 
-                    if (actor is Npc)
+                    if (actor is Npc npc)
                     {
-                        ((Npc)actor).DoOnActorSpawn(playerActor);
+                        npc.DoOnActorSpawn(playerActor);
+
+                        // Quest Instance related
+                        Quest[] quests = playerActor.GetQuestsForNpc(npc);
+                        if (quests.Length != 0)
+                        {
+                            ENpcQuestInstance questInstance = quests[0].GetENpcInstance(npc.GetActorClassId());
+                            QueuePacket(npc.GetSetEventStatusPackets());
+                            QueuePacket(SetActorQuestGraphicPacket.BuildPacket(npc.actorId, questInstance.questFlagType));                            
+                        }
                     }
+
+
+                    actorInstanceList.Add(actor);
                 }
             }
-
         }
 
+        public void UpdateQuestNpcInInstance(ENpcQuestInstance questInstance, bool clearInstance = false)
+        {
+            LockUpdates(true);
+            Actor actor = actorInstanceList.Find(x => x is Npc npc && npc.GetActorClassId().Equals(questInstance.actorClassId));
+            if (actor != null)
+            {
+                if (!clearInstance)
+                {
+                    QueuePacket(actor.GetSetEventStatusPackets());
+                    QueuePacket(SetActorQuestGraphicPacket.BuildPacket(actor.actorId, questInstance.questFlagType));
+                }
+                else
+                {
+                    QueuePacket(actor.GetSetEventStatusPackets());
+                    QueuePacket(SetActorQuestGraphicPacket.BuildPacket(actor.actorId, 0));
+                }
+            }
+            LockUpdates(false);
+        }
 
         public void ClearInstance()
         {
             actorInstanceList.Clear();
         }
-
 
         public void LockUpdates(bool f)
         {

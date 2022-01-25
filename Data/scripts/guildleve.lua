@@ -14,11 +14,11 @@ function glPlateIconIDToAnimID(iconId)
 	return iconId - 20020;
 end
 
-function getGLStartAnimationFromSheet(border, plate, isBoost)
-	return getGLStartAnimation(glBorderIconIDToAnimID(border), glPlateIconIDToAnimID(plate), isBoost);
+function getGLStartAnimationFromSheet(plate, border, isBoost)
+	return getGLStartAnimation(glPlateIconIDToAnimID(plate), glBorderIconIDToAnimID(border), isBoost);
 end
 
-function getGLStartAnimation(border, plate, isBoost)
+function getGLStartAnimation(plate, border, isBoost)
 	borderBits = border;
 	plateBits = bit32.lshift(plate, 7);
 

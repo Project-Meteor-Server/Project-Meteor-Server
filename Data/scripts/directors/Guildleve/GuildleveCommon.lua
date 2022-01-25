@@ -21,7 +21,7 @@ function main(thisDirector)
 	if (members ~= nil and #members ~= 0) then
 		player = members[0];
 		player:SendGameMessage(GetWorldMaster(), 50036, 0x20, thisDirector.guildleveId, player, 0); --"You have started the leve..."
-		player:PlayAnimation(getGLStartAnimationFromSheet(guildleveData.borderId, guildleveData.plateId, false));
+		player:PlayAnimation(getGLStartAnimationFromSheet(guildleveData.plateId, guildleveData.borderId, false));
 	end
 
 	wait(3);
@@ -46,9 +46,4 @@ function main(thisDirector)
 	wait(3);
 	thisDirector:UpdateAimNumNow(0, 3);
 	
-end
-
-function attentionMessage(player, textId, ...)
-	player:SendGameMessage(GetWorldMaster(), textId, 0x20, ...);
-	player:SendDataPacket("attention", GetWorldMaster(), "", textId, ...);
 end
