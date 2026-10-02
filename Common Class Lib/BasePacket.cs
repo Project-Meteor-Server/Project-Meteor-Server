@@ -25,7 +25,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
-using Ionic.Zlib;
+using System.IO.Compression;
 using NLog;
 using NLog.Targets;
 
@@ -429,7 +429,7 @@ namespace Meteor.Common
         public static unsafe void DecompressPacket(ref BasePacket packet)
         {
             using (var compressedStream = new MemoryStream(packet.data))
-            using (var zipStream = new ZlibStream(compressedStream, Ionic.Zlib.CompressionMode.Decompress))
+            using (var zipStream = new ZLibStream(compressedStream, CompressionMode.Decompress))
             using (var resultStream = new MemoryStream())
             {
                 zipStream.CopyTo(resultStream);
@@ -441,23 +441,17 @@ namespace Meteor.Common
 
         public static unsafe BasePacket CompressPacket(BasePacket uncompressedPacket)
         {
-            using (var compressedStream = new MemoryStream(uncompressedPacket.data))
-            using (var zipStream = new ZlibStream(compressedStream, Ionic.Zlib.CompressionMode.Compress))
-            using (var resultStream = new MemoryStream())
-            {
-                zipStream.CopyTo(resultStream);
-                BasePacket compressedPacket = BasePacket.CreatePacket(resultStream.ToArray(), uncompressedPacket.header.isAuthenticated == 1, true);
-                return compressedPacket;
-            }
+            byte[] compressed = CompressData(uncompressedPacket.data);
+            return BasePacket.CreatePacket(compressed, uncompressedPacket.header.isAuthenticated == 1, true);
         }
 
         public static unsafe byte[] CompressData(byte[] data)
         {
-            using (var compressedStream = new MemoryStream(data))
-            using (var zipStream = new ZlibStream(compressedStream, Ionic.Zlib.CompressionMode.Compress))
             using (var resultStream = new MemoryStream())
             {
-                zipStream.CopyTo(resultStream);
+                // ZLibStream only compresses on write; it must be disposed to flush the trailer.
+                using (var zipStream = new ZLibStream(resultStream, CompressionMode.Compress, true))
+                    zipStream.Write(data, 0, data.Length);
                 return resultStream.ToArray();
             }
         }

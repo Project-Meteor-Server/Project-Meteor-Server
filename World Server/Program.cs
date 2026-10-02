@@ -47,7 +47,7 @@ namespace Meteor.World
 
 #if DEBUG
             TextWriterTraceListener myWriter = new TextWriterTraceListener(System.Console.Out);
-            Debug.Listeners.Add(myWriter);
+            Trace.Listeners.Add(myWriter); // Debug and Trace share listeners on modern .NET
 
             if (System.Diagnostics.Debugger.IsAttached)
             {
@@ -100,13 +100,16 @@ namespace Meteor.World
                 while (startServer)
                 {
                     String input = Console.ReadLine();
+                    if (input == null) // stdin closed (service/container): keep running without the console
+                        System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
                     Log.Info("[Console Input] " + input);
                     //cp.DoCommand(input, null);
                 }
             }
 
             Program.Log.Info("Press any key to continue...");
-            Console.ReadKey();
+            if (!Console.IsInputRedirected) // no console when run as a service or in a container
+                Console.ReadKey();
         }
     }
 }

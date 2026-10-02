@@ -1,0 +1,37 @@
+<Project>
+  <!-- Shared settings for every project in the solution. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Each project keeps its own Properties/AssemblyInfo.cs. -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Lobby AssemblyInfo uses a wildcard version ("1.0.*"). -->
+    <Deterministic>false</Deterministic>
+    <!-- Keep output in bin/Debug and bin/Release so the working directory layout
+         (configs, scripts/, ../../navmesh) stays the same as before. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <!-- Server code is old and full of unassigned packet fields; don't drown real warnings. -->
+    <NoWarn>$(NoWarn);CS0649;CS0169;CS0414;CS0219;CS0168</NoWarn>
+    <!-- Pinned: 8.0.32+ throws OverflowException where 8.0.31 silently wrapped (e.g. GetByte on a
+         negative TINYINT returns 255). Many reader.GetXxx calls rely on the old behaviour; fix those
+         against the schema before upgrading. -->
+    <MySqlDataVersion>8.0.31</MySqlDataVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MySql.Data 8.0.31 pulls System.Drawing.Common 4.7.0 transitively (GHSA-rxg9-xrhp-64gj); force the patched version. -->
+    <PackageReference Include="System.Drawing.Common" Version="4.7.2" />
+  </ItemGroup>
+
+  <!-- Copy a server's ini template next to the binary only if there isn't one yet,
+       so a local config (with a real DB password) is never overwritten by a build. -->
+  <Target Name="CopyIniTemplateIfMissing" AfterTargets="Build" Condition="'$(MeteorIni)' != ''">
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)Data/$(MeteorIni)"
+          DestinationFolder="$(OutDir)"
+          Condition="!Exists('$(OutDir)$(MeteorIni)')" />
+  </Target>
+</Project>

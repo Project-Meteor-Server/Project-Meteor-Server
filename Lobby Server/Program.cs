@@ -39,7 +39,7 @@ namespace Meteor.Lobby
             Log = LogManager.GetCurrentClassLogger();
 #if DEBUG
             TextWriterTraceListener myWriter = new TextWriterTraceListener(System.Console.Out);
-            Debug.Listeners.Add(myWriter);
+            Trace.Listeners.Add(myWriter); // Debug and Trace share listeners on modern .NET
 #endif
             Log.Info("==================================");
             Log.Info("Project Meteor: Lobby Server");
@@ -79,7 +79,8 @@ namespace Meteor.Lobby
             }
 
             Program.Log.Info("Press any key to continue...");
-            Console.ReadKey();
+            if (!Console.IsInputRedirected) // no console when run as a service or in a container
+                Console.ReadKey();
         }
 
     
