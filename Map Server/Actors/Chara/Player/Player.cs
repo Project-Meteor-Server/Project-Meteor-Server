@@ -22,7 +22,6 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 using Meteor.Common;
 using System;
 using System.Collections.Generic;
-using MoonSharp.Interpreter;
 using Meteor.Map.dataobjects;
 using Meteor.Map.dataobjects.chara;
 using Meteor.Map.lua;
@@ -106,7 +105,7 @@ namespace Meteor.Map.Actors
         public uint currentEventOwner = 0;
         public string currentEventName = "";
         public byte currentEventType = 0;
-        public Coroutine currentEventRunning;
+        public LuaCoroutine currentEventRunning;
 
         //Player Info
         public uint destinationZone;
@@ -1374,33 +1373,6 @@ namespace Meteor.Map.Actors
 
             return -1;
         }
-
-        //For Lua calls, cause MoonSharp goes retard with uint
-        public void AddQuest(int id, bool isSilent = false)
-        {
-            AddQuest((uint)id, isSilent);
-        }       
-        public void CompleteQuest(int id)
-        {
-            CompleteQuest((uint)id);
-        }
-        public bool HasQuest(int id)
-        {
-            return HasQuest((uint)id);
-        }
-        public Quest GetQuest(int id)
-        {
-            return GetQuest((uint)id);
-        }
-        public bool IsQuestCompleted(int id)
-        {
-            return IsQuestCompleted((uint)id);
-        }
-        public bool CanAcceptQuest(int id)
-        {
-            return CanAcceptQuest((uint)id);
-        }
-        //For Lua calls, cause MoonSharp goes retard with uint
 
         public void AddGuildleve(uint id)
         {

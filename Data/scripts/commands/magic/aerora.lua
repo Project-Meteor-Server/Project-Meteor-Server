@@ -20,8 +20,8 @@ function onSkillFinish(caster, target, skill, action, actionContainer)
     action.amount = skill.basePotency;
 
     --DoAction handles rates, buffs, dealing damage
-    action.DoAction(caster, target, skill, actionContainer);
+    action:DoAction(caster, target, skill, actionContainer);
 
     --Dispels an effect on each target.
-    target.statusEffects.RemoveStatusEffect(GetRandomEffectByFlag(8), actionContainer, 30336);
+    target.statusEffects:RemoveStatusEffect(GetRandomEffectByFlag(8), actionContainer, 30336);
 end;

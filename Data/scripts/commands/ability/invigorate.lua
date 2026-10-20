@@ -1,5 +1,5 @@
 require("global");
-require("Ability");
+require("ability");
 
 function onAbilityPrepare(caster, target, ability)
     return 0;
@@ -7,7 +7,7 @@ end;
 
 function onAbilityStart(caster, target, ability)
     --27280: Enhanced Invigorate: Increases duration of Invigorate by 15 seconds
-    if caster.HasTrait(27280) then
+    if caster:HasTrait(27280) then
         ability.statusDuration = ability.statusDuration + 15;
     end
 
@@ -15,7 +15,7 @@ function onAbilityStart(caster, target, ability)
     local magnitude = 100;
 
     --8032704: Drachen Mail
-    if caster.HasItemEquippedInSlot(8032704, 10) then
+    if caster:HasItemEquippedInSlot(8032704, 10) then
         magnitude = 120;
     end
 
@@ -25,5 +25,5 @@ end;
 
 function onSkillFinish(caster, target, skill, action, actionContainer)
     --DoAction handles rates, buffs, dealing damage
-    action.DoAction(caster, target, skill, actionContainer);
+    action:DoAction(caster, target, skill, actionContainer);
 end;

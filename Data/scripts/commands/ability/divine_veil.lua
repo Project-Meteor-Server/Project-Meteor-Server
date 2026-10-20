@@ -11,10 +11,10 @@ end;
 
 function onSkillFinish(caster, target, skill, action, actionContainer)
     --8051401: Gallant Cuisses
-    if caster.HasItemEquippedInSlot(8051401, 12) then
+    if caster:HasItemEquippedInSlot(8051401, 12) then
         ability.statusTier = 2;
     end
 
     --DoAction handles rates, buffs, dealing damage
-    action.DoAction(caster, target, skill, actionContainer);
+    action:DoAction(caster, target, skill, actionContainer);
 end;

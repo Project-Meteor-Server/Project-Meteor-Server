@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Tests for the script engine and the game scripts. Needs the Lua library built from ThirdParty/XLuaNative. -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Meteor.Map.Tests</RootNamespace>
+    <AssemblyName>Map Server Tests</AssemblyName>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Map Server\Map Server.csproj" />
+    <ProjectReference Include="..\..\ThirdParty\XLua\XLua.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\Data\scripts\**\*" Link="scripts\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Lua\**\*.lua" Link="scripts\__tests\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The Lua library built for this machine (see ThirdParty/XLuaNative). -->
+    <None Include="..\..\ThirdParty\XLuaNative\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*xlua.*" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+</Project>
