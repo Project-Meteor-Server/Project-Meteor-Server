@@ -89,7 +89,7 @@ namespace Meteor.Map.Actors
             ushort actorState, uint animationId, string customDisplayName)
             : base(actorNumber, actorClass, uniqueId, spawnedArea, posX, posY, posZ, rot, actorState, animationId, customDisplayName)  
         {
-            this.aiContainer = new AIContainer(this, new BattleNpcController(this), new PathFind(this), new TargetFind(this));
+            this.aiContainer = new AIContainer(this, new BattleNpcController(this), new Mover(this), new TargetFind(this));
 
             //this.currentSubState = SetActorStatePacket.SUB_STATE_MONSTER;
             //this.currentMainState = SetActorStatePacket.MAIN_STATE_ACTIVE;
@@ -346,8 +346,8 @@ namespace Meteor.Map.Actors
                 }
                 else
                 {
-                    if (target == null && !aiContainer.pathFind.IsFollowingPath())
-                        aiContainer.pathFind.PathInRange(spawnX, spawnY, spawnZ, 1.5f, 15.0f);
+                    if (target == null && !aiContainer.mover.IsMoving)
+                        aiContainer.mover.MoveTo(FindRandomPoint(spawnX, spawnY, spawnZ, 1.5f, 15.0f), Mover.MOVE_STATE_RUN);
                 }
             }
             else

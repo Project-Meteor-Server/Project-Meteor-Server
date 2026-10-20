@@ -34,7 +34,6 @@ namespace Meteor.Map.actors.chara.ai.controllers
         protected bool autoAttackEnabled = true;
         protected bool castingEnabled = true;
         protected bool weaponSkillEnabled = true;
-        protected PathFind pathFind;
         protected TargetFind targetFind;
 
         public Controller(Character owner)

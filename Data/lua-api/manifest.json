@@ -93,6 +93,21 @@
           "writable": true
         },
         {
+          "name": "cadenceHold",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "cadenceRot",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "cadenceTarget",
+          "type": "any",
+          "writable": true
+        },
+        {
           "name": "className",
           "type": "string",
           "writable": true
@@ -845,6 +860,10 @@
           "writable": true
         },
         {
+          "name": "HasCollision",
+          "type": "boolean"
+        },
+        {
           "name": "RegionId",
           "type": "number"
         },
@@ -995,6 +1014,29 @@
           "params": [
             {
               "name": "id",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "DescribeGates",
+          "returns": "string",
+          "params": []
+        },
+        {
+          "name": "DescribeNavMesh",
+          "returns": "string",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
               "type": "number"
             }
           ]
@@ -1164,6 +1206,11 @@
           ]
         },
         {
+          "name": "GetCollision",
+          "returns": "any",
+          "params": []
+        },
+        {
           "name": "GetDirectorById",
           "returns": "Director",
           "params": [
@@ -1176,6 +1223,11 @@
         {
           "name": "GetMonsters",
           "returns": "BattleNpc[]",
+          "params": []
+        },
+        {
+          "name": "GetNavInstance",
+          "returns": "any",
           "params": []
         },
         {
@@ -1204,6 +1256,16 @@
           "params": []
         },
         {
+          "name": "IsGateOpen",
+          "returns": "boolean?",
+          "params": [
+            {
+              "name": "gateId",
+              "type": "string"
+            }
+          ]
+        },
+        {
           "name": "IsPrivate",
           "returns": "boolean",
           "params": []
@@ -1214,12 +1276,66 @@
           "params": []
         },
         {
+          "name": "ProjectToGround",
+          "returns": "string",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "ground",
+              "type": "any"
+            }
+          ]
+        },
+        {
           "name": "RemoveActorFromZone",
           "returns": "nil",
           "params": [
             {
               "name": "actor",
               "type": "Actor"
+            }
+          ]
+        },
+        {
+          "name": "SetGate",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "gateId",
+              "type": "string"
+            },
+            {
+              "name": "open",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "SnapToGround",
+          "returns": "any",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
             }
           ]
         },
@@ -7800,6 +7916,18 @@
       "fullName": "Meteor.Map.ConfigConstants",
       "members": [
         {
+          "name": "CHORD_VALIDATOR",
+          "type": "ChordMode",
+          "static": true,
+          "writable": true
+        },
+        {
+          "name": "COLLISION_PATH",
+          "type": "string",
+          "static": true,
+          "writable": true
+        },
+        {
           "name": "DATABASE_HOST",
           "type": "string",
           "static": true,
@@ -7832,6 +7960,18 @@
         {
           "name": "DATABASE_WORLDID",
           "type": "number",
+          "static": true,
+          "writable": true
+        },
+        {
+          "name": "NAVMESH_ENABLED",
+          "type": "boolean",
+          "static": true,
+          "writable": true
+        },
+        {
+          "name": "NAVMESH_PATH",
+          "type": "string",
           "static": true,
           "writable": true
         },
@@ -7879,6 +8019,18 @@
           "params": []
         }
       ]
+    },
+    {
+      "name": "ChordMode",
+      "fullName": "Meteor.Map.ConfigConstants.ChordMode",
+      "enum": true,
+      "enumValues": [
+        "Off",
+        "Log",
+        "On"
+      ],
+      "members": [],
+      "methods": []
     },
     {
       "name": "AccessoryItem",
@@ -11745,6 +11897,11 @@
           "params": []
         },
         {
+          "name": "LoadNavMeshes",
+          "returns": "nil",
+          "params": []
+        },
+        {
           "name": "LoadSeamlessBoundryList",
           "returns": "nil",
           "params": []
@@ -12598,27 +12755,12 @@
       "base": "Area",
       "members": [
         {
-          "name": "navMeshQuery",
-          "type": "any",
+          "name": "navMesh",
+          "type": "ZoneNavMesh",
           "writable": true
         },
         {
-          "name": "pathCallTime",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "pathCalls",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "prevPathCalls",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "tiledNavMesh",
+          "name": "navWorld",
           "type": "any",
           "writable": true
         }
@@ -13220,8 +13362,8 @@
       "fullName": "Meteor.Map.actors.chara.ai.AIContainer",
       "members": [
         {
-          "name": "pathFind",
-          "type": "PathFind"
+          "name": "mover",
+          "type": "Mover"
         }
       ],
       "methods": [
@@ -14141,6 +14283,182 @@
       "methods": []
     },
     {
+      "name": "ChordResult",
+      "fullName": "Meteor.Map.actors.chara.ai.ChordResult",
+      "members": [
+        {
+          "name": "Length",
+          "type": "number"
+        },
+        {
+          "name": "Reason",
+          "type": "Why"
+        },
+        {
+          "name": "S",
+          "type": "number"
+        },
+        {
+          "name": "Ok",
+          "type": "boolean"
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "Why",
+      "fullName": "Meteor.Map.actors.chara.ai.ChordResult.Why",
+      "enum": true,
+      "enumValues": [
+        "Ok",
+        "TooShort",
+        "Wall",
+        "NoGround",
+        "FloorMismatch",
+        "Step",
+        "Overhang"
+      ],
+      "members": [],
+      "methods": []
+    },
+    {
+      "name": "ChordValidator",
+      "fullName": "Meteor.Map.actors.chara.ai.ChordValidator",
+      "members": [
+        {
+          "name": "ABOVE_MESH",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "BELOW_MESH",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "EDGE_TOLERANCE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "FLOOR_TOLERANCE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "FloorTolerance",
+          "type": "number",
+          "static": true,
+          "writable": true
+        },
+        {
+          "name": "LEDGE_DROP",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "LEDGE_GAP",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MARGIN",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MAX_BIAS",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MIN_MOVE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "SIDE_RADIUS",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "SIDE_SLOPE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "START_SLOP",
+          "type": "number",
+          "static": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "Check",
+          "static": true,
+          "returns": "ChordResult",
+          "params": [
+            {
+              "name": "world",
+              "type": "IChordWorld"
+            },
+            {
+              "name": "c",
+              "type": "any"
+            },
+            {
+              "name": "t",
+              "type": "any"
+            },
+            {
+              "name": "speed",
+              "type": "number"
+            },
+            {
+              "name": "hover",
+              "type": "number"
+            },
+            {
+              "name": "lastTarget",
+              "type": "any?",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "Recover",
+          "static": true,
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "world",
+              "type": "IChordWorld"
+            },
+            {
+              "name": "c",
+              "type": "any"
+            },
+            {
+              "name": "t",
+              "type": "any"
+            },
+            {
+              "name": "speed",
+              "type": "number"
+            },
+            {
+              "name": "hover",
+              "type": "number"
+            },
+            {
+              "name": "hop",
+              "type": "any"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "CommandType",
       "fullName": "Meteor.Map.actors.chara.ai.CommandType",
       "enum": true,
@@ -14150,6 +14468,18 @@
         "WeaponSkill",
         "Ability",
         "Spell"
+      ],
+      "members": [],
+      "methods": []
+    },
+    {
+      "name": "GroundAnswer",
+      "fullName": "Meteor.Map.actors.chara.ai.GroundAnswer",
+      "enum": true,
+      "enumValues": [
+        "Hit",
+        "Miss",
+        "Unknown"
       ],
       "members": [],
       "methods": []
@@ -14244,6 +14574,97 @@
       "methods": []
     },
     {
+      "name": "IChordWorld",
+      "fullName": "Meteor.Map.actors.chara.ai.IChordWorld",
+      "members": [],
+      "methods": [
+        {
+          "name": "MeshDistance",
+          "returns": "number",
+          "params": [
+            {
+              "name": "p",
+              "type": "any"
+            },
+            {
+              "name": "max",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "NavHeight",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "yNear",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "under",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "RayDown",
+          "returns": "GroundAnswer",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "top",
+              "type": "number"
+            },
+            {
+              "name": "bottom",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Walk",
+          "returns": "number",
+          "params": [
+            {
+              "name": "a",
+              "type": "any"
+            },
+            {
+              "name": "b",
+              "type": "any"
+            },
+            {
+              "name": "lateral",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "KnockbackType",
       "fullName": "Meteor.Map.actors.chara.ai.KnockbackType",
       "enum": true,
@@ -14264,182 +14685,1138 @@
       "methods": []
     },
     {
-      "name": "PathFind",
-      "fullName": "Meteor.Map.actors.chara.ai.PathFind",
-      "members": [],
+      "name": "MoveCadence",
+      "fullName": "Meteor.Map.actors.chara.ai.MoveCadence",
+      "members": [
+        {
+          "name": "ACCEL_SECONDS",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "BEHIND_SLACK",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "CHASE_RETARGET",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "CORNER_DEGREES",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "CORNER_SKIP",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "DRIFT",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "FOLLOW_RESEND",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "FOLLOW_SPAN",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "HOLD_START",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "HOLD_TICKS",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "HOP_SECONDS",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "HoldHop",
+          "type": "any",
+          "writable": true
+        },
+        {
+          "name": "LEAD_SECONDS",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MAX_HOP",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MIN_HOP",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "RETARGET",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "SHORTEN_BACK",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "STOP_DELAY",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "THROUGH_GAIN",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "THROUGH_LANE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "Active",
+          "type": "boolean"
+        },
+        {
+          "name": "Corner",
+          "type": "boolean"
+        },
+        {
+          "name": "Final",
+          "type": "boolean"
+        },
+        {
+          "name": "From",
+          "type": "any"
+        },
+        {
+          "name": "SentAt",
+          "type": "number"
+        },
+        {
+          "name": "Speed",
+          "type": "number"
+        },
+        {
+          "name": "State",
+          "type": "number"
+        },
+        {
+          "name": "Target",
+          "type": "any"
+        },
+        {
+          "name": "WalkStart",
+          "type": "number"
+        }
+      ],
       "methods": [
         {
-          "name": "AtPoint",
-          "returns": "boolean",
+          "name": "Along",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "a",
+              "type": "any"
+            },
+            {
+              "name": "b",
+              "type": "any"
+            },
+            {
+              "name": "dist",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "ArrivesAt",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "BandExit",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "y0",
+              "type": "number"
+            },
+            {
+              "name": "y1",
+              "type": "number"
+            },
+            {
+              "name": "lo",
+              "type": "number"
+            },
+            {
+              "name": "hi",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Behind",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "p",
+              "type": "any"
+            },
+            {
+              "name": "c",
+              "type": "any"
+            },
+            {
+              "name": "a",
+              "type": "any"
+            },
+            {
+              "name": "b",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "Check",
+          "returns": "Reason",
+          "params": [
+            {
+              "name": "now",
+              "type": "number"
+            },
+            {
+              "name": "serverPos",
+              "type": "any"
+            },
+            {
+              "name": "speed",
+              "type": "number"
+            },
+            {
+              "name": "state",
+              "type": "number"
+            },
+            {
+              "name": "tickDt",
+              "type": "number"
+            },
+            {
+              "name": "routeGoesOn",
+              "type": "boolean"
+            },
+            {
+              "name": "targetOffRoute",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "ClientPos",
+          "returns": "any",
+          "params": [
+            {
+              "name": "now",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "DistanceToRoute",
+          "static": true,
+          "returns": "number",
           "params": [
             {
               "name": "point",
+              "type": "any"
+            },
+            {
+              "name": "pos",
+              "type": "any"
+            },
+            {
+              "name": "points",
+              "type": "any[]"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "DistanceToSegment",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "p",
+              "type": "any"
+            },
+            {
+              "name": "a",
+              "type": "any"
+            },
+            {
+              "name": "b",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "LeadDistance",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "speed",
+              "type": "number"
+            },
+            {
+              "name": "tickDt",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "MaxHop",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "speed",
+              "type": "number"
+            },
+            {
+              "name": "walk",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "NextHop",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "pos",
+              "type": "any"
+            },
+            {
+              "name": "points",
+              "type": "any[]"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            },
+            {
+              "name": "maxLength",
+              "type": "number"
+            },
+            {
+              "name": "maxDy",
+              "type": "number"
+            },
+            {
+              "name": "end",
+              "type": "HopEnd"
+            },
+            {
+              "name": "corners",
+              "type": "boolean",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "NextHopOrEnd",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "pos",
+              "type": "any"
+            },
+            {
+              "name": "points",
+              "type": "any[]"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            },
+            {
+              "name": "maxLength",
+              "type": "number"
+            },
+            {
+              "name": "maxDy",
+              "type": "number"
+            },
+            {
+              "name": "end",
+              "type": "HopEnd"
+            }
+          ]
+        },
+        {
+          "name": "Plan",
+          "returns": "Hop",
+          "params": [
+            {
+              "name": "now",
+              "type": "number"
+            },
+            {
+              "name": "pos",
+              "type": "any"
+            },
+            {
+              "name": "points",
+              "type": "any[]"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            },
+            {
+              "name": "done",
+              "type": "boolean"
+            },
+            {
+              "name": "truncated",
+              "type": "boolean"
+            },
+            {
+              "name": "speed",
+              "type": "number"
+            },
+            {
+              "name": "state",
+              "type": "number"
+            },
+            {
+              "name": "walk",
+              "type": "boolean"
+            },
+            {
+              "name": "tickDt",
+              "type": "number"
+            },
+            {
+              "name": "maxDy",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "lineClear",
+              "type": "any",
+              "optional": true
+            },
+            {
+              "name": "minResend",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "chord",
+              "type": "any",
+              "optional": true
+            },
+            {
+              "name": "clientAt",
               "type": "any",
               "optional": true
             }
           ]
         },
         {
-          "name": "Clear",
-          "returns": "nil",
-          "params": []
-        },
-        {
-          "name": "FollowPath",
-          "returns": "nil",
-          "params": []
-        },
-        {
-          "name": "IsFollowingPath",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsFollowingScriptedPath",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "PathInRange",
-          "returns": "nil",
+          "name": "Ramp",
+          "static": true,
+          "returns": "number",
           "params": [
             {
-              "name": "dest",
+              "name": "speed",
+              "type": "number"
+            },
+            {
+              "name": "t",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Reset",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "SegmentAfter",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "points",
+              "type": "any[]"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            },
+            {
+              "name": "pos",
               "type": "any"
             },
-            {
-              "name": "minRange",
-              "type": "number"
-            },
-            {
-              "name": "maxRange",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "PathInRange",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "x",
-              "type": "number"
-            },
-            {
-              "name": "y",
-              "type": "number"
-            },
-            {
-              "name": "z",
-              "type": "number"
-            },
-            {
-              "name": "minRange",
-              "type": "number"
-            },
-            {
-              "name": "maxRange",
-              "type": "number",
-              "optional": true
-            }
-          ]
-        },
-        {
-          "name": "PreparePath",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "dest",
-              "type": "any"
-            },
-            {
-              "name": "stepSize",
-              "type": "number",
-              "optional": true
-            },
-            {
-              "name": "maxPath",
-              "type": "number",
-              "optional": true
-            },
-            {
-              "name": "polyRadius",
-              "type": "number",
-              "optional": true
-            }
-          ]
-        },
-        {
-          "name": "PreparePath",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "x",
-              "type": "number"
-            },
-            {
-              "name": "y",
-              "type": "number"
-            },
-            {
-              "name": "z",
-              "type": "number"
-            },
-            {
-              "name": "stepSize",
-              "type": "number",
-              "optional": true
-            },
-            {
-              "name": "maxPath",
-              "type": "number",
-              "optional": true
-            },
-            {
-              "name": "polyRadius",
-              "type": "number",
-              "optional": true
-            }
-          ]
-        },
-        {
-          "name": "SetPathFlags",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "flags",
-              "type": "PathFindFlags"
-            }
-          ]
-        },
-        {
-          "name": "StepTo",
-          "returns": "nil",
-          "params": [
             {
               "name": "point",
               "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "Sent",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "from",
+              "type": "any"
             },
             {
-              "name": "run",
+              "name": "target",
+              "type": "any"
+            },
+            {
+              "name": "speed",
+              "type": "number"
+            },
+            {
+              "name": "state",
+              "type": "number"
+            },
+            {
+              "name": "now",
+              "type": "number"
+            },
+            {
+              "name": "final",
+              "type": "boolean"
+            },
+            {
+              "name": "corner",
               "type": "boolean",
               "optional": true
+            }
+          ]
+        },
+        {
+          "name": "Shorten",
+          "static": true,
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "hop",
+              "type": "Hop"
+            },
+            {
+              "name": "c",
+              "type": "any"
+            },
+            {
+              "name": "length",
+              "type": "number"
+            },
+            {
+              "name": "pointAt",
+              "type": "any"
+            },
+            {
+              "name": "chord",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "Step",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "speed",
+              "type": "number"
+            },
+            {
+              "name": "t0",
+              "type": "number"
+            },
+            {
+              "name": "t1",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "ThroughCorners",
+          "static": true,
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "hop",
+              "type": "Hop"
+            },
+            {
+              "name": "c",
+              "type": "any"
+            },
+            {
+              "name": "origin",
+              "type": "any"
+            },
+            {
+              "name": "points",
+              "type": "any[]"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            },
+            {
+              "name": "maxLength",
+              "type": "number"
+            },
+            {
+              "name": "maxDy",
+              "type": "number"
+            },
+            {
+              "name": "chord",
+              "type": "any"
+            },
+            {
+              "name": "routeEnd",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "Yaw",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "to",
+              "type": "any"
+            },
+            {
+              "name": "fallback",
+              "type": "number"
             }
           ]
         }
       ]
     },
     {
-      "name": "PathFindFlags",
-      "fullName": "Meteor.Map.actors.chara.ai.PathFindFlags",
+      "name": "ChaseLead",
+      "fullName": "Meteor.Map.actors.chara.ai.MoveCadence.ChaseLead",
+      "members": [
+        {
+          "name": "Moving",
+          "type": "boolean"
+        }
+      ],
+      "methods": [
+        {
+          "name": "Lead",
+          "returns": "any",
+          "params": [
+            {
+              "name": "target",
+              "type": "any"
+            },
+            {
+              "name": "now",
+              "type": "number"
+            },
+            {
+              "name": "maxSpeed",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Rebase",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "Reset",
+          "returns": "nil",
+          "params": []
+        }
+      ]
+    },
+    {
+      "name": "GoalTracker",
+      "fullName": "Meteor.Map.actors.chara.ai.MoveCadence.GoalTracker",
+      "members": [
+        {
+          "name": "MOVING_SPEED",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "Moving",
+          "type": "boolean"
+        },
+        {
+          "name": "VelX",
+          "type": "number"
+        },
+        {
+          "name": "VelZ",
+          "type": "number"
+        }
+      ],
+      "methods": [
+        {
+          "name": "Lead",
+          "returns": "any",
+          "params": [
+            {
+              "name": "p",
+              "type": "any"
+            },
+            {
+              "name": "seconds",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Reset",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "Track",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "p",
+              "type": "any"
+            },
+            {
+              "name": "now",
+              "type": "number"
+            },
+            {
+              "name": "maxSpeed",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Hop",
+      "fullName": "Meteor.Map.actors.chara.ai.MoveCadence.Hop",
+      "members": [
+        {
+          "name": "Blocked",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "Check",
+          "type": "ChordResult",
+          "writable": true
+        },
+        {
+          "name": "Checked",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "Final",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "FirstFail",
+          "type": "ChordResult",
+          "writable": true
+        },
+        {
+          "name": "Send",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "Shortened",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Target",
+          "type": "any",
+          "writable": true
+        },
+        {
+          "name": "Why",
+          "type": "Reason",
+          "writable": true
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "HopEnd",
+      "fullName": "Meteor.Map.actors.chara.ai.MoveCadence.HopEnd",
       "enum": true,
       "enumValues": [
-        "None",
-        "Scripted",
-        "IgnoreNav"
+        "Length",
+        "RouteEnd",
+        "Corner",
+        "Height"
       ],
       "members": [],
       "methods": []
+    },
+    {
+      "name": "Reason",
+      "fullName": "Meteor.Map.actors.chara.ai.MoveCadence.Reason",
+      "enum": true,
+      "enumValues": [
+        "None",
+        "Start",
+        "State",
+        "Speed",
+        "Reach",
+        "Drift",
+        "Retarget"
+      ],
+      "members": [],
+      "methods": []
+    },
+    {
+      "name": "Mover",
+      "fullName": "Meteor.Map.actors.chara.ai.Mover",
+      "members": [
+        {
+          "name": "DEFAULT_REPATH_DISTANCE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MOVE_STATE_ACTIVE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MOVE_STATE_RUN",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MOVE_STATE_STOP",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MOVE_STATE_WALK",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "Scripted",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "ChaseTargetMoving",
+          "type": "boolean"
+        },
+        {
+          "name": "Failed",
+          "type": "boolean"
+        },
+        {
+          "name": "Goal",
+          "type": "any"
+        },
+        {
+          "name": "IsMoving",
+          "type": "boolean"
+        },
+        {
+          "name": "LastOutcome",
+          "type": "Outcome"
+        },
+        {
+          "name": "LastPathResult",
+          "type": "PathResult"
+        },
+        {
+          "name": "Route",
+          "type": "any[]"
+        }
+      ],
+      "methods": [
+        {
+          "name": "Chase",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "dest",
+              "type": "any"
+            },
+            {
+              "name": "moveState",
+              "type": "number"
+            },
+            {
+              "name": "stopShort",
+              "type": "number"
+            },
+            {
+              "name": "crowded",
+              "type": "any",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "Describe",
+          "returns": "string",
+          "params": []
+        },
+        {
+          "name": "MoveTo",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "dest",
+              "type": "any"
+            },
+            {
+              "name": "moveState",
+              "type": "number"
+            },
+            {
+              "name": "stopShort",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "repathDistance",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "onDone",
+              "type": "any",
+              "optional": true
+            },
+            {
+              "name": "ignoreNav",
+              "type": "boolean",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "Stop",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "Teleport",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "pos",
+              "type": "any"
+            },
+            {
+              "name": "rotation",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Update",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "tick",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "WatchChase",
+          "returns": "any",
+          "params": [
+            {
+              "name": "dest",
+              "type": "any"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Outcome",
+      "fullName": "Meteor.Map.actors.chara.ai.Mover.Outcome",
+      "enum": true,
+      "enumValues": [
+        "None",
+        "Moving",
+        "Arrived",
+        "Partial",
+        "NoRoute",
+        "Stuck",
+        "Stopped"
+      ],
+      "members": [],
+      "methods": []
+    },
+    {
+      "name": "MoverMath",
+      "fullName": "Meteor.Map.actors.chara.ai.MoverMath",
+      "members": [],
+      "methods": [
+        {
+          "name": "Advance",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "pos",
+              "type": "any"
+            },
+            {
+              "name": "points",
+              "type": "any[]"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            },
+            {
+              "name": "budget",
+              "type": "number"
+            },
+            {
+              "name": "travelled",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Budget",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "speed",
+              "type": "number"
+            },
+            {
+              "name": "dt",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "PathLength",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "points",
+              "type": "any[]"
+            },
+            {
+              "name": "from",
+              "type": "number",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "RingRadius",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "u",
+              "type": "number"
+            },
+            {
+              "name": "min",
+              "type": "number"
+            },
+            {
+              "name": "max",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "TrimEnd",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "points",
+              "type": "any[]"
+            },
+            {
+              "name": "cut",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "XZDistance",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "a",
+              "type": "any"
+            },
+            {
+              "name": "b",
+              "type": "any"
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "StatusEffect",
@@ -19903,6 +21280,1278 @@
         },
         {
           "name": "value",
+          "type": "any",
+          "writable": true
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "AreaChordWorld",
+      "fullName": "Meteor.Map.navigation.AreaChordWorld",
+      "members": [],
+      "methods": [
+        {
+          "name": "MeshDistance",
+          "returns": "number",
+          "params": [
+            {
+              "name": "p",
+              "type": "any"
+            },
+            {
+              "name": "max",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "NavHeight",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "yNear",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "under",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "RayDown",
+          "returns": "GroundAnswer",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "top",
+              "type": "number"
+            },
+            {
+              "name": "bottom",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Walk",
+          "returns": "number",
+          "params": [
+            {
+              "name": "a",
+              "type": "any"
+            },
+            {
+              "name": "b",
+              "type": "any"
+            },
+            {
+              "name": "lateral",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CollisionManager",
+      "fullName": "Meteor.Map.navigation.CollisionManager",
+      "members": [
+        {
+          "name": "UNLOAD_AFTER",
+          "type": "any",
+          "static": true
+        },
+        {
+          "name": "Entries",
+          "type": "Entry[]",
+          "static": true
+        },
+        {
+          "name": "Loaded",
+          "type": "any[]",
+          "static": true
+        },
+        {
+          "name": "Root",
+          "type": "string",
+          "static": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "FindForZones",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "zones",
+              "type": "Zone[]"
+            }
+          ]
+        },
+        {
+          "name": "Get",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "zoneName",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "name": "Has",
+          "static": true,
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "zoneName",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "name": "Probe",
+          "static": true,
+          "returns": "ProbeResult",
+          "params": [
+            {
+              "name": "zoneName",
+              "type": "string"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "yFrom",
+              "type": "number"
+            },
+            {
+              "name": "gates",
+              "type": "any"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "complete",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "RayDown",
+          "static": true,
+          "returns": "ProbeResult",
+          "params": [
+            {
+              "name": "zoneName",
+              "type": "string"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "top",
+              "type": "number"
+            },
+            {
+              "name": "bottom",
+              "type": "number"
+            },
+            {
+              "name": "gates",
+              "type": "any"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "complete",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "TryGet",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "e",
+              "type": "Entry"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Entry",
+      "fullName": "Meteor.Map.navigation.CollisionManager.Entry",
+      "members": [
+        {
+          "name": "Dir",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "Failed",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "LastUsedMs",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Loads",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Max",
+          "type": "any",
+          "writable": true
+        },
+        {
+          "name": "Min",
+          "type": "any",
+          "writable": true
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "World",
+          "type": "any",
+          "writable": true
+        },
+        {
+          "name": "Loading",
+          "type": "boolean"
+        }
+      ],
+      "methods": [
+        {
+          "name": "Covers",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ProbeResult",
+      "fullName": "Meteor.Map.navigation.CollisionManager.ProbeResult",
+      "enum": true,
+      "enumValues": [
+        "Hit",
+        "Miss",
+        "NoCollision"
+      ],
+      "members": [],
+      "methods": []
+    },
+    {
+      "name": "IZoneNav",
+      "fullName": "Meteor.Map.navigation.IZoneNav",
+      "members": [
+        {
+          "name": "Instance",
+          "type": "any"
+        },
+        {
+          "name": "Name",
+          "type": "string"
+        },
+        {
+          "name": "PolyCount",
+          "type": "number"
+        },
+        {
+          "name": "TileCount",
+          "type": "number"
+        }
+      ],
+      "methods": [
+        {
+          "name": "Describe",
+          "returns": "string",
+          "params": [
+            {
+              "name": "pos",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "HasLineOfSight",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "to",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "IsReachable",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "to",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "ProjectSpawn",
+          "returns": "SpawnCheck",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "snapped",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TryClearance",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "dirX",
+              "type": "number[]"
+            },
+            {
+              "name": "dirZ",
+              "type": "number[]"
+            },
+            {
+              "name": "maxDist",
+              "type": "number[]"
+            },
+            {
+              "name": "dist",
+              "type": "number[]"
+            }
+          ]
+        },
+        {
+          "name": "TryFindPath",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "start",
+              "type": "any"
+            },
+            {
+              "name": "end",
+              "type": "any"
+            },
+            {
+              "name": "stepSize",
+              "type": "number"
+            },
+            {
+              "name": "maxPoints",
+              "type": "number"
+            },
+            {
+              "name": "endRandomRadius",
+              "type": "number"
+            },
+            {
+              "name": "output",
+              "type": "any[]"
+            },
+            {
+              "name": "result",
+              "type": "PathResult"
+            }
+          ]
+        },
+        {
+          "name": "TryProject",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "p",
+              "type": "any"
+            },
+            {
+              "name": "ground",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TryRandomPointAround",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "center",
+              "type": "any"
+            },
+            {
+              "name": "radius",
+              "type": "number"
+            },
+            {
+              "name": "point",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TryRandomPointInRing",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "center",
+              "type": "any"
+            },
+            {
+              "name": "minRadius",
+              "type": "number"
+            },
+            {
+              "name": "maxRadius",
+              "type": "number"
+            },
+            {
+              "name": "point",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TrySnapToGround",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "snapped",
+              "type": "any"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MsetNavMeshLoader",
+      "fullName": "Meteor.Map.navigation.MsetNavMeshLoader",
+      "members": [],
+      "methods": [
+        {
+          "name": "Load",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "path",
+              "type": "string"
+            },
+            {
+              "name": "tileCount",
+              "type": "number"
+            },
+            {
+              "name": "polyCount",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NavInstanceMesh",
+      "fullName": "Meteor.Map.navigation.NavInstanceMesh",
+      "members": [
+        {
+          "name": "Instance",
+          "type": "any"
+        },
+        {
+          "name": "Name",
+          "type": "string"
+        },
+        {
+          "name": "PolyCount",
+          "type": "number"
+        },
+        {
+          "name": "TileCount",
+          "type": "number"
+        }
+      ],
+      "methods": [
+        {
+          "name": "Describe",
+          "returns": "string",
+          "params": [
+            {
+              "name": "pos",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "DescribeGates",
+          "returns": "string",
+          "params": []
+        },
+        {
+          "name": "HasLineOfSight",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "to",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "IsReachable",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "to",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "M",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "v",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "N",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "v",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "ProjectSpawn",
+          "returns": "SpawnCheck",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "snapped",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "ToPathResult",
+          "static": true,
+          "returns": "PathResult",
+          "params": [
+            {
+              "name": "r",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TryClearance",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "dirX",
+              "type": "number[]"
+            },
+            {
+              "name": "dirZ",
+              "type": "number[]"
+            },
+            {
+              "name": "maxDist",
+              "type": "number[]"
+            },
+            {
+              "name": "dist",
+              "type": "number[]"
+            }
+          ]
+        },
+        {
+          "name": "TryFindPath",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "start",
+              "type": "any"
+            },
+            {
+              "name": "end",
+              "type": "any"
+            },
+            {
+              "name": "stepSize",
+              "type": "number"
+            },
+            {
+              "name": "maxPoints",
+              "type": "number"
+            },
+            {
+              "name": "endRandomRadius",
+              "type": "number"
+            },
+            {
+              "name": "output",
+              "type": "any[]"
+            },
+            {
+              "name": "result",
+              "type": "PathResult"
+            }
+          ]
+        },
+        {
+          "name": "TryProject",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "p",
+              "type": "any"
+            },
+            {
+              "name": "ground",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TryRandomPointAround",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "center",
+              "type": "any"
+            },
+            {
+              "name": "radius",
+              "type": "number"
+            },
+            {
+              "name": "point",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TryRandomPointInRing",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "center",
+              "type": "any"
+            },
+            {
+              "name": "minRadius",
+              "type": "number"
+            },
+            {
+              "name": "maxRadius",
+              "type": "number"
+            },
+            {
+              "name": "point",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TrySnapToGround",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "snapped",
+              "type": "any"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NavMeshManager",
+      "fullName": "Meteor.Map.navigation.NavMeshManager",
+      "members": [
+        {
+          "name": "MANIFEST",
+          "type": "string",
+          "static": true
+        },
+        {
+          "name": "Worlds",
+          "type": "any[]",
+          "static": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "Get",
+          "static": true,
+          "returns": "ZoneNavMesh",
+          "params": [
+            {
+              "name": "fileName",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "name": "LoadForZones",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "zones",
+              "type": "Zone[]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NavStats",
+      "fullName": "Meteor.Map.navigation.NavStats",
+      "members": [
+        {
+          "name": "NO_MESH",
+          "type": "string",
+          "static": true
+        },
+        {
+          "name": "Meshes",
+          "type": "any[]",
+          "static": true
+        },
+        {
+          "name": "Since",
+          "type": "any",
+          "static": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "IsFailure",
+          "static": true,
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "r",
+              "type": "PathResult"
+            }
+          ]
+        },
+        {
+          "name": "Record",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "mesh",
+              "type": "string"
+            },
+            {
+              "name": "result",
+              "type": "PathResult"
+            },
+            {
+              "name": "elapsedTicks",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Reset",
+          "static": true,
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "ToMicroseconds",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "ticks",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Counters",
+      "fullName": "Meteor.Map.navigation.NavStats.Counters",
+      "members": [
+        {
+          "name": "Calls",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "MaxTicks",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Results",
+          "type": "number[]"
+        },
+        {
+          "name": "Ticks",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "PathResult",
+      "fullName": "Meteor.Map.navigation.PathResult",
+      "enum": true,
+      "enumValues": [
+        "Ok",
+        "Partial",
+        "NoMesh",
+        "SamePoint",
+        "StartOffMesh",
+        "GoalOffMesh",
+        "NoRoute",
+        "Failed",
+        "GateClosed",
+        "VerticalMismatch"
+      ],
+      "members": [],
+      "methods": []
+    },
+    {
+      "name": "SpawnCheck",
+      "fullName": "Meteor.Map.navigation.SpawnCheck",
+      "enum": true,
+      "enumValues": [
+        "Ok",
+        "SmallIsland",
+        "NotFound",
+        "VerticalMismatch"
+      ],
+      "members": [],
+      "methods": []
+    },
+    {
+      "name": "ZoneNavMesh",
+      "fullName": "Meteor.Map.navigation.ZoneNavMesh",
+      "members": [
+        {
+          "name": "FilePath",
+          "type": "string"
+        },
+        {
+          "name": "IslandCount",
+          "type": "number"
+        },
+        {
+          "name": "Instance",
+          "type": "any"
+        },
+        {
+          "name": "Name",
+          "type": "string"
+        },
+        {
+          "name": "PolyCount",
+          "type": "number"
+        },
+        {
+          "name": "TileCount",
+          "type": "number"
+        }
+      ],
+      "methods": [
+        {
+          "name": "Describe",
+          "returns": "string",
+          "params": [
+            {
+              "name": "pos",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "HasLineOfSight",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "to",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "IsReachable",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "to",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "ProjectSpawn",
+          "returns": "SpawnCheck",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "snapped",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TryClearance",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "dirX",
+              "type": "number[]"
+            },
+            {
+              "name": "dirZ",
+              "type": "number[]"
+            },
+            {
+              "name": "maxDist",
+              "type": "number[]"
+            },
+            {
+              "name": "dist",
+              "type": "number[]"
+            }
+          ]
+        },
+        {
+          "name": "TryFindPath",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "start",
+              "type": "any"
+            },
+            {
+              "name": "end",
+              "type": "any"
+            },
+            {
+              "name": "stepSize",
+              "type": "number"
+            },
+            {
+              "name": "maxPoints",
+              "type": "number"
+            },
+            {
+              "name": "endRandomRadius",
+              "type": "number"
+            },
+            {
+              "name": "output",
+              "type": "any[]"
+            }
+          ]
+        },
+        {
+          "name": "TryFindPath",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "start",
+              "type": "any"
+            },
+            {
+              "name": "end",
+              "type": "any"
+            },
+            {
+              "name": "stepSize",
+              "type": "number"
+            },
+            {
+              "name": "maxPoints",
+              "type": "number"
+            },
+            {
+              "name": "endRandomRadius",
+              "type": "number"
+            },
+            {
+              "name": "output",
+              "type": "any[]"
+            },
+            {
+              "name": "result",
+              "type": "PathResult"
+            }
+          ]
+        },
+        {
+          "name": "TryProject",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "p",
+              "type": "any"
+            },
+            {
+              "name": "ground",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TryRandomPointAround",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "center",
+              "type": "any"
+            },
+            {
+              "name": "radius",
+              "type": "number"
+            },
+            {
+              "name": "point",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TryRandomPointInRing",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "center",
+              "type": "any"
+            },
+            {
+              "name": "minRadius",
+              "type": "number"
+            },
+            {
+              "name": "maxRadius",
+              "type": "number"
+            },
+            {
+              "name": "point",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "TrySnapToGround",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "snapped",
+              "type": "any"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QueryContext",
+      "fullName": "Meteor.Map.navigation.ZoneNavMesh.QueryContext",
+      "members": [
+        {
+          "name": "Corners",
+          "type": "any[]",
+          "writable": true
+        },
+        {
+          "name": "Polys",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "Query",
+          "type": "any",
+          "writable": true
+        },
+        {
+          "name": "Rand",
           "type": "any",
           "writable": true
         }
@@ -28658,13 +31307,24 @@
       "members": [],
       "methods": [
         {
+          "name": "AgentFor",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "chara",
+              "type": "Character"
+            }
+          ]
+        },
+        {
           "name": "CanSee",
           "static": true,
           "returns": "boolean",
           "params": [
             {
-              "name": "zone",
-              "type": "Zone"
+              "name": "area",
+              "type": "Area"
             },
             {
               "name": "x1",
@@ -28693,21 +31353,74 @@
           ]
         },
         {
-          "name": "GamePosToNavmeshPos",
+          "name": "Clearance",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "area",
+              "type": "Area"
+            },
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "dirX",
+              "type": "number[]"
+            },
+            {
+              "name": "dirZ",
+              "type": "number[]"
+            },
+            {
+              "name": "maxDist",
+              "type": "number[]"
+            },
+            {
+              "name": "dist",
+              "type": "number[]"
+            }
+          ]
+        },
+        {
+          "name": "ClearanceTowards",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "area",
+              "type": "Area"
+            },
+            {
+              "name": "from",
+              "type": "any"
+            },
+            {
+              "name": "to",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "GetNavInstance",
           "static": true,
           "returns": "any",
           "params": [
             {
-              "name": "x",
-              "type": "number"
-            },
+              "name": "area",
+              "type": "Area"
+            }
+          ]
+        },
+        {
+          "name": "GetNavMesh",
+          "static": true,
+          "returns": "IZoneNav",
+          "params": [
             {
-              "name": "y",
-              "type": "number"
-            },
-            {
-              "name": "z",
-              "type": "number"
+              "name": "area",
+              "type": "Area"
             }
           ]
         },
@@ -28717,8 +31430,8 @@
           "returns": "any[]",
           "params": [
             {
-              "name": "zone",
-              "type": "Zone"
+              "name": "area",
+              "type": "Area"
             },
             {
               "name": "startVec",
@@ -28756,8 +31469,51 @@
           "returns": "any[]",
           "params": [
             {
-              "name": "zone",
-              "type": "Zone"
+              "name": "area",
+              "type": "Area"
+            },
+            {
+              "name": "startVec",
+              "type": "any"
+            },
+            {
+              "name": "endVec",
+              "type": "any"
+            },
+            {
+              "name": "result",
+              "type": "PathResult"
+            },
+            {
+              "name": "stepSize",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "pathSize",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "polyRadius",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "skipToTarget",
+              "type": "boolean",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "GetPath",
+          "static": true,
+          "returns": "any[]",
+          "params": [
+            {
+              "name": "area",
+              "type": "Area"
             },
             {
               "name": "x",
@@ -28806,25 +31562,14 @@
           ]
         },
         {
-          "name": "LoadNavmesh",
+          "name": "SnapToGround",
           "static": true,
           "returns": "any",
           "params": [
             {
-              "name": "navmesh",
-              "type": "any"
+              "name": "area",
+              "type": "Area"
             },
-            {
-              "name": "filePath",
-              "type": "string"
-            }
-          ]
-        },
-        {
-          "name": "NavmeshPosToGamePos",
-          "static": true,
-          "returns": "any",
-          "params": [
             {
               "name": "x",
               "type": "number"

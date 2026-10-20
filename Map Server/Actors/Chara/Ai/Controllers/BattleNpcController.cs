@@ -103,7 +103,7 @@ namespace Meteor.Map.actors.chara.ai.controllers
                         if (chara.allegiance == owner.allegiance)
                            continue;
 
-                        if (owner.aiContainer.pathFind.AtPoint() && owner.detectionType != DetectionType.None)
+                        if (owner.detectionType != DetectionType.None)
                         {
                             uint levelDifference = (uint)Math.Abs(owner.GetLevel() - chara.GetLevel());
 
@@ -156,8 +156,7 @@ namespace Meteor.Map.actors.chara.ai.controllers
             // todo:
             lastActionTime = lastUpdate.AddSeconds(5);
             owner.isMovingToSpawn = true;
-            owner.aiContainer.pathFind.SetPathFlags(PathFindFlags.None);
-            owner.aiContainer.pathFind.PreparePath(owner.spawnX, owner.spawnY, owner.spawnZ, 1.5f, 10);
+            owner.aiContainer.mover.MoveTo(new Vector3(owner.spawnX, owner.spawnY, owner.spawnZ), Mover.MOVE_STATE_RUN);
             neutralTime = lastActionTime;
             owner.hateContainer.ClearHate();
             lua.LuaEngine.CallLuaBattleFunction(owner, "onDisengage", owner, target, Utils.UnixTimeStampUTC(lastUpdate));
@@ -189,36 +188,21 @@ namespace Meteor.Map.actors.chara.ai.controllers
 
         protected virtual void DoRoamTick(DateTime tick, List<Character> contentGroupCharas = null)
         {
+            var mover = owner.aiContainer.mover;
             if (tick >= waitTime)
             {
                 neutralTime = tick.AddSeconds(5);
-                if (owner.aiContainer.pathFind.IsFollowingPath())
-                {
-                    owner.aiContainer.pathFind.FollowPath();
+                if (mover.IsMoving)
                     lastActionTime = tick.AddSeconds(-5);
-                }
-                else
-                {
-                    if (tick >= lastActionTime)
-                    {
-                        
-                    }
-                }
                 waitTime = tick.AddSeconds(owner.GetMobMod((uint) MobModifier.RoamDelay));
                 owner.OnRoam(tick);
 
-                if (CanMoveForward(0.0f) && !owner.aiContainer.pathFind.IsFollowingPath())
+                if (CanMoveForward(0.0f) && !mover.IsMoving && owner.aiContainer.CanFollowPath())
                 {
-                    // will move on next tick
-                    owner.aiContainer.pathFind.SetPathFlags(PathFindFlags.None);
-                    owner.aiContainer.pathFind.PathInRange(owner.spawnX, owner.spawnY, owner.spawnZ, 1.5f, 50.0f);
+                    var dest = owner.FindRandomPoint(owner.spawnX, owner.spawnY, owner.spawnZ, 1.5f, 50.0f);
+                    mover.MoveTo(dest, owner.isMovingToSpawn ? Mover.MOVE_STATE_RUN : Mover.MOVE_STATE_WALK);
                 }
                 //lua.LuaEngine.CallLuaBattleFunction(owner, "onRoam", owner, contentGroupCharas);
-            }
-
-            if (owner.aiContainer.pathFind.IsFollowingPath() && owner.aiContainer.CanFollowPath())
-            {
-                owner.aiContainer.pathFind.FollowPath();
             }
         }
 
@@ -232,9 +216,9 @@ namespace Meteor.Map.actors.chara.ai.controllers
                 return;
             }
             owner.SetMod((uint)Modifier.MovementSpeed, 5);
+            Move();
             if ((tick - lastCombatTickScript).TotalSeconds > 3)
             {
-                Move();
                 //if (owner.aiContainer.CanChangeState())
                     //owner.aiContainer.WeaponSkill(owner.zone.FindActorInArea<Character>(owner.target.actorId), 27155);
                 //lua.LuaEngine.CallLuaBattleFunction(owner, "onCombatTick", owner, owner.target, Utils.UnixTimeStampUTC(tick), contentGroupCharas);
@@ -244,59 +228,31 @@ namespace Meteor.Map.actors.chara.ai.controllers
 
         protected virtual void Move()
         {
-            if (!owner.aiContainer.CanFollowPath() || owner.statusEffects.HasStatusEffectsByFlag(StatusEffectFlags.PreventMovement))
+            var mover = owner.aiContainer.mover;
+            if (owner.target == null || !owner.aiContainer.CanFollowPath() || mover.Scripted)
+                return;
+
+            if (owner.statusEffects.HasStatusEffectsByFlag(StatusEffectFlags.PreventMovement))
             {
+                mover.Stop();
                 return;
             }
 
-            if (owner.aiContainer.pathFind.IsFollowingScriptedPath())
-            {
-                owner.aiContainer.pathFind.FollowPath();
-                return;
-            }
+            var targetPos = owner.target.GetPosAsVector3();
+            var distance = Utils.Distance(owner.GetPosAsVector3(), targetPos);
+            float stopDistance = Math.Max(0.0f, owner.GetAttackRange() - 0.2f);
+            mover.WatchChase(targetPos);
 
-            var vecToTarget = owner.target.GetPosAsVector3() - owner.GetPosAsVector3();
-            vecToTarget /= vecToTarget.Length();
-            vecToTarget = (Utils.Distance(owner.GetPosAsVector3(), owner.target.GetPosAsVector3()) - owner.GetAttackRange() + 0.2f) * vecToTarget;
-
-            var targetPos = vecToTarget + owner.GetPosAsVector3();
-            var distance = Utils.Distance(owner.GetPosAsVector3(), owner.target.GetPosAsVector3());
-            if (distance > owner.GetAttackRange() - 0.2f)
+            if (distance <= stopDistance || !CanMoveForward(distance))
             {
-                if (CanMoveForward(distance))
-                {
-                    if (!owner.aiContainer.pathFind.IsFollowingPath() && distance > 3)
-                    {
-                        // pathfind if too far otherwise jump to target
-                        owner.aiContainer.pathFind.SetPathFlags(PathFindFlags.None);
-                        owner.aiContainer.pathFind.PreparePath(targetPos, 1.5f, 5);
-                    }
-                    owner.aiContainer.pathFind.FollowPath();
-                    if (!owner.aiContainer.pathFind.IsFollowingPath())
-                    {
-                        if (owner.target is Player)
-                        {
-                            foreach (var chara in owner.CurrentArea.GetActorsAroundActor<Character>(owner, 1))
-                            {
-                                if (chara == owner)
-                                    continue;
-
-                                float mobDistance = Utils.Distance(owner.positionX, owner.positionY, owner.positionZ, chara.positionX, chara.positionY, chara.positionZ);
-                                if (mobDistance < 0.50f && (chara.updateFlags & ActorUpdateFlags.Position) == 0)
-                                {
-                                    owner.aiContainer.pathFind.PathInRange(targetPos, 1.3f, chara.GetAttackRange());
-                                    break;
-                                }
-                            }
-                        }
-                        FaceTarget();
-                    }
-                }
-            }
-            else
-            {
+                mover.Stop();
                 FaceTarget();
+                return;
             }
+
+            // Route to the target, not to a point short of it: that point can be on the far side of a thin wall.
+            if (!mover.Chase(targetPos, Mover.MOVE_STATE_RUN, stopDistance))
+                FaceTarget();
             lastRoamUpdate = DateTime.Now;
         }
 
@@ -352,7 +308,7 @@ namespace Meteor.Map.actors.chara.ai.controllers
                 return false;
 
             // todo: this should probably be changed to only allow detection at end of path?
-            if (owner.aiContainer.pathFind.IsFollowingScriptedPath() || owner.aiContainer.pathFind.IsFollowingPath() && !owner.aiContainer.pathFind.AtPoint())
+            if (owner.aiContainer.mover.Scripted)
             {
                 return false;
             }
@@ -404,7 +360,7 @@ namespace Meteor.Map.actors.chara.ai.controllers
 
         public virtual bool CanSeePoint(float x, float y, float z)
         {
-            return NavmeshUtils.CanSee((Zone)owner.CurrentArea, owner.positionX, owner.positionY, owner.positionZ, x, y, z);
+            return NavmeshUtils.CanSee(owner.CurrentArea, owner.positionX, owner.positionY, owner.positionZ, x, y, z);
         }
 
         protected virtual void HandleHate()

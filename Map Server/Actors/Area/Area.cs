@@ -60,6 +60,87 @@ namespace Meteor.Map.Actors
 
         LuaScript areaScript;
 
+        public string DescribeNavMesh(float x, float y, float z)
+        {
+            var navMesh = utils.NavmeshUtils.GetNavMesh(this);
+            return navMesh == null ? $"{ZoneName} has no navmesh loaded." : navMesh.Describe(new Vector3(x, y, z));
+        }
+
+        /// <summary>Returns the position unchanged when there is no ground near it.</summary>
+        public Vector3 SnapToGround(float x, float y, float z) => utils.NavmeshUtils.SnapToGround(this, x, y, z);
+
+        /// <summary>Returns "Ok", "NotFound", "VerticalMismatch" (ground far above or below y; y = 0 means
+        /// unknown), "SmallIsland" (stray geometry on an old mesh) or "NoMesh".</summary>
+        public string ProjectToGround(float x, float y, float z, out Vector3 ground)
+        {
+            var navMesh = utils.NavmeshUtils.GetNavMesh(this);
+            if (navMesh == null)
+            {
+                ground = null;
+                return "NoMesh";
+            }
+            return navMesh.ProjectSpawn(x, y, z, out ground).ToString();
+        }
+
+        private readonly object navLock = new object();
+        private navigation.NavInstanceMesh navInstanceMesh;
+
+        // Each area has its own instance so private areas don't share doors with the zone.
+        public Meteor.Navigation.NavInstance GetNavInstance() => GetNavInstanceMesh()?.Instance;
+
+        internal navigation.NavInstanceMesh GetNavInstanceMesh()
+        {
+            var world = this is PrivateArea pa ? pa.GetParentZone()?.navWorld : (this as Zone)?.navWorld;
+            if (world == null)
+                return null;
+            var current = navInstanceMesh;
+            if (current != null && current.Instance.World == world)
+                return current;
+            lock (navLock)
+            {
+                if (navInstanceMesh == null || navInstanceMesh.Instance.World != world)
+                {
+                    string name = this is PrivateArea priv ? $"{ZoneName}/{priv.GetPrivateAreaName()}/{priv.GetPrivateAreaType()}" : ZoneName;
+                    var instance = world.CreateInstance(name);
+                    instance.GateChanged += (inst, gate, open) =>
+                        Program.Log.Debug("Nav gate {0} in {1} {2} (version {3}).", inst.World.Gates[gate].Id, inst.Name, open ? "opened" : "closed", inst.GateVersion);
+                    navInstanceMesh = new navigation.NavInstanceMesh(instance);
+                }
+                return navInstanceMesh;
+            }
+        }
+
+        public bool HasCollision => navigation.CollisionManager.Has(ZoneName);
+
+        public Meteor.Navigation.CollisionWorld GetCollision() => navigation.CollisionManager.Get(ZoneName);
+
+        /// <summary>Opens or closes a door, lift or wall for this area only. Returns false when there is no such gate.</summary>
+        public bool SetGate(string gateId, bool open)
+        {
+            var instance = GetNavInstance();
+            if (instance == null)
+                return false;
+            bool found = instance.SetGate(gateId, open);
+            if (!found)
+                Program.Log.Warn("SetGate: {0} has no navigation gate \"{1}\".", ZoneName, gateId);
+            return found;
+        }
+
+        /// <summary>Null when the gate doesn't exist.</summary>
+        public bool? IsGateOpen(string gateId)
+        {
+            var instance = GetNavInstance();
+            if (instance == null || instance.World.GateIndex(gateId) < 0)
+                return null;
+            return instance.IsGateOpen(gateId);
+        }
+
+        public string DescribeGates()
+        {
+            var mesh = GetNavInstanceMesh();
+            return mesh == null ? $"{ZoneName} has no .nav world (gates need one)." : mesh.DescribeGates();
+        }
+
         public Area(uint zoneId, string zoneName, ushort regionId, string classPath, ushort bgmDay, ushort bgmNight, ushort bgmBattle, bool isIsolated, bool isInn, bool canRideChocobo, bool canStealth, bool isInstanceRaid)
             : base((4 << 28 | zoneId << 19 | ((uint)1)))
         {

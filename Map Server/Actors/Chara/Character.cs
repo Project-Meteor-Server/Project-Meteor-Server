@@ -302,16 +302,24 @@ namespace Meteor.Map.Actors
         }
 
         #region ai stuff
+        /// <summary>stepSize and maxPath are unused; kept so old scripts still run. Stops polyRadius short.</summary>
         public void PathTo(float x, float y, float z, float stepSize = 0.70f, int maxPath = 40, float polyRadius = 0.0f)
         {
-            if (aiContainer != null && aiContainer.pathFind != null)
-                aiContainer.pathFind.PreparePath(x, y, z, stepSize, maxPath, polyRadius);
+            aiContainer?.mover?.MoveTo(new Vector3(x, y, z), DefaultMoveState(), polyRadius);
         }
 
+        /// <summary>Call every tick to keep following. stepSize and maxPath are unused.</summary>
         public void FollowTarget(Actor target, float stepSize = 1.2f, int maxPath = 25, float radius = 0.0f)
         {
             if (target != null)
-                PathTo(target.positionX, target.positionY, target.positionZ, stepSize, maxPath, radius);
+                aiContainer?.mover?.Chase(target.GetPosAsVector3(), Mover.MOVE_STATE_RUN, radius);
+        }
+
+        private ushort DefaultMoveState()
+        {
+            if (aiContainer != null && aiContainer.IsEngaged())
+                return Mover.MOVE_STATE_ACTIVE;
+            return isMovingToSpawn ? Mover.MOVE_STATE_RUN : Mover.MOVE_STATE_WALK;
         }
 
         public double GetMod(Modifier modifier)

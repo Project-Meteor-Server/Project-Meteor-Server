@@ -110,7 +110,7 @@ namespace Meteor.Map.Actors
             }
 
             GenerateActorName((int)actorNumber);
-            this.aiContainer = new AIContainer(this, null, new PathFind(this), new TargetFind(this));
+            this.aiContainer = new AIContainer(this, null, new Mover(this), new TargetFind(this));
         }
 
         public Npc(int actorNumber, ActorClass actorClass, string uniqueId, Area spawnedArea, float posX, float posY, float posZ, float rot, uint mapObjLayoutId = 0, uint mapObjInstanceId = 0)
@@ -152,7 +152,7 @@ namespace Meteor.Map.Actors
             }
 
             GenerateActorName((int)actorNumber);
-            this.aiContainer = new AIContainer(this, null, new PathFind(this), new TargetFind(null));
+            this.aiContainer = new AIContainer(this, null, new Mover(this), new TargetFind(null));
         }
 
         public SubPacket CreateAddActorPacket()
