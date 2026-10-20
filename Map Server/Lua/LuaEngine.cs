@@ -686,7 +686,7 @@ namespace Meteor.Map.lua
         {
             bool playerNull = player == null;
 
-            if (playerNull)
+            if (playerNull && param != null) // param is null for console !help
             {
                 if (param.Length >= 2 && param[1].Contains("\""))
                     player = Server.GetWorldManager().GetPCInWorld(param[1]);
@@ -694,7 +694,7 @@ namespace Meteor.Map.lua
                     player = Server.GetWorldManager().GetPCInWorld(param[1] + param[2]);
             }
 
-            if (playerNull && param.Length >= 3)
+            if (playerNull && param != null && param.Length >= 3)
                 player = Server.GetWorldManager().GetPCInWorld(param[1] + " " + param[2]);
             
             // load from scripts/commands/gm/ directory
