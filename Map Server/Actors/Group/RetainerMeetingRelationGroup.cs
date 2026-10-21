@@ -22,7 +22,7 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 using Meteor.Common;
 using Meteor.Map.actors.chara.npc;
 using Meteor.Map.Actors;
-using Meteor.Map.dataobjects;
+using Meteor.Map.DataObjects;
 using Meteor.Map.packets.send.group;
 using Meteor.Map.packets.send.groups;
 using System.Collections.Generic;
@@ -50,8 +50,8 @@ namespace Meteor.Map.actors.group
         {
             List<GroupMember> groupMembers = new List<GroupMember>();
 
-            groupMembers.Add(new GroupMember(player.actorId, -1, 0x83, false, true, player.customDisplayName));
-            groupMembers.Add(new GroupMember(retainer.actorId, -1, 0x83, false, true, retainer.customDisplayName));
+            groupMembers.Add(new GroupMember(player.Id, -1, 0x83, false, true, player.DisplayName));
+            groupMembers.Add(new GroupMember(retainer.Id, -1, 0x83, false, true, retainer.DisplayName));
             
             return groupMembers;
         }

@@ -20,7 +20,7 @@ function onEvade(effect, attacker, defender, skill, action, actionContainer)
     local mpToReturn = percent * action.amountMitigated;
     defender:AddMP(math.ceil(mpToReturn));
     --33010: You recover x MP from Featherfoot
-    actionContainer:AddMPAction(defender.actorId, 33010, mpToReturn);
+    actionContainer:AddMPAction(defender.Id, 33010, mpToReturn);
     --Featherfoot is lost after evading
     defender.statusEffects:RemoveStatusEffect(effect, actionContainer, 30331, false);
 end;

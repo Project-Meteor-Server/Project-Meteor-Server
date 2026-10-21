@@ -40,7 +40,7 @@ namespace Meteor.Map.actors.chara.ai.state
 
             this.target = (skill.mainTarget & ValidTarget.SelfOnly) != 0 ? owner : target;
 
-            errorResult = new CommandResult(owner.actorId, 32553, 0);
+            errorResult = new CommandResult(owner.Id, 32553, 0);
             if (returnCode == 0)
             {
                 OnStart();
@@ -59,7 +59,7 @@ namespace Meteor.Map.actors.chara.ai.state
             if (returnCode != 0)
             {
                 interrupt = true;
-                errorResult = new CommandResult(owner.actorId, (ushort)(returnCode == -1 ? 32558 : returnCode), 0);
+                errorResult = new CommandResult(owner.Id, (ushort)(returnCode == -1 ? 32558 : returnCode), 0);
             }
             else
             {
@@ -76,7 +76,7 @@ namespace Meteor.Map.actors.chara.ai.state
                     owner.GetSubState().chantId = 0xf0;
                     owner.SubstateModified();
                     //You ready [skill] (6F000002: BLM, 6F000003: WHM, 0x6F000008: BRD)
-                    owner.DoBattleAction(skill.id, (uint)0x6F000000 | skill.castType, new CommandResult(target.actorId, 30126, 1, 0, 1));
+                    owner.DoBattleAction(skill.id, (uint)0x6F000000 | skill.castType, new CommandResult(target.Id, 30126, 1, 0, 1));
                 }
             }
         }

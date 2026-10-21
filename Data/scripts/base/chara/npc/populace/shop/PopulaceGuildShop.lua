@@ -45,9 +45,20 @@ guildShopInfo = { -- [actor id] = { saySheetId, guildmarkCurrency }
 [1001461] = {19, 1000115}, -- Armorer, Notrelchamps
 }
 
-
-
 function onEventStarted(player, npc)
+
+	-- Man1g0 Frances cross-script
+    local classId = npc:GetActorClassId();
+	local privAreaName = npc.CurrentArea:GetPrivateAreaName();
+	local privAreaType = npc.CurrentArea:GetPrivateAreaType();
+	if (classId == 1000466 and player:HasQuest(110007) and privAreaName == "PrivateAreaMasterPast" and privAreaType == 7) then
+        local sequence = player:GetQuest(110007):GetSequence();
+        if (sequence == 5) then
+            callClientFunction(player, "delegateEvent", player, GetStaticActor("Man1g0"), "processEvent010_4"); 
+        end
+		player:EndEvent();
+		return;
+    end
 
     local npcId = npc:GetActorClassId();
     local saySheetId = guildShopInfo[npcId][1];

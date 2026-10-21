@@ -63,6 +63,7 @@ namespace Meteor.Map.actors
 
         public class PushCircleEventCondition
         {
+            public bool isEnabled = true;
             public string conditionName = "";
             public float radius = 30.0f;
             public bool outwards = false;
@@ -71,6 +72,7 @@ namespace Meteor.Map.actors
 
         public class PushFanEventCondition
         {
+            public bool isEnabled = true;
             public string conditionName;
             public float radius = 30.0f;
             public bool outwards = false;
@@ -79,7 +81,8 @@ namespace Meteor.Map.actors
 
         public class PushBoxEventCondition
         {
-            public uint bgObj;
+            public bool isEnabled = true;
+            public uint instance;
             public uint layout;
             public string conditionName = "";
             public string reactName = "";

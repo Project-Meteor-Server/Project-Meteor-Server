@@ -96,11 +96,11 @@ function onTrigger(player, argc, name,  width, height, blockCount)
 	
 	if player and (modelIds[name] != nil) then
         local pos = player:GetPos();
-        local x = tonumber(pos[0]);
-        local y = tonumber(pos[1]);
-        local z = tonumber(pos[2]);
-        local rot = tonumber(pos[3]);
-        local zone = pos[4];
+        local x = tonumber(pos[1]);
+        local y = tonumber(pos[2]);
+        local z = tonumber(pos[3]);
+        local rot = tonumber(pos[4]);
+        local zone = pos[5];
         local w = tonumber(width) or 0;
 
         local h = tonumber(height) or 0;
@@ -108,7 +108,8 @@ function onTrigger(player, argc, name,  width, height, blockCount)
 		for b = 0, blocks do
             for i = 0, w do
                 for j = 0, h do
-                    local actor = player:GetZone():SpawnActor(2104001, 'ass', x + (i * 1), y, z + (j * 1), rot, 0, 0, true);
+                    local actor = player.CurrentArea:SpawnActor(2104001, 'ass', x + (i * 1), y, z + (j * 1), rot, 0, 0, true);
+					print(tostring(actor));
                     actor:ChangeNpcAppearance(modelIds[name]);
                     actor:SetMaxHP(5000);
                     actor:SetHP(5000);

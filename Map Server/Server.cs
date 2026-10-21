@@ -23,10 +23,11 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using Meteor.Map.dataobjects;
+using Meteor.Map.DataObjects;
 
 using Meteor.Common;
 using Meteor.Map.Actors;
+using System.Linq;
 
 namespace Meteor.Map
 {
@@ -38,53 +39,56 @@ namespace Meteor.Map
 
         public const string STATIC_ACTORS_PATH = "./staticactors.bin";
 
-        private static Server mSelf;
+        private static Server _Self;
 
-        private Socket mServerSocket;
+        private Socket ServerSocket;
 
-        private Dictionary<uint, Session> mSessionList = new Dictionary<uint, Session>();        
+        private Dictionary<uint, Session> SessionList = new Dictionary<uint, Session>();        
      
-        private static CommandProcessor mCommandProcessor = new CommandProcessor();
-        private static ZoneConnection mWorldConnection = new ZoneConnection();
-        private static WorldManager mWorldManager;
-        private static Dictionary<uint, ItemData> mGamedataItems;
-        private static Dictionary<uint, GuildleveData> mGamedataGuildleves;
-        private static StaticActors mStaticActors;
+        private static CommandProcessor CommandProcessor = new CommandProcessor();
+        private static ZoneConnection WorldConnection = new ZoneConnection();
+        private static WorldManager WorldManager;
+        private static Dictionary<uint, ItemData> GamedataItems;
+        private static Dictionary<uint, GuildleveData> GamedataGuildleves;
+        private static Dictionary<uint, QuestGameData> GamedataQuests;
+        private static StaticActors StaticActors;
 
         private PacketProcessor mProcessor;        
 
         public Server()
         {
-            mSelf = this;
+            _Self = this;
         }
         
         public bool StartServer()
         {           
-            mStaticActors = new StaticActors(STATIC_ACTORS_PATH);
+            StaticActors = new StaticActors(STATIC_ACTORS_PATH);
 
-            mGamedataItems = Database.GetItemGamedata();
-            Program.Log.Info("Loaded {0} items.", mGamedataItems.Count);
-            mGamedataGuildleves = Database.GetGuildleveGamedata();
-            Program.Log.Info("Loaded {0} guildleves.", mGamedataGuildleves.Count);
+            Program.Log.Info("Loading gamedata...");
+            GamedataItems = Database.GetItemGamedata();
+            Program.Log.Info("Loaded {0} items.", GamedataItems.Count);
+            GamedataGuildleves = Database.GetGuildleveGamedata();
+            Program.Log.Info("Loaded {0} guildleves.", GamedataGuildleves.Count);
+            GamedataQuests = Database.GetQuestGamedata();
+            Program.Log.Info("Loaded {0} quests.", GamedataQuests.Count);
 
-            mWorldManager = new WorldManager(this);
-            mWorldManager.LoadZoneList();
-            mWorldManager.LoadZoneEntranceList();
-            mWorldManager.LoadSeamlessBoundryList();
-            mWorldManager.LoadActorClasses();
-            mWorldManager.LoadSpawnLocations();
-            mWorldManager.LoadBattleNpcs();
-            mWorldManager.LoadStatusEffects();
-            mWorldManager.LoadBattleCommands();
-            mWorldManager.LoadBattleTraits();
-            mWorldManager.SpawnAllActors();
-            mWorldManager.StartZoneThread();
+            WorldManager = new WorldManager(this);
+            WorldManager.LoadZoneList();
+            WorldManager.LoadSeamlessBoundryList();
+            WorldManager.LoadActorClasses();
+            WorldManager.LoadENPCs();
+            WorldManager.LoadBattleNpcs();
+            WorldManager.LoadStatusEffects();
+            WorldManager.LoadBattleCommands();
+            WorldManager.LoadBattleTraits();
+            WorldManager.SpawnAllActors();
+            WorldManager.StartZoneThread();
 
             IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse(ConfigConstants.OPTIONS_BINDIP), int.Parse(ConfigConstants.OPTIONS_PORT));
 
             try
             {
-                mServerSocket = new Socket(serverEndPoint.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                ServerSocket = new Socket(serverEndPoint.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             }
             catch (Exception e)
             {
@@ -92,8 +96,8 @@ namespace Meteor.Map
             }
             try
             {
-                mServerSocket.Bind(serverEndPoint);
-                mServerSocket.Listen(BACKLOG);
+                ServerSocket.Bind(serverEndPoint);
+                ServerSocket.Listen(BACKLOG);
             }
             catch (Exception e)
             {
@@ -101,7 +105,7 @@ namespace Meteor.Map
             }
             try
             {
-                mServerSocket.BeginAccept(new AsyncCallback(AcceptCallback), mServerSocket);
+                ServerSocket.BeginAccept(new AsyncCallback(AcceptCallback), ServerSocket);
             }
             catch (Exception e)
             {
@@ -109,7 +113,7 @@ namespace Meteor.Map
             }
 
             Console.ForegroundColor = ConsoleColor.White;
-            Program.Log.Info("Map Server has started @ {0}:{1}", (mServerSocket.LocalEndPoint as IPEndPoint).Address, (mServerSocket.LocalEndPoint as IPEndPoint).Port);
+            Program.Log.Info("Map Server has started @ {0}:{1}", (ServerSocket.LocalEndPoint as IPEndPoint).Address, (ServerSocket.LocalEndPoint as IPEndPoint).Port);
             Console.ForegroundColor = ConsoleColor.Gray;
 
             mProcessor = new PacketProcessor(this);
@@ -123,38 +127,38 @@ namespace Meteor.Map
 
         public Session AddSession(uint id)
         {
-            if (mSessionList.ContainsKey(id))
+            if (SessionList.ContainsKey(id))
             {
-                mSessionList[id].ClearInstance();
-                return mSessionList[id];
+                SessionList[id].ClearInstance();
+                return SessionList[id];
             }
 
             Session session = new Session(id);
-            mSessionList.Add(id, session);
+            SessionList.Add(id, session);
             return session;
         }
 
         public void RemoveSession(uint id)
         {
-            if (mSessionList.ContainsKey(id))
+            if (SessionList.ContainsKey(id))
             {
-                mSessionList.Remove(id);                
+                SessionList.Remove(id);                
             }
         }
 
         public Session GetSession(uint id)
         {
-            if (mSessionList.ContainsKey(id))
-                return mSessionList[id];
+            if (SessionList.ContainsKey(id))
+                return SessionList[id];
             else
                 return null;
         }
 
         public Session GetSession(string name)
         {
-            foreach (Session s in mSessionList.Values)
+            foreach (Session s in SessionList.Values)
             {
-                if (s.GetActor().customDisplayName.ToLower().Equals(name.ToLower()))
+                if (s.GetActor().DisplayName.ToLower().Equals(name.ToLower()))
                     return s;
             }
             return null;
@@ -162,7 +166,7 @@ namespace Meteor.Map
 
         public Dictionary<uint, Session> GetSessionList()
         {
-            return mSessionList;
+            return SessionList;
         }
 
         #endregion
@@ -180,29 +184,29 @@ namespace Meteor.Map
                 conn.socket = socket.EndAccept(result);
                 conn.buffer = new byte[BUFFER_SIZE];
 
-                mWorldConnection = conn;
+                WorldConnection = conn;
                 
                 Program.Log.Info("Connection {0}:{1} has connected.", (conn.socket.RemoteEndPoint as IPEndPoint).Address, (conn.socket.RemoteEndPoint as IPEndPoint).Port);
                 //Queue recieving of data from the connection
                 conn.socket.BeginReceive(conn.buffer, 0, conn.buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), conn);
                 //Queue the accept of the next incomming connection
-                mServerSocket.BeginAccept(new AsyncCallback(AcceptCallback), mServerSocket);
+                ServerSocket.BeginAccept(new AsyncCallback(AcceptCallback), ServerSocket);
             }
             catch (SocketException)
             {
                 if (conn != null)
                 {
-                    mWorldConnection = null;
+                    WorldConnection = null;
                 }
-                mServerSocket.BeginAccept(new AsyncCallback(AcceptCallback), mServerSocket);
+                ServerSocket.BeginAccept(new AsyncCallback(AcceptCallback), ServerSocket);
             }
             catch (Exception)
             {
                 if (conn != null)
                 {
-                    mWorldConnection = null;
+                    WorldConnection = null;
                 }
-                mServerSocket.BeginAccept(new AsyncCallback(AcceptCallback), mServerSocket);
+                ServerSocket.BeginAccept(new AsyncCallback(AcceptCallback), ServerSocket);
             }
         }
         
@@ -217,7 +221,7 @@ namespace Meteor.Map
             //Check if disconnected
             if ((conn.socket.Poll(1, SelectMode.SelectRead) && conn.socket.Available == 0))
             {
-                mWorldConnection = null;
+                WorldConnection = null;
                 Program.Log.Info("Disconnected from world server!");
             }
 
@@ -261,7 +265,7 @@ namespace Meteor.Map
                 }
                 else
                 {
-                    mWorldConnection = null;
+                    WorldConnection = null;
                     Program.Log.Info("Disconnected from world server!");
                 }
             }
@@ -269,7 +273,7 @@ namespace Meteor.Map
             {
                 if (conn.socket != null)
                 {
-                    mWorldConnection = null;
+                    WorldConnection = null;
                     Program.Log.Info("Disconnected from world server!");
                 }
             }
@@ -279,54 +283,90 @@ namespace Meteor.Map
 
         public static ZoneConnection GetWorldConnection()
         {
-            return mWorldConnection;
+            return WorldConnection;
         }
 
         public static Server GetServer()
         {
-            return mSelf;
+            return _Self;
         }
 
         public static CommandProcessor GetCommandProcessor()
         {
-            return mCommandProcessor;
+            return CommandProcessor;
         }        
 
         public static WorldManager GetWorldManager()
         {
-            return mWorldManager;
+            return WorldManager;
         }
         
         public static Dictionary<uint, ItemData> GetGamedataItems()
         {
-            return mGamedataItems;
+            return GamedataItems;
         }
 
         public static Actor GetStaticActors(uint id)
         {
-            return mStaticActors.GetActor(id);
+            return StaticActors.GetActor(id);
         }
 
         public static Actor GetStaticActors(string name)
         {
-            return mStaticActors.FindStaticActor(name);
+            return StaticActors.FindStaticActor(name);
         }
 
         public static ItemData GetItemGamedata(uint id)
         {
-            if (mGamedataItems.ContainsKey(id))
-                return mGamedataItems[id];
+            if (GamedataItems.ContainsKey(id))
+                return GamedataItems[id];
             else
                 return null;
         }
 
         public static GuildleveData GetGuildleveGamedata(uint id)
         {
-            if (mGamedataGuildleves.ContainsKey(id))
-                return mGamedataGuildleves[id];
+            if (GamedataGuildleves.ContainsKey(id))
+                return GamedataGuildleves[id];
             else
                 return null;
         }
 
+        public static QuestGameData GetQuestGamedata(uint id)
+        {
+            if (GamedataQuests.ContainsKey(id))
+                return GamedataQuests[id];
+            else
+                return null;
+        }
+
+
+        public static QuestGameData[] GetQuestGamedataByMaxLvl(int lvl, bool all = false)
+        {
+            if (all)
+                return GamedataQuests.Values.Where(quest => quest.MinLevel > 0 && quest.MinLevel <= lvl).ToArray();
+            else
+                return GamedataQuests.Values.Where(quest => quest.MinLevel > 0 && quest.MinLevel == lvl).ToArray();
+        }
+
+        public static QuestGameData[] GetQuestGamedataByPrerequisite(uint questId)
+        {
+            return GamedataQuests.Values.Where(quest => quest.PrerequisiteQuest == questId).ToArray();
+        }
+
+        public static QuestGameData[] GetQuestGamedataAllPrerequisite()
+        {
+            return GamedataQuests.Values.Where(quest => quest.PrerequisiteQuest != 0).ToArray();
+        }
+
+        public static QuestGameData[] GetQuestGamedataAllGCRanked()
+        {
+            return GamedataQuests.Values.Where(quest => quest.MinGCRank != 0).ToArray();
+        }
+
+        //public static QuestData[] GetQuestGamedataByGCRank(int gc, int rank, bool all = false)
+        //{
+        // return GamedataQuests.Values.Where(quest => all ? quest.MinLevel == lvl : quest.MinLevel <= lvl).ToArray();
+        //}
     }
 }

@@ -45,7 +45,7 @@ namespace Meteor.Map.actors.chara.ai.controllers
                 contentGroupCharas = new List<Character>(owner.currentContentGroup.GetMemberCount());
                 foreach (var charaId in owner.currentContentGroup.GetMembers())
                 {
-                    var chara = owner.zone.FindActorInArea<Character>(charaId);
+                    var chara = owner.CurrentArea.FindActorInArea<Character>(charaId);
 
                     if (chara != null)
                         contentGroupCharas.Add(chara);
@@ -66,7 +66,7 @@ namespace Meteor.Map.actors.chara.ai.controllers
                 {
                     if(owner.aiContainer.GetTargetFind().CanTarget((Character) chara.target) && chara.target is BattleNpc && ((BattleNpc)chara.target).hateContainer.HasHateForTarget(chara))
                     {
-                        owner.Engage(chara.target.actorId);
+                        owner.Engage(chara.target.Id);
                         owner.hateContainer.AddBaseHate((Character) chara.target);
                         break;
                     }

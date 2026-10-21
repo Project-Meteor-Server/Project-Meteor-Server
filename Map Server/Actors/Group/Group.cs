@@ -20,7 +20,7 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 */
 
 using Meteor.Common;
-using Meteor.Map.dataobjects;
+using Meteor.Map.DataObjects;
 using Meteor.Map.packets.send.group;
 using Meteor.Map.packets.send.groups;
 using System;
@@ -141,8 +141,8 @@ namespace Meteor.Map.actors.group
             ulong time = Utils.MilisUnixTimeStampUTC();
             List<GroupMember> members = BuildMemberList(session.id);
 
-            session.QueuePacket(GroupHeaderPacket.buildPacket(session.id, session.GetActor().zoneId, time, this));
-            session.QueuePacket(GroupMembersBeginPacket.buildPacket(session.id, session.GetActor().zoneId, time, this));
+            session.QueuePacket(GroupHeaderPacket.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, this));
+            session.QueuePacket(GroupMembersBeginPacket.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, this));
 
             int currentIndex = 0;
 
@@ -150,18 +150,18 @@ namespace Meteor.Map.actors.group
             {
                 int memberCount = Math.Min(GetMemberCount(), members.Count);
                 if (memberCount - currentIndex >= 64)
-                    session.QueuePacket(GroupMembersX64Packet.buildPacket(session.id, session.GetActor().zoneId, time, members, ref currentIndex));
+                    session.QueuePacket(GroupMembersX64Packet.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, members, ref currentIndex));
                 else if (memberCount - currentIndex >= 32)
-                    session.QueuePacket(GroupMembersX32Packet.buildPacket(session.id, session.GetActor().zoneId, time, members, ref currentIndex));
+                    session.QueuePacket(GroupMembersX32Packet.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, members, ref currentIndex));
                 else if (memberCount - currentIndex >= 16)
-                    session.QueuePacket(GroupMembersX16Packet.buildPacket(session.id, session.GetActor().zoneId, time, members, ref currentIndex));
+                    session.QueuePacket(GroupMembersX16Packet.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, members, ref currentIndex));
                 else if (memberCount - currentIndex > 0)
-                    session.QueuePacket(GroupMembersX08Packet.buildPacket(session.id, session.GetActor().zoneId, time, members, ref currentIndex));
+                    session.QueuePacket(GroupMembersX08Packet.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, members, ref currentIndex));
                 else
                     break;
             }
             
-            session.QueuePacket(GroupMembersEndPacket.buildPacket(session.id, session.GetActor().zoneId, time, this));
+            session.QueuePacket(GroupMembersEndPacket.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, this));
 
         }
 

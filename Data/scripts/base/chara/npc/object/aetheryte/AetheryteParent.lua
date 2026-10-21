@@ -33,6 +33,34 @@ end
 
 function onEventStarted(player, aetheryte, triggerName)
 	
+	-- Main Scenario Intro Quests
+	if (player:HasQuest(110002) == true) then
+		require ("quests/man/man0l1");
+		local quest = player:GetQuest("Man0l1");
+		if (quest:GetSequence() == SEQ_003) then			
+			callClientFunction(player, "delegateEvent", player, quest, "processEvent025");
+			quest:StartSequence(SEQ_005);
+		end
+	elseif (player:HasQuest(110006) == true) then
+		require ("quests/man/man0g1");
+		local quest = player:GetQuest("Man0g1");
+		if (quest:GetSequence() == SEQ_005) then
+			if (ENABLE_GL_TUTORIAL) then			
+				callClientFunction(player, "delegateEvent", player, quest, "processEvent013");
+			else
+				callClientFunction(player, "delegateEvent", player, quest, "processEvent013_2");
+			end
+			quest:StartSequence(SEQ_010);
+		end
+	elseif (player:HasQuest(110010) == true) then
+		require ("quests/man/man0u1");
+		local quest = player:GetQuest("Man0u1");
+		if (quest:GetSequence() == SEQ_005) then			
+			callClientFunction(player, "delegateEvent", player, quest, "processEvent013");
+			quest:StartSequence(SEQ_010);
+		end
+	end
+	
 	if (player:GetGuildleveDirector() ~= nil) then
 		doGuildleveMenu(player, aetheryte);
 	else
@@ -142,7 +170,7 @@ function doLevequestInit(player, aetheryte)
 							
 				player:SendGameMessage(worldMaster, 50036, 0x20, glId, player);
 				player:PlayAnimation(getGLStartAnimationFromSheet(guildleveData.borderId, guildleveData.plateId, true));				
-				director = player:GetZone():CreateGuildleveDirector(glId, difficulty, player);
+				director = player.CurrentArea:CreateGuildleveDirector(glId, difficulty, player);
 				player:AddDirector(director);
 				director:StartDirector(true, glId);
 				

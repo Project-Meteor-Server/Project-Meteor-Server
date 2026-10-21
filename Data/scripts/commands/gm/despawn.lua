@@ -8,9 +8,8 @@ properties = {
 
 function onTrigger(player, argc, actorName)
 
-	if (actorName ~= nil) then		
-		zone = player:GetZone();
-		actor = zone:DespawnActor(actorName);
+	if (actorName ~= nil) then
+		actor = player.CurrentArea:DespawnActor(actorName);
 	end
 	
 end;

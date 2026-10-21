@@ -66,7 +66,7 @@ emoteTable = {
 };
 
 
-function onEventStarted(player, actor, triggerName, emoteId, showText, arg2, arg3, targetId)
+function onEventStarted(player, actor, eventType, triggerName, emoteId, showText, arg2, arg3, targetId)
 
 	if (targetId == nil) then
 		targetId = 0;

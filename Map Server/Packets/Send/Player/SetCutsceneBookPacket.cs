@@ -79,9 +79,7 @@ namespace Meteor.Map.packets.send.player
         public const ushort OPCODE = 0x01A3;
         public const uint PACKET_SIZE = 0x150;
 
-        public bool[] cutsceneFlags = new bool[2048];
-
-        public SubPacket BuildPacket(uint sourceActorId, string sNpcName, short sNpcActorIdOffset, byte sNpcSkin, byte sNpcPersonality)
+        public SubPacket BuildPacket(uint sourceActorId, string sNpcName, byte sNpcSkin, byte sNpcPersonality, short sNpcCoordinate, bool[] completedQuests)
         {
             byte[] data = new byte[PACKET_SIZE - 0x20];
 
@@ -89,15 +87,15 @@ namespace Meteor.Map.packets.send.player
             {
                 using (BinaryWriter binWriter = new BinaryWriter(mem))
                 {
-                    byte[] binStream = Utils.ConvertBoolArrayToBinaryStream(cutsceneFlags);
+                    byte[] binStream = Utils.ConvertBoolArrayToBinaryStream(completedQuests);
                     
                     //Temp Path Companion SNPC Stuff
                     binWriter.Seek(0x01 ,SeekOrigin.Begin);
                     binWriter.Write((Int16)2);
                     binWriter.Write((Byte)0);
-                    binWriter.Write((Int16)sNpcActorIdOffset);
-                    binWriter.Write((Byte)sNpcSkin);
+                    binWriter.Write((Int16)sNpcSkin);
                     binWriter.Write((Byte)sNpcPersonality);
+                    binWriter.Write((Byte)sNpcCoordinate);
 
                     if (binStream.Length <= PACKET_SIZE - 0x20)
                         binWriter.Write(binStream);

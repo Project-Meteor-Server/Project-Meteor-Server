@@ -20,7 +20,7 @@ seekAmount: The amount of seekItem we want.
 
 require ("global")
 
-function onEventStarted(player, actor, triggerName, rewardItem, seekItem, bazaarMode, arg1, bazaarActor, rewardAmount, seekAmount, arg2, arg3, type9ItemIds)
+function onEventStarted(player, actor, eventType, eventName, rewardItem, seekItem, bazaarMode, arg1, bazaarActor, rewardAmount, seekAmount, arg2, arg3, type9ItemIds)
 
 	local rewarding = nil;
 	local seeking = nil;

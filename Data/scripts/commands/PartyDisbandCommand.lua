@@ -15,7 +15,7 @@ TextIds:
 
 --]]
 
-function onEventStarted(player, actor, name)
+function onEventStarted(player, actor, eventType, eventName, name)
 	worldMaster = GetWorldMaster();		
 	
 	if (player:IsPartyLeader()) then

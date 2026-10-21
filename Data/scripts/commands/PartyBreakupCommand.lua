@@ -6,7 +6,7 @@ Handles disbanding the party.
 
 --]]
 
-function onEventStarted(player, actor, triggerName)
+function onEventStarted(player, actor, eventType, eventName)
 	worldMaster = GetWorldMaster();		
 	
 	if (player:IsPartyLeader()) then

@@ -14,23 +14,22 @@ function onTrigger(player, argc, actorClassId, width, height)
 	end	
 
     local pos = player:GetPos();
-    local x = pos[0];
-    local y = pos[1];
-    local z = pos[2];
-    local rot = pos[3];
-    local zone = pos[4];
+    local x = pos[1];
+    local y = pos[2];
+    local z = pos[3];
+    local rot = pos[4];
+    local zone = pos[5];
          
 	actorClassId = tonumber(actorClassId);
 	
-	if (actorClassId ~= nil) then		
-		zone = player:GetZone();
+	if (actorClassId ~= nil) then
 		local w = tonumber(width) or 0;
         local h = tonumber(height) or 0;
         printf("%f %f %f", x, y, z);
         --local x, y, z = player.GetPos();
         for i = 0, w do
             for j = 0, h do
-				actor = zone:SpawnActor(actorClassId, "test", pos[0] + (i - (w / 2) * 3), pos[1], pos[2] + (j - (h / 2) * 3), pos[3]);
+				actor = player.CurrentArea:SpawnActor(actorClassId, "test", x + (i - (w / 2) * 3), y, z + (j - (h / 2) * 3), rot);
 				actor.SetAppearance(1001149)
 			end
 		end

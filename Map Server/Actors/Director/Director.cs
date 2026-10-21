@@ -45,11 +45,10 @@ namespace Meteor.Map.actors.director
         private LuaCoroutine currentCoroutine;
 
         public Director(uint id, Area zone, string directorPath, bool hasContentGroup, params object[] args)
-            : base((6 << 28 | zone.actorId << 19 | (uint)id))
+            : base((6 << 28 | zone.ZoneId << 19 | (uint)id + 2))
         {
             directorId = id;
-            this.zone = zone;
-            this.zoneId = zone.actorId;
+            CurrentArea = zone;
             directorScriptPath = directorPath;
 
             LoadLuaScript();
@@ -78,7 +77,7 @@ namespace Meteor.Map.actors.director
             for (int i = 1; i < lparams.Count; i++)
                 actualLParams.Add(lparams[i]);
 
-            return ActorInstantiatePacket.BuildPacket(actorId, actorName, className, actualLParams);
+            return ActorInstantiatePacket.BuildPacket(Id, Name, className, actualLParams);
         }
 
         public override List<SubPacket> GetSpawnPackets(ushort spawnType = 1)
@@ -100,7 +99,7 @@ namespace Meteor.Map.actors.director
             List<SubPacket> subpackets = new List<SubPacket>();
             SetActorPropetyPacket initProperties = new SetActorPropetyPacket("/_init");
             initProperties.AddTarget();
-            subpackets.Add(initProperties.BuildPacket(actorId));
+            subpackets.Add(initProperties.BuildPacket(Id));
             return subpackets;
         }
 
@@ -171,7 +170,7 @@ namespace Meteor.Map.actors.director
                 ((Player)player).RemoveDirector(this);
             members.Clear();
             isDeleted = true;
-            Server.GetWorldManager().GetZone(zoneId).DeleteDirector(actorId);
+            Server.GetWorldManager().GetArea(CurrentArea.ZoneId).DeleteDirector(Id);
         }
         
         public void AddMember(Actor actor)
@@ -193,7 +192,7 @@ namespace Meteor.Map.actors.director
             if (members.Contains(actor))
                 members.Remove(actor);
             if (contentGroup != null)
-                contentGroup.RemoveMember(actor.actorId);
+                contentGroup.RemoveMember(actor.Id);
             if (GetPlayerMembers().Count == 0 && !isDeleting)
                 EndDirector();
         }
@@ -241,7 +240,7 @@ namespace Meteor.Map.actors.director
             className = Char.ToLowerInvariant(className[0]) + className.Substring(1);
 
             //Format Zone Name
-            string zoneName = zone.zoneName.Replace("Field", "Fld")
+            string zoneName = CurrentArea.ZoneName.Replace("Field", "Fld")
                                            .Replace("Dungeon", "Dgn")
                                            .Replace("Town", "Twn")
                                            .Replace("Battle", "Btl")
@@ -249,7 +248,7 @@ namespace Meteor.Map.actors.director
                                            .Replace("Event", "Evt")
                                            .Replace("Ship", "Shp")
                                            .Replace("Office", "Ofc");
-            if (zone is PrivateArea)
+            if (CurrentArea is PrivateArea)
             {
                 //Check if "normal"
                 zoneName = zoneName.Remove(zoneName.Length - 1, 1) + "P";
@@ -267,12 +266,10 @@ namespace Meteor.Map.actors.director
             string classNumber = Utils.ToStringBase63(actorNumber);
 
             //Get stuff after @
-            uint zoneId = zone.actorId;
-            uint privLevel = 0;
-            if (zone is PrivateArea)
-                privLevel = ((PrivateArea)zone).GetPrivateAreaType();
+            uint zoneId = CurrentArea.ZoneId;
+            int privLevel = CurrentArea.GetPrivateAreaType();
 
-            actorName = String.Format("{0}_{1}_{2}@{3:X3}{4:X2}", className, zoneName, classNumber, zoneId, privLevel);
+            Name = String.Format("{0}_{1}_{2}@{3:X3}{4:X2}", className, zoneName, classNumber, zoneId, privLevel);
         }
 
         public string GetScriptPath()
@@ -283,7 +280,7 @@ namespace Meteor.Map.actors.director
         private void LoadLuaScript()
         {
             string errorMsg = "";
-            string luaPath = String.Format(LuaEngine.FILEPATH_DIRECTORS, GetScriptPath());
+            string luaPath = ConfigConstants.OPTIONS_SCRIPTPATH + String.Format(LuaEngine.FILEPATH_DIRECTORS, GetScriptPath());
             directorScript = LuaEngine.LoadScript(luaPath, ref errorMsg);
             if (directorScript == null)
                 Program.Log.Error("Could not find script for director {0}.", GetName());          
@@ -294,7 +291,7 @@ namespace Meteor.Map.actors.director
             if (directorScript != null)
             {
                 string errorMsg = "";
-                directorScript = LuaEngine.LoadScript(String.Format(LuaEngine.FILEPATH_DIRECTORS, directorScriptPath), ref errorMsg);
+                directorScript = LuaEngine.LoadScript(ConfigConstants.OPTIONS_SCRIPTPATH + String.Format(LuaEngine.FILEPATH_DIRECTORS, directorScriptPath), ref errorMsg);
                 if (directorScript.GetGlobal(funcName) != null)
                 {
                     object[] result = directorScript.Call(funcName, args);

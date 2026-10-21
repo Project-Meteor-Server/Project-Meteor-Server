@@ -39,6 +39,6 @@ function onSkillFinish(caster, target, skill, action, actionContainer)
 
         caster:AddMP(mpToReturn);
         --30452: You recover x MP.
-        actionContainer:AddMPAbsorbAction(caster.actorId, 30452, mpToReturn);
+        actionContainer:AddMPAbsorbAction(caster.Id, 30452, mpToReturn);
     end
 end;

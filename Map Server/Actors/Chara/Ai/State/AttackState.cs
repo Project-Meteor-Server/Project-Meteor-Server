@@ -49,8 +49,8 @@ namespace Meteor.Map.actors.chara.ai.state
 
         public override bool Update(DateTime tick)
         {
-            if ((target == null || owner.target != target || owner.target?.actorId != owner.currentLockedTarget) && owner.isAutoAttackEnabled)
-                owner.aiContainer.ChangeTarget(target = owner.zone.FindActorInArea<Character>(owner.currentTarget));
+            if ((target == null || owner.target != target || owner.target?.Id != owner.currentLockedTarget) && owner.isAutoAttackEnabled)
+                owner.aiContainer.ChangeTarget(target = owner.CurrentArea.FindActorInArea<Character>(owner.currentTarget));
 
             if (target == null || target.IsDead())
             {
@@ -91,7 +91,7 @@ namespace Meteor.Map.actors.chara.ai.state
             // todo: send paralyzed/sleep message etc.
             if (errorResult != null)
             {
-                owner.zone.BroadcastPacketAroundActor(owner, CommandResultX01Packet.BuildPacket(errorResult.targetId, errorResult.animation, 0x765D, errorResult));
+                owner.CurrentArea.BroadcastPacketAroundActor(owner, CommandResultX01Packet.BuildPacket(errorResult.targetId, errorResult.animation, 0x765D, errorResult));
                 errorResult = null;
             }
         }

@@ -54,8 +54,8 @@ for _, k in ipairs({
 }) do base[k] = _G[k] end
 
 -- Arguments from C#: stamp(path) gives the file's last-modified time (nil if it doesn't exist),
--- log(text) writes to the server log.
-local stamp, log = ...
+-- log(text) writes to the server log, root is the scripts folder (script_path in the config).
+local stamp, log, root = ...
 
 base.print = function(...)
     local parts = {}
@@ -82,8 +82,8 @@ local function newEnv()
     local env = setmetatable({}, { __index = base })
     env._G = env
     local loaded = {}
-    env.package = { loaded = loaded, path = './scripts/?;./scripts/?.lua' }
-    -- require('battle.actions') loads ./scripts/battle/actions or ./scripts/battle/actions.lua.
+    env.package = { loaded = loaded, path = root .. '/?;' .. root .. '/?.lua' }
+    -- require('battle.actions') loads <root>/battle/actions or <root>/battle/actions.lua.
     -- The file runs with the requiring script's globals, so what it defines becomes part of that
     -- script, and it runs only once per script.
     env.require = function(name)
@@ -91,7 +91,7 @@ local function newEnv()
         if v ~= nil then return v end
         local n = tostring(name):gsub('%.', '/')
         local path
-        for _, p in ipairs({ './scripts/' .. n, './scripts/' .. n .. '.lua' }) do
+        for _, p in ipairs({ root .. '/' .. n, root .. '/' .. n .. '.lua' }) do
             if stamp(p) then path = p; break end
         end
         if not path then error(""module '"" .. tostring(name) .. ""' not found"", 2) end
@@ -177,7 +177,7 @@ return base,
             Action<string> log = s => Log.Debug(s);
 
             var init = env.LoadString(Bootstrap, "=meteor-bootstrap");
-            object[] parts = init.Call(stamp, log);
+            object[] parts = init.Call(stamp, log, ConfigConstants.OPTIONS_SCRIPTPATH ?? "./scripts");
             init.Dispose();
 
             using (var baseTable = (LuaTable)parts[0])

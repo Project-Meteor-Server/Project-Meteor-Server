@@ -4,7 +4,7 @@ LinkshellChangeCommand Script
 
 --]]
 
-function onEventStarted(player, actor, triggerName, linkshellName, arg1, arg2)
+function onEventStarted(player, actor, eventType, eventName, linkshellName, arg1, arg2)
 
 	if (linkshellName == nil) then
 		linkshellName = "";

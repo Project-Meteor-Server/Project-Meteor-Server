@@ -6,7 +6,7 @@ require ("global")
 --commandid: command being equipped
 
 
-function onEventStarted(player, equipAbilityWidget, triggername, slot, commandid, unkown, arg1, arg2, arg3, arg4, arg5, arg6)
+function onEventStarted(player, equipAbilityWidget, eventType, eventName, slot, commandid, unkown, arg1, arg2, arg3, arg4, arg5, arg6)
     local worldManager = GetWorldManager();
     local ability = worldManager:GetBattleCommand(commandid);
     

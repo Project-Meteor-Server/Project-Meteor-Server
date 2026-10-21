@@ -3,43 +3,50 @@ require("global");
 properties = {
     permissions = 0,
     parameters = "sssss",
-    description = ""
+    description =
+[[
+
+Tests a layout/region id w/ an animation string
+!testmapobj <anim> <region> <layout> <maxlayout>
+]],
 }
 
-function onTrigger(player, argc, animation, regionId, layoutId, maxLayoutId)
-	layoutId = tonumber(layoutId);
+function onTrigger(player, argc, animation, layoutId, instanceId, maxInstanceId)
+	instanceId = tonumber(instanceId);
 	
-	if (maxLayoutId ~= nil) then
-		maxLayoutId = tonumber(maxLayoutId);
+	if (maxInstanceId ~= nil) then
+		maxInstanceId = tonumber(maxInstanceId);
 	else
-		maxLayoutId = layoutId;
+		maxInstanceId = instanceId;
 	end
 	
 	actorClassId = 5900001;
-	while (layoutId <= maxLayoutId) do
+	while (instanceId <= maxInstanceId) do
 		if (actorClassId == nil) then
 			player:SendMessage(0x20, "", "No actor class id provided.");
 			return;
 		end	
 
 		local pos = player:GetPos();
-		local x = pos[0];
-		local y = pos[1];
-		local z = pos[2];
-		local zone = pos[4];
+		local x = pos[1];
+		local y = pos[2];
+		local z = pos[3];
+		local zone = pos[5];
 			 
 		actorClassId = tonumber(actorClassId);
 		
 		if (actorClassId ~= nil) then		
-			zone = player:GetZone();
-			actor = zone:SpawnActor(actorClassId, "mapobj", pos[0], pos[1], pos[2], tonumber(regionId), tonumber(layoutId));
-			wait(0.8);
+			zone = player.CurrentArea;
+			actor = zone:SpawnActor(actorClassId, "mapobj", pos[1], pos[2], pos[3], tonumber(layoutId), tonumber(instanceId));
+			
+			 print("test");
+			wait(2);
 			actor:PlayMapObjAnimation(player, animation);
 			zone:DespawnActor("mapobj");
 			wait(0.5);
-			player:SendMessage(0x20, "", "Layout ID: "..layoutId);
+			player:SendMessage(0x20, "", "Playing animation for instance: " .. instanceId);
 		end
-		layoutId=layoutId+1;
+		instanceId = instanceId + 1;
 	end
 end;
 --!testmapobj 5900001 421 2810 2820

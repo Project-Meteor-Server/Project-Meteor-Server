@@ -25,7 +25,7 @@ namespace Meteor.Map.actors.chara.npc
     {
         public readonly uint actorClassId;
         public readonly string classPath;
-        public readonly uint displayNameId;
+        public readonly int displayNameId;
         public readonly uint propertyFlags;
         public readonly string eventConditions;
 
@@ -33,7 +33,7 @@ namespace Meteor.Map.actors.chara.npc
         public readonly ushort pushCommandSub;
         public readonly byte pushCommandPriority;
 
-        public ActorClass(uint id, string classPath, uint nameId, uint propertyFlags, string eventConditions, ushort pushCommand, ushort pushCommandSub, byte pushCommandPriority)
+        public ActorClass(uint id, string classPath, int nameId, uint propertyFlags, string eventConditions, ushort pushCommand, ushort pushCommandSub, byte pushCommandPriority)
         {
             this.actorClassId = id;
             this.classPath = classPath;

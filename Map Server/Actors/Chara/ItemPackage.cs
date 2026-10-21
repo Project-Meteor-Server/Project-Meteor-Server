@@ -22,7 +22,7 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 using Meteor.Common;
 using Meteor.Map.actors.chara.npc;
 using Meteor.Map.Actors;
-using Meteor.Map.dataobjects;
+using Meteor.Map.DataObjects;
 using Meteor.Map.packets.send.actor.inventory;
 using System;
 using System.Collections.Generic;
@@ -196,9 +196,9 @@ namespace Meteor.Map.actors.chara.player
 
             if (owner is Player)
             {
-                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.Id));
                 SendUpdate();
-                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.Id));
             }
 
             return ERROR_SUCCESS;
@@ -273,9 +273,9 @@ namespace Meteor.Map.actors.chara.player
 
             if (owner is Player)
             {
-                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.Id));
                 SendUpdate();
-                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.Id));
             }
 
             return ERROR_SUCCESS;
@@ -306,9 +306,9 @@ namespace Meteor.Map.actors.chara.player
 
             if (owner is Player)
             {
-                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.Id));
                 SendUpdate();
-                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.Id));
             }
 
             return ERROR_SUCCESS;           
@@ -399,9 +399,9 @@ namespace Meteor.Map.actors.chara.player
 
             if (owner is Player)
             {
-                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.Id));
                 SendUpdate();
-                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.Id));
             }
         }
 
@@ -450,9 +450,9 @@ namespace Meteor.Map.actors.chara.player
 
             if (owner is Player)
             {
-                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.Id));
                 SendUpdate();
-                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.Id));
             }
         }
 
@@ -471,9 +471,9 @@ namespace Meteor.Map.actors.chara.player
 
             if (owner is Player)
             {
-                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.Id));
                 SendUpdate();
-                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.Id));
             }
         }
 
@@ -501,9 +501,9 @@ namespace Meteor.Map.actors.chara.player
 
                 if (owner is Player)
                 {
-                    (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.actorId));
+                    (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.Id));
                     SendUpdate();
-                    (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.actorId));
+                    (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.Id));
                 }
             }                   
         }
@@ -520,9 +520,9 @@ namespace Meteor.Map.actors.chara.player
 
             if (owner is Player)
             {
-                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryBeginChangePacket.BuildPacket(owner.Id));
                 SendUpdate();
-                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.actorId));
+                (owner as Player).QueuePacket(InventoryEndChangePacket.BuildPacket(owner.Id));
             }
         }
 
@@ -606,9 +606,9 @@ namespace Meteor.Map.actors.chara.player
         #region Packet Functions
         public void SendFullPackage(Player player)
         {
-            player.QueuePacket(InventorySetBeginPacket.BuildPacket(owner.actorId, itemPackageCapacity, itemPackageCode));
+            player.QueuePacket(InventorySetBeginPacket.BuildPacket(owner.Id, itemPackageCapacity, itemPackageCode));
             SendItemPackets(player, 0);
-            player.QueuePacket(InventorySetEndPacket.BuildPacket(owner.actorId));            
+            player.QueuePacket(InventorySetEndPacket.BuildPacket(owner.Id));            
         }
 
         public void SendUpdate()
@@ -641,12 +641,12 @@ namespace Meteor.Map.actors.chara.player
             if (!holdingUpdates)
                 Array.Clear(isDirty, 0, isDirty.Length);
             
-            player.QueuePacket(InventorySetBeginPacket.BuildPacket(owner.actorId, itemPackageCapacity, itemPackageCode));
+            player.QueuePacket(InventorySetBeginPacket.BuildPacket(owner.Id, itemPackageCapacity, itemPackageCode));
             //Send Updated Slots
             SendItemPackets(player, items);
             //Send Remove packets for tail end
             SendItemPackets(player, slotsToRemove);
-            player.QueuePacket(InventorySetEndPacket.BuildPacket(owner.actorId));
+            player.QueuePacket(InventorySetEndPacket.BuildPacket(owner.Id));
             //If player is updating their normal inventory, we need to send
             //an equip update as well to resync the slots.
             if (player.Equals(owner) && itemPackageCode == NORMAL)
@@ -655,7 +655,7 @@ namespace Meteor.Map.actors.chara.player
 
         private void SendItemPackets(Player player, InventoryItem item)
         {
-             player.QueuePacket(InventoryListX01Packet.BuildPacket(owner.actorId, item));            
+             player.QueuePacket(InventoryListX01Packet.BuildPacket(owner.Id, item));            
         }
 
         private void SendItemPackets(Player player, List<InventoryItem> items)
@@ -665,16 +665,16 @@ namespace Meteor.Map.actors.chara.player
             while (true)
             {
                 if (items.Count - currentIndex >= 64)
-                    player.QueuePacket(InventoryListX64Packet.BuildPacket(owner.actorId, items, ref currentIndex));
+                    player.QueuePacket(InventoryListX64Packet.BuildPacket(owner.Id, items, ref currentIndex));
                 else if (items.Count - currentIndex >= 32)
-                    player.QueuePacket(InventoryListX32Packet.BuildPacket(owner.actorId, items, ref currentIndex));
+                    player.QueuePacket(InventoryListX32Packet.BuildPacket(owner.Id, items, ref currentIndex));
                 else if (items.Count - currentIndex >= 16)
-                    player.QueuePacket(InventoryListX16Packet.BuildPacket(owner.actorId, items, ref currentIndex));
+                    player.QueuePacket(InventoryListX16Packet.BuildPacket(owner.Id, items, ref currentIndex));
                 else if (items.Count - currentIndex > 1)
-                    player.QueuePacket(InventoryListX08Packet.BuildPacket(owner.actorId, items, ref currentIndex));
+                    player.QueuePacket(InventoryListX08Packet.BuildPacket(owner.Id, items, ref currentIndex));
                 else if (items.Count - currentIndex == 1)
                 {
-                    player.QueuePacket(InventoryListX01Packet.BuildPacket(owner.actorId, items[currentIndex]));
+                    player.QueuePacket(InventoryListX01Packet.BuildPacket(owner.Id, items[currentIndex]));
                     currentIndex++;
                 }
                 else
@@ -693,16 +693,16 @@ namespace Meteor.Map.actors.chara.player
             while (true)
             {
                 if (endOfListIndex - currentIndex >= 64)
-                    player.QueuePacket(InventoryListX64Packet.BuildPacket(owner.actorId, lst, ref currentIndex));
+                    player.QueuePacket(InventoryListX64Packet.BuildPacket(owner.Id, lst, ref currentIndex));
                 else if (endOfListIndex - currentIndex >= 32)
-                    player.QueuePacket(InventoryListX32Packet.BuildPacket(owner.actorId, lst, ref currentIndex));
+                    player.QueuePacket(InventoryListX32Packet.BuildPacket(owner.Id, lst, ref currentIndex));
                 else if (endOfListIndex - currentIndex >= 16)
-                    player.QueuePacket(InventoryListX16Packet.BuildPacket(owner.actorId, lst, ref currentIndex));
+                    player.QueuePacket(InventoryListX16Packet.BuildPacket(owner.Id, lst, ref currentIndex));
                 else if (endOfListIndex - currentIndex > 1)
-                    player.QueuePacket(InventoryListX08Packet.BuildPacket(owner.actorId, lst, ref currentIndex));
+                    player.QueuePacket(InventoryListX08Packet.BuildPacket(owner.Id, lst, ref currentIndex));
                 else if (endOfListIndex - currentIndex == 1)
                 {
-                    player.QueuePacket(InventoryListX01Packet.BuildPacket(owner.actorId, list[currentIndex]));
+                    player.QueuePacket(InventoryListX01Packet.BuildPacket(owner.Id, list[currentIndex]));
                     currentIndex++;
                 }
                 else
@@ -712,7 +712,7 @@ namespace Meteor.Map.actors.chara.player
 
         private void SendItemPackets(Player player, ushort index)
         {
-            player.QueuePacket(InventoryRemoveX01Packet.BuildPacket(owner.actorId, index));
+            player.QueuePacket(InventoryRemoveX01Packet.BuildPacket(owner.Id, index));
         }
 
         private void SendItemPackets(Player player, List<ushort> indexes)
@@ -722,16 +722,16 @@ namespace Meteor.Map.actors.chara.player
             while (true)
             {
                 if (indexes.Count - currentIndex >= 64)
-                    player.QueuePacket(InventoryRemoveX64Packet.BuildPacket(owner.actorId, indexes, ref currentIndex));
+                    player.QueuePacket(InventoryRemoveX64Packet.BuildPacket(owner.Id, indexes, ref currentIndex));
                 else if (indexes.Count - currentIndex >= 32)
-                    player.QueuePacket(InventoryRemoveX32Packet.BuildPacket(owner.actorId, indexes, ref currentIndex));
+                    player.QueuePacket(InventoryRemoveX32Packet.BuildPacket(owner.Id, indexes, ref currentIndex));
                 else if (indexes.Count - currentIndex >= 16)
-                    player.QueuePacket(InventoryRemoveX16Packet.BuildPacket(owner.actorId, indexes, ref currentIndex));
+                    player.QueuePacket(InventoryRemoveX16Packet.BuildPacket(owner.Id, indexes, ref currentIndex));
                 else if (indexes.Count - currentIndex > 1)
-                    player.QueuePacket(InventoryRemoveX08Packet.BuildPacket(owner.actorId, indexes, ref currentIndex));
+                    player.QueuePacket(InventoryRemoveX08Packet.BuildPacket(owner.Id, indexes, ref currentIndex));
                 else if (indexes.Count - currentIndex == 1)
                 {
-                    player.QueuePacket(InventoryRemoveX01Packet.BuildPacket(owner.actorId, indexes[currentIndex]));
+                    player.QueuePacket(InventoryRemoveX01Packet.BuildPacket(owner.Id, indexes[currentIndex]));
                     currentIndex++;
                 }
                 else

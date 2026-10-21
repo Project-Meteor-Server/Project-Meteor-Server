@@ -46,7 +46,6 @@ function onEventStarted(player, npc, triggerName)
     local cluster = 3020413;
     local eventMode = 2012;
     
-    
     if eventMode == 2011 then
         if playerGC == 0 then
             callClientFunction(player, "eventTalkStep0", 0);

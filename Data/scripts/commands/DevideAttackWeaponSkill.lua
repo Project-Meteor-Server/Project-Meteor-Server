@@ -9,7 +9,7 @@ Finds the correct weaponskill subscript to fire when a weaponskill actor is acti
 
 --]]
 
-function onEventStarted(player, command, triggerName, arg1, arg2, arg3, arg4, targetActor, arg5, arg6, arg7, arg8)
+function onEventStarted(player, command, eventType, eventName, arg1, arg2, arg3, arg4, targetActor, arg5, arg6, arg7, arg8)
 	
 	--Are they in active mode?
 	if (player:GetState() != 2) then
@@ -21,6 +21,6 @@ function onEventStarted(player, command, triggerName, arg1, arg2, arg3, arg4, ta
     if not player.aiContainer:IsEngaged() then
         player:Engage(targetActor);
     end;
-    player:WeaponSkill(command.actorId, targetActor);
+    player:WeaponSkill(command.Id, targetActor);
 	player:EndEvent();
 end;

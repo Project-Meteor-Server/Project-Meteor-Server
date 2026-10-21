@@ -31,7 +31,7 @@ namespace Meteor.Map.actors.area
 {
     class Zone : Area
     {        
-        Dictionary<string, Dictionary<uint, PrivateArea>> privateAreas = new Dictionary<string, Dictionary<uint, PrivateArea>>();
+        Dictionary<string, Dictionary<int, PrivateArea>> privateAreas = new Dictionary<string, Dictionary<int, PrivateArea>>();
         Dictionary<string, List<PrivateAreaContent>> contentAreas = new Dictionary<string, List<PrivateAreaContent>>();
         Object contentAreasLock = new Object();
 
@@ -68,18 +68,20 @@ namespace Meteor.Map.actors.area
                 privateAreas[pa.GetPrivateAreaName()][pa.GetPrivateAreaType()] = pa;
             else
             {
-                privateAreas[pa.GetPrivateAreaName()] = new Dictionary<uint, PrivateArea>();
-                privateAreas[pa.GetPrivateAreaName()][pa.GetPrivateAreaType()] = pa;
+                privateAreas[pa.GetPrivateAreaName()] = new Dictionary<int, PrivateArea>
+                {
+                    [pa.GetPrivateAreaType()] = pa
+                };
             }
         }
 
-        public PrivateArea GetPrivateArea(string type, uint number)
+        public PrivateArea GetPrivateArea(string name, int type)
         {
-            if (privateAreas.ContainsKey(type))
+            if (privateAreas.ContainsKey(name))
             {
-                Dictionary<uint, PrivateArea> instances = privateAreas[type];
-                if (instances.ContainsKey(number))
-                    return instances[number];
+                Dictionary<int, PrivateArea> instances = privateAreas[name];
+                if (instances.ContainsKey(type))
+                    return instances[type];
                 else
                     return null;
             }
@@ -92,8 +94,8 @@ namespace Meteor.Map.actors.area
             bool isEntranceDesion = false;
 
             List<LuaParam> lParams;
-            lParams = LuaUtils.CreateLuaParamList(classPath, false, true, zoneName, "", -1, canRideChocobo ? (byte)1 : (byte)0, canStealth, isInn, false, false, false, true, isInstanceRaid, isEntranceDesion);
-            return ActorInstantiatePacket.BuildPacket(actorId, actorName, className, lParams);        
+            lParams = LuaUtils.CreateLuaParamList(classPath, false, true, ZoneName, "", -1, canRideChocobo ? (byte)1 : (byte)0, canStealth, isInn, false, false, false, true, isInstanceRaid, isEntranceDesion);
+            return ActorInstantiatePacket.BuildPacket(Id, Name, className, lParams);        
         }
 
         public void AddSpawnLocation(SpawnLocation spawn)
@@ -103,14 +105,14 @@ namespace Meteor.Map.actors.area
             {
                 if (privateAreas.ContainsKey(spawn.privAreaName))
                 {
-                    Dictionary<uint, PrivateArea> levels = privateAreas[spawn.privAreaName];
+                    Dictionary<int, PrivateArea> levels = privateAreas[spawn.privAreaName];
                     if (levels.ContainsKey(spawn.privAreaLevel))
                         levels[spawn.privAreaLevel].AddSpawnLocation(spawn);
                     else
-                        Program.Log.Error("Tried to add a spawn location to non-existing private area level \"{0}\" in area {1} in zone {2}", spawn.privAreaName, spawn.privAreaLevel, zoneName);
+                        Program.Log.Error("Tried to add a spawn location to non-existing private area level \"{0}\" in area {1} in zone {2}", spawn.privAreaName, spawn.privAreaLevel, ZoneName);
                 }
                 else
-                    Program.Log.Error("Tried to add a spawn location to non-existing private area \"{0}\" in zone {1}", spawn.privAreaName, zoneName);
+                    Program.Log.Error("Tried to add a spawn location to non-existing private area \"{0}\" in zone {1}", spawn.privAreaName, ZoneName);
             }
             else            
                 mSpawnLocations.Add(spawn);            
@@ -123,7 +125,7 @@ namespace Meteor.Map.actors.area
 
             if (doPrivAreas)
             {
-                foreach (Dictionary<uint, PrivateArea> areas in privateAreas.Values)
+                foreach (var areas in privateAreas.Values)
                 {
                     foreach (PrivateArea pa in areas.Values)
                         pa.SpawnAllActors();
@@ -137,7 +139,7 @@ namespace Meteor.Map.actors.area
             {
                 if (!mActorList.ContainsKey(id))
                 {
-                    foreach (Dictionary<uint, PrivateArea> paList in privateAreas.Values)
+                    foreach (var paList in privateAreas.Values)
                     {
                         foreach (PrivateArea pa in paList.Values)
                         {

@@ -71,7 +71,6 @@ namespace Meteor.World
 
             mWorldManager = new WorldManager(this);
             mWorldManager.LoadZoneServerList();
-            mWorldManager.LoadZoneEntranceList();
             mWorldManager.ConnectToZoneServers();
 
             IPEndPoint serverEndPoint = new System.Net.IPEndPoint(IPAddress.Parse(ConfigConstants.OPTIONS_BINDIP), int.Parse(ConfigConstants.OPTIONS_PORT));

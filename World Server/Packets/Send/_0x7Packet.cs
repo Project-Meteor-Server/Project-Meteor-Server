@@ -29,7 +29,7 @@ namespace Meteor.World.Packets.Send
     class _0x7Packet
     {
         public const ushort OPCODE = 0x0007;
-        public const uint PACKET_SIZE = 0x18;
+        public const uint PACKET_SIZE = 0x8;
 
         public static SubPacket BuildPacket(uint actorID)
         {

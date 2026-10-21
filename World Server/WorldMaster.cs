@@ -106,57 +106,6 @@ namespace Meteor.World
             }
             
         }
-
-        public void LoadZoneEntranceList()
-        {
-            zoneEntranceList = new Dictionary<uint, ZoneEntrance>();
-            int count = 0;
-            using (MySqlConnection conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
-            {
-                try
-                {
-                    conn.Open();
-
-                    string query = @"
-                                    SELECT 
-                                    id,
-                                    zoneId,
-                                    spawnType,
-                                    spawnX,
-                                    spawnY,
-                                    spawnZ,
-                                    spawnRotation,
-                                    privateAreaName
-                                    FROM server_zones_spawnlocations";
-
-                    MySqlCommand cmd = new MySqlCommand(query, conn);
-
-                    using (MySqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            uint id = reader.GetUInt32(0);
-                            string privArea = null;
-
-                            if (!reader.IsDBNull(7))
-                                privArea = reader.GetString(7);
-
-                            ZoneEntrance entance = new ZoneEntrance(reader.GetUInt32(1), privArea, reader.GetByte(2), reader.GetFloat(3), reader.GetFloat(4), reader.GetFloat(5), reader.GetFloat(6));
-                            zoneEntranceList[id] = entance;
-                            count++;
-                        }
-                    }
-                }
-                catch (MySqlException e)
-                { Console.WriteLine(e); }
-                finally
-                {
-                    conn.Dispose();
-                }
-            }
-
-            Program.Log.Info(String.Format("Loaded {0} zone spawn locations.", count));
-        }
         
         public void ConnectToZoneServers()
         {

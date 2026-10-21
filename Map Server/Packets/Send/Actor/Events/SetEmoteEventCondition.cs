@@ -40,9 +40,10 @@ namespace Meteor.Map.packets.send.actor.events
             {
                 using (BinaryWriter binWriter = new BinaryWriter(mem))
                 {
-                    binWriter.Write((Byte)condition.unknown1); //4
-                    binWriter.Write((UInt16)condition.emoteId); //82, 76, 6E
-                    binWriter.Write(Encoding.ASCII.GetBytes(condition.conditionName), 0, Encoding.ASCII.GetByteCount(condition.conditionName) >= 0x24 ? 0x24 : Encoding.ASCII.GetByteCount(condition.conditionName));
+                    binWriter.Write((Byte)4); //Id type? Priority
+                    binWriter.Write((Byte)condition.unknown2);
+                    binWriter.Write((UInt16)condition.emoteId); //82, 76, 6E are emotes used in captures
+                    binWriter.Write(Encoding.ASCII.GetBytes(condition.conditionName), 0, Encoding.ASCII.GetByteCount(condition.conditionName) >= 0x20 ? 0x20 : Encoding.ASCII.GetByteCount(condition.conditionName));
                 }
             }
 

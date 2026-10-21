@@ -82,15 +82,12 @@ city = {
     [1500394] = 3, -- Ul'dah    : Edine
 }
 
-
-
-function onEventStarted(player, npc, triggerName)	
-
+function onEventStarted(player, npc, eventType, eventName)	
     local npcCity = city[npc:GetActorClassId()] or 1;
-    local wardPlaceName = CITY_INFO[npcCity][1];        -- Market Wards category name. Identical in all languages except Japanese
+    local marketPlaceName = CITY_INFO[npcCity][1];        -- Market Wards category name. Identical in all languages except Japanese
     local exitPlaceName = CITY_INFO[npcCity][2];        -- Central Limsa Lominsa / Heartstream / The Fronds
     local gcHQPlaceName = CITY_INFO[npcCity][3];        -- Maelstrom Command / Adders' Nest / Hall of Flames
-    local questAreaName = 0; --CITY_INFO[npcCity][4];   -- Sailors Ward / Peasants Ward / Merchants Ward
+    local questPlaceName = CITY_INFO[npcCity][4];   		-- Sailors Ward / Peasants Ward / Merchants Ward
     local wardListStart = CITY_INFO[npcCity][5];        -- Starting id for the market wards
     local wardListCount = CITY_INFO[npcCity][6];        -- Amount of wards in the list
     local showItemSearchCounter = false;
@@ -98,19 +95,30 @@ function onEventStarted(player, npc, triggerName)
     
     local worldMaster = GetWorldMaster(); 
     local pos = player:GetPos();
-    local currZone = pos[4];
+    local currZone = pos[5];
+	local currRegion = player.CurrentArea.RegionId;	
+	local quests = player:GetQuestsForNpc(npc);
     
-    if (currZone == 133 or currZone == 230 or currZone == 155 or currZone == 206 or currZone == 175 or currZone == 209) then 
+	-- City entrance specific stuff
+    if (currRegion == 101 or currRegion == 103 or currRegion == 104) then 
         exitPlaceName = 0;  -- If in city, hide city menu option
-    elseif (currZone == 232 or currZone == 234 or currZone == 233) then 
-        gcHQPlaceName = 0;  -- If in GC Office, hide office menu option
+		
+		-- If no quests attached to this entrence, don't show quest area
+		if (#quests == 0) then
+			questPlaceName = 0;
+		end
+    end
+	
+	-- If in GC Office, hide office menu option
+	if (currZone == 232 or currZone == 234 or currZone == 233) then 
+        gcHQPlaceName = 0;  
     end
 
-    choice = callClientFunction(player, "eventPushChoiceAreaOrQuest", exitPlaceName, wardPlaceName, gcHQPlaceName, questAreaName, showItemSearchCounter, itemSearchId);
+    choice = callClientFunction(player, "eventPushChoiceAreaOrQuest", exitPlaceName, marketPlaceName, gcHQPlaceName, questPlaceName, showItemSearchCounter, itemSearchId);
         
     while (true) do
         
-        if choice == wardPlaceName then -- Market Wards
+        if choice == marketPlaceName then -- Market Wards
             wardSelect = callClientFunction(player, "eventPushStepPrvMarket", wardListStart, wardListCount, 0);
             
             if wardSelect and (wardSelect >= wardListStart and wardSelect <= (wardListStart+wardListCount)) then
@@ -139,11 +147,36 @@ function onEventStarted(player, npc, triggerName)
                 wait(1);
                 GetWorldManager():DoZoneChange(player, warp[1], nil, 0, 0x02, warp[2], warp[3], warp[4], warp[5]);          
                 break;
+		elseif (choice == 2095 or choice == 3095) then -- Quest
+			-- This should never happen but in dev it will:
+			-- Either let the player choose the quest or start it if it's the only one.
+			local chosenQuest = quests[1];
+			if (#quests > 1) then
+				local currentPage = 0;
+				local numPages = math.floor((#quests-1)/4) + 1;
+				
+				while (true) do
+					local page, index = callClientFunction(player, "switchEvent", quests[currentPage * 4 + 1], quests[currentPage * 4 + 2], quests[currentPage * 4 + 3], quests[currentPage * 4 + 4], currentPage + 1, numPages, 0x3F1);
+					
+					if (page == 0) then
+						chosenQuest = quests[(currentPage * 4) + index];
+						break;
+					elseif (page > 0) then
+						currentPage = page - 1;
+					else
+						player:EndEvent();
+						return;
+					end
+				end
+			end
+		
+			chosenQuest:OnPush(player, npc, eventName);
+			return;
         elseif (choice == 0 or choice == -3) then -- Menu Closed
             break;  
         end 
         
-        choice = callClientFunction(player, "eventPushChoiceAreaOrQuest", exitPlaceName, wardPlaceName, gcHQPlaceName, questAreaName, showItemSearchCounter, itemSearchId);
+        choice = callClientFunction(player, "eventPushChoiceAreaOrQuest", exitPlaceName, marketPlaceName, gcHQPlaceName, questAreaName, showItemSearchCounter, itemSearchId);
           
     end
     

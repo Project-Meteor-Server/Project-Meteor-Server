@@ -23,7 +23,7 @@ using System;
 using System.IO;
 
 using Meteor.Common;
-using Meteor.Map.dataobjects;
+using Meteor.Map.DataObjects;
 
 namespace  Meteor.Map.packets.send.actor.inventory
 {

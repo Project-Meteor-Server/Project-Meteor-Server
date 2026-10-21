@@ -41,7 +41,7 @@ namespace Meteor.Map.packets.send.actor.events
             {
                 using (BinaryWriter binWriter = new BinaryWriter(mem))
                 {
-                    binWriter.Write((UInt32)condition.bgObj);  // bgObj
+                    binWriter.Write((UInt32)condition.instance);  // bgObj
                     binWriter.Write((UInt32)condition.layout);   // Layout
                     binWriter.Write((UInt32)4);       // Actor?  Always 4 in 1.23
                     binWriter.Seek(8, SeekOrigin.Current); // Unknowns

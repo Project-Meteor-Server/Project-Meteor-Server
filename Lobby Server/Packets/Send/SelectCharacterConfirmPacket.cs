@@ -62,10 +62,11 @@ namespace Meteor.Lobby.Packets
                     binWriter.Write((UInt32)characterId); //ActorId
                     binWriter.Write((UInt32)characterId); //CharacterId
                     binWriter.Write((UInt32)0);
-                    binWriter.Write(Encoding.ASCII.GetBytes(sessionToken.PadRight(0x42, '\0'))); //Session Token
+                    binWriter.Write(Encoding.ASCII.GetBytes(sessionToken.PadRight(0x40, '\0'))); //Session Token??? [ActorId-UnkMD5-Time]
+                    binWriter.Write((UInt16)0);
                     binWriter.Write((UInt16)worldPort); //World Port
-                    binWriter.Write(Encoding.ASCII.GetBytes(worldIp.PadRight(0x38, '\0'))); //World Hostname/IP
-                    binWriter.Write((UInt64)selectCharTicket); //Ticket or Handshake of somekind
+                    binWriter.Write(Encoding.ASCII.GetBytes(worldIp.PadRight(0x20, '\0'))); //World Hostname/IP
+                    binWriter.Write(Encoding.ASCII.GetBytes("192.168.0.44".PadRight(0x20, '\0'))); //Unknown IP
                 }
                 data = memStream.GetBuffer();
             }

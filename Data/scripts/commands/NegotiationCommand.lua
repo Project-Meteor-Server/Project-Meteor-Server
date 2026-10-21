@@ -40,7 +40,7 @@ updateNegotiationWidget(player, gridIndex, key, itemIconId, pointValue, ?, ?) - 
 
 require ("global")
 
-function onEventStarted(player, commandactor, triggerName, arg1, arg2, arg3, arg4, arg5)
+function onEventStarted(player, commandactor, eventType, eventName, arg1, arg2, arg3, arg4, arg5)
 	
 	negotiationJudge = GetStaticActor("NegotiationJudge");
 

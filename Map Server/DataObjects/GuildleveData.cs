@@ -21,7 +21,7 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 
 using MySql.Data.MySqlClient;
 
-namespace Meteor.Map.dataobjects
+namespace Meteor.Map.DataObjects
 {
     class GuildleveData
     {

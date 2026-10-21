@@ -23,7 +23,7 @@ using Meteor.Common;
 using Meteor.Map.actors.director;
 using Meteor.Map.actors.group.Work;
 using Meteor.Map.Actors;
-using Meteor.Map.dataobjects;
+using Meteor.Map.DataObjects;
 using Meteor.Map.packets.send.group;
 using Meteor.Map.packets.send.groups;
 using System.Collections.Generic;
@@ -52,7 +52,7 @@ namespace Meteor.Map.actors.group
             }
 
             this.director = director;
-            contentGroupWork._globalTemp.director = (ulong)director.actorId << 32;
+            contentGroupWork._globalTemp.director = (ulong)director.Id << 32;
         }
 
         public void Start()
@@ -67,8 +67,8 @@ namespace Meteor.Map.actors.group
             if (actor == null)
                 return;
             
-            if(!members.Contains(actor.actorId))
-                members.Add(actor.actorId);
+            if(!members.Contains(actor.Id))
+                members.Add(actor.Id);
 
             if (actor is Character)            
                 ((Character)actor).SetCurrentContentGroup(this);
@@ -119,26 +119,26 @@ namespace Meteor.Map.actors.group
             ulong time = Utils.MilisUnixTimeStampUTC();
             List<GroupMember> members = BuildMemberList(session.id);
 
-            session.QueuePacket(GroupHeaderPacket.buildPacket(session.id, session.GetActor().zoneId, time, this));
-            session.QueuePacket(GroupMembersBeginPacket.buildPacket(session.id, session.GetActor().zoneId, time, this));
+            session.QueuePacket(GroupHeaderPacket.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, this));
+            session.QueuePacket(GroupMembersBeginPacket.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, this));
 
             int currentIndex = 0;
 
             while (true)
             {
                 if (GetMemberCount() - currentIndex >= 64)
-                    session.QueuePacket(ContentMembersX64Packet.buildPacket(session.id, session.GetActor().zoneId, time, members, ref currentIndex));
+                    session.QueuePacket(ContentMembersX64Packet.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, members, ref currentIndex));
                 else if (GetMemberCount() - currentIndex >= 32)
-                    session.QueuePacket(ContentMembersX32Packet.buildPacket(session.id, session.GetActor().zoneId, time, members, ref currentIndex));
+                    session.QueuePacket(ContentMembersX32Packet.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, members, ref currentIndex));
                 else if (GetMemberCount() - currentIndex >= 16)
-                    session.QueuePacket(ContentMembersX16Packet.buildPacket(session.id, session.GetActor().zoneId, time, members, ref currentIndex));
+                    session.QueuePacket(ContentMembersX16Packet.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, members, ref currentIndex));
                 else if (GetMemberCount() - currentIndex > 0)
-                    session.QueuePacket(ContentMembersX08Packet.buildPacket(session.id, session.GetActor().zoneId, time, members, ref currentIndex));
+                    session.QueuePacket(ContentMembersX08Packet.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, members, ref currentIndex));
                 else
                     break;
             }
 
-            session.QueuePacket(GroupMembersEndPacket.buildPacket(session.id, session.GetActor().zoneId, time, this));
+            session.QueuePacket(GroupMembersEndPacket.buildPacket(session.id, session.GetActor().CurrentArea.ZoneId, time, this));
         }
 
         public override uint GetTypeId()
@@ -160,7 +160,7 @@ namespace Meteor.Map.actors.group
                 Session s = Server.GetServer().GetSession(members[i]);
                 if (s != null)
                     s.GetActor().SetCurrentContentGroup(null);
-                Actor a = director.GetZone().FindActorInArea(members[i]);
+                Actor a = director.CurrentArea.FindActorInArea(members[i]);
                 if (a is Npc)
                     ((Npc)a).Despawn();
                 members.Remove(members[i]);

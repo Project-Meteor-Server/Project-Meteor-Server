@@ -32,7 +32,7 @@ namespace  Meteor.Map.packets.send.actor
         public const ushort OPCODE = 0x013D;
         public const uint PACKET_SIZE = 0x48;
 
-        public static SubPacket BuildPacket(uint sourceActorId, uint displayNameID, string customName)
+        public static SubPacket BuildPacket(uint sourceActorId, int displayNameID, string customName, bool isSexMale = true)
         {
             byte[] data = new byte[PACKET_SIZE - 0x20];
 
@@ -42,9 +42,12 @@ namespace  Meteor.Map.packets.send.actor
                 {
                     binWriter.Write((UInt32)displayNameID);
 
-                    if (customName != null && (displayNameID == 0 || displayNameID == 0xFFFFFFFF))
+                    if (customName != null && (displayNameID == 0 || displayNameID == -1))
                     {
                         binWriter.Write(Encoding.ASCII.GetBytes(customName), 0, Encoding.ASCII.GetByteCount(customName) >= 0x20 ? 0x19 : Encoding.ASCII.GetByteCount(customName));
+
+                        binWriter.BaseStream.Seek(0x24, SeekOrigin.Begin);
+                        binWriter.Write((UInt32)(isSexMale ? 0 : 1));
                     }
 
                 }

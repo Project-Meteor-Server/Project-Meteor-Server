@@ -526,7 +526,7 @@ namespace Meteor.Lobby
                     FROM characters
                     INNER JOIN characters_parametersave ON id = characters_parametersave.characterId
                     WHERE userId = @userId AND state = 2
-                    ORDER BY slot";
+                    ORDER BY creationDate";
                 MySqlCommand cmd = new MySqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@userId", userId);
                 using (MySqlDataReader reader = cmd.ExecuteReader())

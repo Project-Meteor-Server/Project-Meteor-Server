@@ -25,7 +25,7 @@ namespace Meteor.Map.Actors
     {
         public Judge(uint actorID, string name) : base(actorID)
         {
-            actorName = name;
+            Name = name;
         }
     }
 }

@@ -88,6 +88,8 @@ namespace Meteor.World
                 {
                     SubPacket init = _0x8PingPacket.BuildPacket(client.owner.sessionId);
                     client.QueuePacket(BasePacket.CreatePacket(init, true, false));
+                    packet.DebugPrintPacket();
+                    init.DebugPrintSubPacket();
                 }
                 //Zoning Related
                 else if (subpacket.header.type == 0x08)

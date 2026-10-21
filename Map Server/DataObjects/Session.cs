@@ -25,9 +25,10 @@ using Meteor.Map.Actors;
 using Meteor.Map.packets.send.actor;
 using System.Collections.Generic;
 using Meteor.Map.actors.chara.npc;
-using static Meteor.Map.Actors.Quest;
+using Meteor.Map.Actors.QuestNS;
+using static Meteor.Map.Actors.QuestNS.QuestState;
 
-namespace Meteor.Map.dataobjects
+namespace Meteor.Map.DataObjects
 {
     class Session
     {
@@ -55,6 +56,8 @@ namespace Meteor.Map.dataobjects
 
         public void QueuePacket(SubPacket subPacket)
         {
+            ////if (subPacket.gameMessage.opcode != 1)
+                //subPacket.DebugPrintSubPacket();
             subPacket.SetTargetId(id);
             Server.GetWorldConnection().QueuePacket(subPacket);
         }
@@ -117,12 +120,12 @@ namespace Meteor.Map.dataobjects
                 //Retainer Instance
                 if (actorInstanceList[i] is Retainer && playerActor.currentSpawnedRetainer == null)
                 {
-                    QueuePacket(RemoveActorPacket.BuildPacket(actorInstanceList[i].actorId));
+                    QueuePacket(RemoveActorPacket.BuildPacket(actorInstanceList[i].Id));
                     actorInstanceList.RemoveAt(i);
                 }
                 else if (!list.Contains(actorInstanceList[i]) && !(actorInstanceList[i] is Retainer))
                 {
-                    QueuePacket(RemoveActorPacket.BuildPacket(actorInstanceList[i].actorId));
+                    QueuePacket(RemoveActorPacket.BuildPacket(actorInstanceList[i].Id));
                     actorInstanceList.RemoveAt(i);
                 }
             }
@@ -144,7 +147,7 @@ namespace Meteor.Map.dataobjects
             {
                 Actor actor = list[i];
 
-                if (actor.actorId == playerActor.actorId)
+                if (actor.Id == playerActor.Id)
                     continue;
 
                 if (actorInstanceList.Contains(actor))
@@ -165,9 +168,9 @@ namespace Meteor.Map.dataobjects
                         Quest[] quests = playerActor.GetQuestsForNpc(npc);
                         if (quests.Length != 0)
                         {
-                            ENpcQuestInstance questInstance = quests[0].GetENpcInstance(npc.GetActorClassId());
-                            QueuePacket(npc.GetSetEventStatusPackets());
-                            QueuePacket(SetActorQuestGraphicPacket.BuildPacket(npc.actorId, questInstance.questFlagType));                            
+                            QuestENpc questInstance = quests[0].GetQuestState().GetENpc(npc.GetActorClassId());
+                            QueuePacket(npc.GetSetEventStatusPackets(questInstance.isTalkEnabled, questInstance.isEmoteEnabled, questInstance.isPushEnabled));
+                            QueuePacket(SetActorQuestGraphicPacket.BuildPacket(npc.Id, questInstance.questFlagType));                            
                         }
                     }
 
@@ -177,7 +180,7 @@ namespace Meteor.Map.dataobjects
             }
         }
 
-        public void UpdateQuestNpcInInstance(ENpcQuestInstance questInstance, bool clearInstance = false)
+        public void UpdateQuestNpcInInstance(QuestENpc questInstance, bool clearInstance = false)
         {
             LockUpdates(true);
             Actor actor = actorInstanceList.Find(x => x is Npc npc && npc.GetActorClassId().Equals(questInstance.actorClassId));
@@ -185,13 +188,13 @@ namespace Meteor.Map.dataobjects
             {
                 if (!clearInstance)
                 {
-                    QueuePacket(actor.GetSetEventStatusPackets());
-                    QueuePacket(SetActorQuestGraphicPacket.BuildPacket(actor.actorId, questInstance.questFlagType));
+                    QueuePacket(actor.GetSetEventStatusPackets(questInstance.isTalkEnabled, questInstance.isEmoteEnabled, questInstance.isPushEnabled));
+                    QueuePacket(SetActorQuestGraphicPacket.BuildPacket(actor.Id, questInstance.questFlagType));
                 }
                 else
                 {
                     QueuePacket(actor.GetSetEventStatusPackets());
-                    QueuePacket(SetActorQuestGraphicPacket.BuildPacket(actor.actorId, 0));
+                    QueuePacket(SetActorQuestGraphicPacket.BuildPacket(actor.Id, 0));
                 }
             }
             LockUpdates(false);

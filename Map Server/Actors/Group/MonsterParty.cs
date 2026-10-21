@@ -20,7 +20,7 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 */
 
 using Meteor.Common;
-using Meteor.Map.dataobjects;
+using Meteor.Map.DataObjects;
 using Meteor.Map.packets.send.group;
 using Meteor.Map.packets.send.groups;
 using System.Collections.Generic;
@@ -54,11 +54,11 @@ namespace Meteor.Map.actors.group
         public override List<GroupMember> BuildMemberList(uint id)
         {
             List<GroupMember> groupMembers = new List<GroupMember>();
-            groupMembers.Add(new GroupMember(id, -1, 0, false, true, Server.GetWorldManager().GetActorInWorld(id).customDisplayName));
+            groupMembers.Add(new GroupMember(id, -1, 0, false, true, Server.GetWorldManager().GetActorInWorld(id).DisplayName));
             foreach (uint charaId in monsterMembers)
             {
                 if (charaId != id)
-                    groupMembers.Add(new GroupMember(charaId, -1, 0, false, true, Server.GetWorldManager().GetActorInWorld(charaId).customDisplayName));
+                    groupMembers.Add(new GroupMember(charaId, -1, 0, false, true, Server.GetWorldManager().GetActorInWorld(charaId).DisplayName));
             }
             return groupMembers;
         }

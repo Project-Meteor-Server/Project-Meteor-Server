@@ -30,32 +30,42 @@ namespace Meteor.Map.actors.area
 {
     class PrivateArea : Area    
     {
-        private Zone parentZone;
-        private string privateAreaName;
-        private uint privateAreaType;
+        private readonly Zone ParentZone;
+        private readonly string PrivateAreaName;
+        private readonly int PrivateAreaType;
+        private readonly bool CanExitArea;
 
-        public PrivateArea(Zone parent, uint id, string classPath, string privateAreaName, uint privateAreaType, ushort bgmDay, ushort bgmNight, ushort bgmBattle)
-            : base(id, parent.zoneName, parent.regionId, classPath, bgmDay, bgmNight, bgmBattle, parent.isIsolated, parent.isInn, parent.canRideChocobo, parent.canStealth, true)
+        public PrivateArea(Zone parent, string classPath, string privateAreaName, int privateAreaType, bool canExitArea, ushort music)
+            : base(parent.ZoneId, parent.ZoneName, parent.RegionId, classPath, music, music, music, parent.isIsolated, parent.isInn, parent.canRideChocobo, parent.canStealth, true)
         {
-            this.parentZone = parent;
-            this.zoneName = parent.zoneName;
-            this.privateAreaName = privateAreaName;
-            this.privateAreaType = privateAreaType;
+            this.ParentZone = parent;
+            this.PrivateAreaName = privateAreaName;
+            this.PrivateAreaType = privateAreaType;
         }
 
-        public string GetPrivateAreaName()
+        public override string GetPrivateAreaName()
         {
-            return privateAreaName;
+            return PrivateAreaName;
         }
 
-        public uint GetPrivateAreaType()
+        public override int GetPrivateAreaType()
         {
-            return privateAreaType;
+            return PrivateAreaType;
+        }
+
+        public bool CanExitPrivateArea()
+        {
+            return CanExitArea;
+        }
+
+        public override bool IsPublic()
+        {
+            return false;
         }
 
         public Zone GetParentZone()
         {
-            return parentZone;
+            return ParentZone;
         }
 
         public override SubPacket CreateScriptBindPacket()
@@ -66,9 +76,9 @@ namespace Meteor.Map.actors.area
 
             string realClassName = className.Substring(className.LastIndexOf("/") + 1);
 
-            lParams = LuaUtils.CreateLuaParamList(classPath, false, true, zoneName, privateAreaName, privateAreaType, canRideChocobo ? (byte)1 : (byte)0, canStealth, isInn, false, false, false, false, false, false);
-            ActorInstantiatePacket.BuildPacket(actorId, actorName, realClassName, lParams).DebugPrintSubPacket();
-            return ActorInstantiatePacket.BuildPacket(actorId, actorName, realClassName, lParams);
+            lParams = LuaUtils.CreateLuaParamList(classPath, false, true, ZoneName, PrivateAreaName, PrivateAreaType, canRideChocobo ? (byte)1 : (byte)0, canStealth, isInn, false, false, false, false, false, false);
+            ActorInstantiatePacket.BuildPacket(Id, Name, realClassName, lParams).DebugPrintSubPacket();
+            return ActorInstantiatePacket.BuildPacket(Id, Name, realClassName, lParams);
         }
 
 

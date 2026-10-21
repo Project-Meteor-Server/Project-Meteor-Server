@@ -31,7 +31,7 @@ namespace  Meteor.Map.packets.send.actor
         public const ushort OPCODE = 0x00D8;
         public const uint PACKET_SIZE = 0x28;
 
-        public static SubPacket BuildPacket(uint sourceActorId, uint val1, uint val2)
+        public static SubPacket BuildPacket(uint sourceActorId, uint layoutId, uint instanceId)
         {
             byte[] data = new byte[PACKET_SIZE - 0x20];
 
@@ -39,8 +39,8 @@ namespace  Meteor.Map.packets.send.actor
             {
                 using (BinaryWriter binWriter = new BinaryWriter(mem))
                 {
-                    binWriter.Write((UInt32)val1);
-                    binWriter.Write((UInt32)val2);
+                    binWriter.Write((UInt32)instanceId);
+                    binWriter.Write((UInt32)layoutId);
                 }
             }
 

@@ -15,10 +15,12 @@ function onTrigger(player, argc, state)
     local sender = "[setstate] ";
     
     local s = tonumber(state);
-    local actor = GetWorldManager():GetActorInWorld(player.currentTarget) or nil;
+    local actor = player.CurrentArea:FindActorInArea(player.currentTarget) or nil;
     if player and actor then
         actor:ChangeState(s);
-		wait(0.8);
-		player:SendMessage(0x20, "", "state: "..s);
+        wait(0.8);
+        player:SendMessage(0x20, "", "state: "..s);
+    else
+        player:SendMessage(0x20, "", "Error: No target selected.");   
     end;
 end;

@@ -47,7 +47,7 @@ namespace Meteor.Map.actors.chara.ai.state
 
             this.target = (spell.mainTarget & ValidTarget.SelfOnly) != 0 ? owner : target;
 
-            errorResult = new CommandResult(owner.actorId, 32553, 0);
+            errorResult = new CommandResult(owner.Id, 32553, 0);
             if (returnCode == 0 && owner.CanUse(this.target, spell, errorResult))
             {
                 OnStart();
@@ -65,7 +65,7 @@ namespace Meteor.Map.actors.chara.ai.state
             if (returnCode != 0)
             {
                 interrupt = true;
-                errorResult = new CommandResult(target.actorId, (ushort)(returnCode == -1 ? 32553 : returnCode), 0, 0, 0, 1);
+                errorResult = new CommandResult(target.Id, (ushort)(returnCode == -1 ? 32553 : returnCode), 0, 0, 0, 1);
             }
             else
             {
@@ -98,7 +98,7 @@ namespace Meteor.Map.actors.chara.ai.state
                     }
                     owner.GetSubState().chantId = 0xf0;
                     owner.SubstateModified();
-                    owner.DoBattleAction(spell.id, (uint) 0x6F000000 | spell.castType, new CommandResult(target.actorId, 30128, 1, 0, 1)); //You begin casting (6F000002: BLM, 6F000003: WHM, 0x6F000008: BRD)
+                    owner.DoBattleAction(spell.id, (uint) 0x6F000000 | spell.castType, new CommandResult(target.Id, 30128, 1, 0, 1)); //You begin casting (6F000002: BLM, 6F000003: WHM, 0x6F000008: BRD)
                 }
             }
         }
@@ -174,7 +174,7 @@ namespace Meteor.Map.actors.chara.ai.state
 
             if (HasMoved())
             {
-                errorResult = new CommandResult(owner.actorId, 30211, 0);
+                errorResult = new CommandResult(owner.Id, 30211, 0);
                 errorResult.animation = 0x7F000002;
                 interrupt = true;
                 return;

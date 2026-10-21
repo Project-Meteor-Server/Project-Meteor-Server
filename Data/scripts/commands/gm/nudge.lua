@@ -24,13 +24,28 @@ vertical = {
 ["DESCEND"] = -1,
 }
 
+horizontal = {
+["RIGHT"] = 2,
+["R"] = 2,
+["+"] = 2,
+["LEFT"] = -2,
+["L"] = -2,
+["0"] = -2
+}
+
+rotation = {
+["ROTATE"] = 3,
+["ORIENTATION"] = 3,
+["O"] = 3
+}
+
 function onTrigger(player, argc, arg1, arg2)
     local pos = player:GetPos();
-    local x = pos[0];
-    local y = pos[1];
-    local z = pos[2];
-    local rot = pos[3];	
-    local zone = pos[4];
+    local x = pos[1];
+    local y = pos[2];
+    local z = pos[3];
+    local rot = pos[4];	
+    local zone = pos[5];
     local angle = rot + (math.pi/2); 
     
     local worldManager = GetWorldManager();
@@ -54,16 +69,24 @@ function onTrigger(player, argc, arg1, arg2)
             distance = checkArg1;
         elseif checkArg1 and not checkArg2 then   -- If first is number and second is string
             distance = checkArg1;
-            if vertical[string.upper(arg2)] then                -- Check vertical direction on string, otherwise throw param error
+            if vertical[string.upper(arg2)] then                -- Check vertical direction on string
                 direction = vertical[string.upper(arg2)];
+			elseif horizontal[string.upper(arg2)] then          -- Check horizontal direction on string
+                direction = horizontal[string.upper(arg2)];
+			elseif rotation[string.upper(arg2)] then            -- Check rotation on string, otherwise throw param error
+                direction = rotation[string.upper(arg2)];
             else
                player:SendMessage(messageID, sender, "Unknown parameters! Usage: \n"..properties.description);
                return;
             end
         elseif (not checkArg1) and checkArg2 then -- If first is string and second is number
             distance = checkArg2;
-            if vertical[string.upper(arg1)] then                -- Check vertical direction on string, otherwise throw param error
+            if vertical[string.upper(arg1)] then                -- Check vertical direction on string
                 direction = vertical[string.upper(arg1)];
+			elseif horizontal[string.upper(arg1)] then          -- Check horizontal direction on string
+                direction = horizontal[string.upper(arg1)];
+			elseif rotation[string.upper(arg1)] then            -- Check rotation on string, otherwise throw param error
+                direction = rotation[string.upper(arg1)];
             else
                 player:SendMessage(messageID, sender, "Unknown parameters! Usage: \n"..properties.description);
                 return;
@@ -86,6 +109,19 @@ function onTrigger(player, argc, arg1, arg2)
         y = y - distance;
         message = string.format("Positioning down %s yalms.", distance);
         worldManager:DoPlayerMoveInZone(player, x, y, z, rot, 0x0);
+	elseif direction == 2 then
+		local px = x - distance * math.cos(angle - math.pi/2);
+        local pz = z + distance * math.sin(angle - math.pi/2);
+        message = string.format("Positioning right %s yalms.", distance);
+        worldManager:DoPlayerMoveInZone(player, px, y, pz, rot, 0x0);
+    elseif direction == -2 then
+		local px = x - distance * math.cos(angle + math.pi/2);
+        local pz = z + distance * math.sin(angle + math.pi/2);
+        message = string.format("Positioning left %s yalms.", distance);
+        worldManager:DoPlayerMoveInZone(player, px, y, pz, rot, 0x0);
+	elseif direction == 3 then
+        message = string.format("ROTATE down %s yalms.", distance);
+        worldManager:DoPlayerMoveInZone(player, x, y, z, distance, 0x0);
     else
         local px = x - distance * math.cos(angle);
         local pz = z + distance * math.sin(angle);

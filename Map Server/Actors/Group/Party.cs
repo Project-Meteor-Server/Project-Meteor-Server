@@ -50,7 +50,7 @@ namespace Meteor.Map.actors.group
         {
             for (int i = 0; i < members.Count; i++)
             {
-                if (Server.GetWorldManager().GetActorInWorld(members[i]).customDisplayName.Equals(name))
+                if (Server.GetWorldManager().GetActorInWorld(members[i]).DisplayName.Equals(name))
                 {
                     return members[i];
                 }
@@ -76,12 +76,12 @@ namespace Meteor.Map.actors.group
         public override List<GroupMember> BuildMemberList(uint id)
         {
             List<GroupMember> groupMembers = new List<GroupMember>();
-            groupMembers.Add(new GroupMember(id, -1, 0, false, true, Server.GetWorldManager().GetActorInWorld(id).customDisplayName));
+            groupMembers.Add(new GroupMember(id, -1, 0, false, true, Server.GetWorldManager().GetActorInWorld(id).DisplayName));
             foreach (uint charaId in members)
             {                
                 var chara = Server.GetWorldManager().GetActorInWorld(charaId);
                 if (charaId != id && chara != null)
-                    groupMembers.Add(new GroupMember(charaId, -1, 0, false, true, chara.customDisplayName));
+                    groupMembers.Add(new GroupMember(charaId, -1, 0, false, true, chara.DisplayName));
             }
             return groupMembers;
         }

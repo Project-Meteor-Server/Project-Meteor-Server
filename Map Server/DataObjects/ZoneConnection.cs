@@ -27,7 +27,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using Meteor.Map.packets.WorldPackets.Send;
 
-namespace Meteor.Map.dataobjects
+namespace Meteor.Map.DataObjects
 {
     class ZoneConnection
     {

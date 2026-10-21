@@ -19,6 +19,6 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 ===========================================================================
 */
 
-namespace Meteor.Map.dataobjects
+namespace Meteor.Map.DataObjects
 {
 }

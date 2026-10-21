@@ -6,7 +6,7 @@ Handles what happens when you accept/refuse a trade
 
 --]]
 
-function onEventStarted(player, actor, triggerName, groupType, result)
+function onEventStarted(player, actor, eventType, eventName, groupType, result)
 
 	--Accept
 	if (result == 1) then
