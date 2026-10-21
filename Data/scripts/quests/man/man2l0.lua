@@ -68,13 +68,13 @@ function onStateChange(player, quest, sequence)
 		quest:SetENpc(HOB, QFLAG_TALK);
 		quest:SetENpc(BADERON);
 	elseif (sequence == SEQ_010) then
-		quest:SetENpc(TRIGGER_DOCKS, QFLAG_NONE, false, true);
+		quest:SetENpc(TRIGGER_DOCKS, QFLAG_OFF, false, true);
 		quest:SetENpc(HOB);
 		quest:SetENpc(BARRACUDA_KNIGHT1);
 		quest:SetENpc(BARRACUDA_KNIGHT2);
 		quest:SetENpc(EVENTDOOR_SHIP1, QFLAG_PUSH, false, true);
 	elseif (sequence == SEQ_015) then
-		quest:SetENpc(TRIGGER_DOCKS, QFLAG_NONE, false, true);
+		quest:SetENpc(TRIGGER_DOCKS, QFLAG_OFF, false, true);
 		quest:SetENpc(HOB);
 		quest:SetENpc(BARRACUDA_KNIGHT1);
 		quest:SetENpc(BARRACUDA_KNIGHT2);

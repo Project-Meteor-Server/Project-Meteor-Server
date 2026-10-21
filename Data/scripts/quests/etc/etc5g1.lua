@@ -95,7 +95,7 @@ function onTalk(player, quest, npc)
             if (not hasQuestItem) then
                 callClientFunction(player, "delegateEvent", player, quest, "processEventOTOPAPOTTOPAStart");
                 giveWantedItem(player);
-                npc:SetQuestGraphic(player, QFLAG_NONE);
+                npc:SetQuestGraphic(player, QFLAG_OFF);
             else
                 callClientFunction(player, "delegateEvent", player, quest, "processEventOTOPAPOTTOPAStart_2");
             end 

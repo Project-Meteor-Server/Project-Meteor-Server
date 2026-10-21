@@ -57,11 +57,11 @@ function onStateChange(player, quest, sequence)
 	local data = quest:GetData();
 	if (sequence == SEQ_000) then
         quest:SetENpc(GINNADE);
-		quest:SetENpc(ZONGGO,     	(not data:GetFlag(FLAG_TALKED_ZONGGO) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(WHAHTOA,		(not data:GetFlag(FLAG_TALKED_WHAHTOA) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(FERDILLAIX,   (not data:GetFlag(FLAG_TALKED_FERDILLAIX) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(FRAILOISE,    (not data:GetFlag(FLAG_TALKED_FRAILOISE) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(ARNEGIS,      (not data:GetFlag(FLAG_TALKED_ARNEGIS) and QFLAG_TALK or QFLAG_NONE));
+		quest:SetENpc(ZONGGO,     	(not data:GetFlag(FLAG_TALKED_ZONGGO) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(WHAHTOA,		(not data:GetFlag(FLAG_TALKED_WHAHTOA) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(FERDILLAIX,   (not data:GetFlag(FLAG_TALKED_FERDILLAIX) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(FRAILOISE,    (not data:GetFlag(FLAG_TALKED_FRAILOISE) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(ARNEGIS,      (not data:GetFlag(FLAG_TALKED_ARNEGIS) and QFLAG_TALK or QFLAG_OFF));
 	elseif (sequence == SEQ_001) then
 		quest:SetENpc(GINNADE, QFLAG_REWARD);
 	end	

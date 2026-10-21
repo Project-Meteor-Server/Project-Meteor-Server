@@ -53,10 +53,10 @@ function onStateChange(player, quest, sequence)
 	elseif (sequence == SEQ_000) then
 		local data = quest:GetData();
         quest:SetENpc(SWAENHYLT);
-		quest:SetENpc(FLAVIELLE,    (not data:GetFlag(FLAG_TALKED_FLAVIELLE) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(KEKETO,   	(not data:GetFlag(FLAG_TALKED_KEKETO) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(CEADDA,       (not data:GetFlag(FLAG_TALKED_CEADDA) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(THIMM,       	(not data:GetFlag(FLAG_TALKED_THIMM) and QFLAG_TALK or QFLAG_NONE));
+		quest:SetENpc(FLAVIELLE,    (not data:GetFlag(FLAG_TALKED_FLAVIELLE) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(KEKETO,   	(not data:GetFlag(FLAG_TALKED_KEKETO) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(CEADDA,       (not data:GetFlag(FLAG_TALKED_CEADDA) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(THIMM,       	(not data:GetFlag(FLAG_TALKED_THIMM) and QFLAG_TALK or QFLAG_OFF));
     elseif (sequence == SEQ_001) then 
         quest:SetENpc(SWAENHYLT, QFLAG_REWARD);
     end

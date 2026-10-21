@@ -57,11 +57,11 @@ function onStateChange(player, quest, sequence)
 	local data = quest:GetData();
 	if (sequence == SEQ_000) then
         quest:SetENpc(DYMPNA);
-		quest:SetENpc(AERGWYNT,     (not data:GetFlag(FLAG_TALKED_AERGWYNT) and QFLAG_TALK or QFLAG_NONE), true, false, true);
-		quest:SetENpc(FERDILLAIX,   (not data:GetFlag(FLAG_TALKED_FERDILLAIX) and QFLAG_TALK or QFLAG_NONE), true, false, true);
-		quest:SetENpc(BUBUROON,		(not data:GetFlag(FLAG_TALKED_BUBUROON) and QFLAG_TALK or QFLAG_NONE), true, false, true);
-		quest:SetENpc(RBAHARRA,     (not data:GetFlag(FLAG_TALKED_RBAHARRA) and QFLAG_TALK or QFLAG_NONE), true, false, true);
-		quest:SetENpc(FUFUNA,       (not data:GetFlag(FLAG_TALKED_FUFUNA) and QFLAG_TALK or QFLAG_NONE), true, false, true);
+		quest:SetENpc(AERGWYNT,     (not data:GetFlag(FLAG_TALKED_AERGWYNT) and QFLAG_TALK or QFLAG_OFF), true, false, true);
+		quest:SetENpc(FERDILLAIX,   (not data:GetFlag(FLAG_TALKED_FERDILLAIX) and QFLAG_TALK or QFLAG_OFF), true, false, true);
+		quest:SetENpc(BUBUROON,		(not data:GetFlag(FLAG_TALKED_BUBUROON) and QFLAG_TALK or QFLAG_OFF), true, false, true);
+		quest:SetENpc(RBAHARRA,     (not data:GetFlag(FLAG_TALKED_RBAHARRA) and QFLAG_TALK or QFLAG_OFF), true, false, true);
+		quest:SetENpc(FUFUNA,       (not data:GetFlag(FLAG_TALKED_FUFUNA) and QFLAG_TALK or QFLAG_OFF), true, false, true);
 	elseif (sequence == SEQ_001) then
 		quest:SetENpc(DYMPNA, QFLAG_REWARD);
 	end	

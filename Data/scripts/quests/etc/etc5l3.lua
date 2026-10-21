@@ -84,11 +84,11 @@ function onStateChange(player, quest, sequence)
     elseif (sequence == SEQ_000) then
         quest:SetENpc(COFFER_AND_COFFIN_PUSH, QFLAG_PUSH, false, true, false, true);
     elseif (sequence == SEQ_005) then
-        local bane1Flag = data:GetFlag(FLAG_SEQ005_BANE_1) and QFLAG_NONE or QFLAG_TALK;
-        local bane2Flag = data:GetFlag(FLAG_SEQ005_BANE_2) and QFLAG_NONE or QFLAG_TALK;
-        local bane3Flag = data:GetFlag(FLAG_SEQ005_BANE_3) and QFLAG_NONE or QFLAG_TALK;
-        local bane4Flag = data:GetFlag(FLAG_SEQ005_BANE_4) and QFLAG_NONE or QFLAG_TALK;
-        local bane5Flag = data:GetFlag(FLAG_SEQ005_BANE_5) and QFLAG_NONE or QFLAG_TALK;
+        local bane1Flag = data:GetFlag(FLAG_SEQ005_BANE_1) and QFLAG_OFF or QFLAG_TALK;
+        local bane2Flag = data:GetFlag(FLAG_SEQ005_BANE_2) and QFLAG_OFF or QFLAG_TALK;
+        local bane3Flag = data:GetFlag(FLAG_SEQ005_BANE_3) and QFLAG_OFF or QFLAG_TALK;
+        local bane4Flag = data:GetFlag(FLAG_SEQ005_BANE_4) and QFLAG_OFF or QFLAG_TALK;
+        local bane5Flag = data:GetFlag(FLAG_SEQ005_BANE_5) and QFLAG_OFF or QFLAG_TALK;
     
         quest:SetENpc(COFFER_AND_COFFIN_PUSH, QFLAG_PUSH, false, true, false, true);
         quest:SetENpc(HILDIBRAND);

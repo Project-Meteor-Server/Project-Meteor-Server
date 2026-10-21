@@ -68,12 +68,12 @@ function onStateChange(player, quest, sequence)
 		-- Setup states incase we loaded in.
 		local data = quest:GetData();
 		
-		local rostnsthalFlag = data:GetFlag(FLAG_SEQ000_MINITUT1) and QFLAG_NONE or QFLAG_TALK;
-		local vixenFlag = data:GetFlag(FLAG_SEQ000_MINITUT2) and QFLAG_NONE or QFLAG_TALK;
-		local babyfaceFlag = data:GetFlag(FLAG_SEQ000_MINITUT3) and QFLAG_NONE or QFLAG_TALK;
+		local rostnsthalFlag = data:GetFlag(FLAG_SEQ000_MINITUT1) and QFLAG_OFF or QFLAG_TALK;
+		local vixenFlag = data:GetFlag(FLAG_SEQ000_MINITUT2) and QFLAG_OFF or QFLAG_TALK;
+		local babyfaceFlag = data:GetFlag(FLAG_SEQ000_MINITUT3) and QFLAG_OFF or QFLAG_TALK;
 		local rostnsthalCanPush = not data:GetFlag(FLAG_SEQ000_MINITUT0);
 		local exitCanPush = data:GetFlags() == 0xF;
-		local exitFlag = data:GetFlags() == 0xF and QFLAG_PUSH or QFLAG_NONE;		
+		local exitFlag = data:GetFlags() == 0xF and QFLAG_PUSH or QFLAG_OFF;		
 		
 		quest:SetENpc(WELLTRAVELED_MERCHANT);
 		quest:SetENpc(TIPSY_ADVENTURER);
@@ -103,7 +103,7 @@ function onStateChange(player, quest, sequence)
 		quest:SetENpc(WELLTRAVELED_MERCHANT);
 		quest:SetENpc(VOLUPTUOUS_VIXEN);
 		quest:SetENpc(LANKY_TRAVELER);
-		quest:SetENpc(PRIVAREA_PAST_EXIT, QFLAG_NONE, false, true);
+		quest:SetENpc(PRIVAREA_PAST_EXIT, QFLAG_OFF, false, true);
 	end
 end
 

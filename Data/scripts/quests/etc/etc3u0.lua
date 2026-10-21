@@ -57,11 +57,11 @@ function onStateChange(player, quest, sequence)
 	local data = quest:GetData();
 	if (sequence == SEQ_000) then
         quest:SetENpc(FRUHYBOLG);
-		quest:SetENpc(VANNES,       (not data:GetFlag(FLAG_TALKED_VANNES) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(JEGER,   		(not data:GetFlag(FLAG_TALKED_JEGER) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(LETTICE,      (not data:GetFlag(FLAG_TALKED_LETTICE) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(ZOENGTERBIN,  (not data:GetFlag(FLAG_TALKED_ZOENGTERBIN) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(THIMM,        (not data:GetFlag(FLAG_TALKED_THIMM) and QFLAG_TALK or QFLAG_NONE));
+		quest:SetENpc(VANNES,       (not data:GetFlag(FLAG_TALKED_VANNES) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(JEGER,   		(not data:GetFlag(FLAG_TALKED_JEGER) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(LETTICE,      (not data:GetFlag(FLAG_TALKED_LETTICE) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(ZOENGTERBIN,  (not data:GetFlag(FLAG_TALKED_ZOENGTERBIN) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(THIMM,        (not data:GetFlag(FLAG_TALKED_THIMM) and QFLAG_TALK or QFLAG_OFF));
 	elseif (sequence == SEQ_001) then
 		quest:SetENpc(FRUHYBOLG, QFLAG_REWARD);
 	end	

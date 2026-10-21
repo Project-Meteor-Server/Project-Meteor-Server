@@ -150,9 +150,9 @@ function onStateChange(player, quest, sequence)
 		local subseqMSK = data:GetCounter(CNTR_SEQ7_MSK);
 		-- Always active in this seqence
 		quest:SetENpc(BADERON);
-		quest:SetENpc(CHARLYS, subseqCUL == 0 and QFLAG_TALK or QFLAG_NONE);
+		quest:SetENpc(CHARLYS, subseqCUL == 0 and QFLAG_TALK or QFLAG_OFF);
 		-- Down and Up the MSK guild
-		quest:SetENpc(ISANDOREL, (subseqMSK == 0 or subseqMSK == 2) and QFLAG_TALK or QFLAG_NONE);
+		quest:SetENpc(ISANDOREL, (subseqMSK == 0 or subseqMSK == 2) and QFLAG_TALK or QFLAG_OFF);
 		if (subseqMSK == 1) then
 			quest:SetENpc(MSK_TRIGGER, QFLAG_PUSH, false, true);
 		elseif (subseqMSK == 2) then
@@ -169,7 +169,7 @@ function onStateChange(player, quest, sequence)
 		quest:SetENpc(ADVENTURER1);
 		quest:SetENpc(ADVENTURER2);
 		quest:SetENpc(ADVENTURER3);
-		quest:SetENpc(ECHO_EXIT_TRIGGER, subseqMSK == 3 and QFLAG_PUSH or QFLAG_NONE, false, subseqMSK == 3);					
+		quest:SetENpc(ECHO_EXIT_TRIGGER, subseqMSK == 3 and QFLAG_PUSH or QFLAG_OFF, false, subseqMSK == 3);					
 	elseif (sequence == SEQ_035) then
 		quest:SetENpc(NNMULIKA, QFLAG_TALK);
 	elseif (sequence == SEQ_040) then

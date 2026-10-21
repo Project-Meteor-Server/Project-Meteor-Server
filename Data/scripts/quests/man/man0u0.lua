@@ -110,15 +110,15 @@ function onStateChange(player, quest, sequence)
     if (sequence == SEQ_000) then
         -- Setup states incase we loaded in.
         local asciliaCanPush = not data:GetFlag(FLAG_SEQ000_MINITUT0);
-        local asciliaFlag = data:GetFlag(FLAG_SEQ000_MINITUT1) and QFLAG_NONE or QFLAG_TALK;
-        local fretfulfarmhandFlag = data:GetFlag(FLAG_SEQ000_MINITUT2) and QFLAG_NONE or QFLAG_TALK;
-        local gildiggingmistressFlag = data:GetFlag(FLAG_SEQ000_MINITUT3) and QFLAG_NONE or QFLAG_TALK;
+        local asciliaFlag = data:GetFlag(FLAG_SEQ000_MINITUT1) and QFLAG_OFF or QFLAG_TALK;
+        local fretfulfarmhandFlag = data:GetFlag(FLAG_SEQ000_MINITUT2) and QFLAG_OFF or QFLAG_TALK;
+        local gildiggingmistressFlag = data:GetFlag(FLAG_SEQ000_MINITUT3) and QFLAG_OFF or QFLAG_TALK;
 
-        local exitFlag = data:GetFlags() == 0xF and QFLAG_PUSH or QFLAG_NONE;
+        local exitFlag = data:GetFlags() == 0xF and QFLAG_PUSH or QFLAG_OFF;
 
         if (asciliaCanPush) then
-            fretfulfarmhandFlag = QFLAG_NONE;
-            gildiggingmistressFlag = QFLAG_NONE;
+            fretfulfarmhandFlag = QFLAG_OFF;
+            gildiggingmistressFlag = QFLAG_OFF;
         end
 
         --SetENpc(classId, byte flagType=0,isTalkEnabled, isPushEnabled, isEmoteEnabled, isSpawned)
@@ -134,10 +134,10 @@ function onStateChange(player, quest, sequence)
         quest:SetENpc(TWITTERING_TOMBOY);
         quest:SetENpc(STOCKY_STRANGER);
         quest:SetENpc(EXIT_TRIGGER, exitFlag, false, true);
-        quest:SetENpc(OPENING_STOPER_ULDAH, QFLAG_NONE, false, false, true);
+        quest:SetENpc(OPENING_STOPER_ULDAH, QFLAG_OFF, false, false, true);
 
     elseif (sequence == SEQ_010) then
-        local yayatokiFlag = data:GetFlag(FLAG_SEQ010_TALK0) and QFLAG_NONE or QFLAG_TALK;
+        local yayatokiFlag = data:GetFlag(FLAG_SEQ010_TALK0) and QFLAG_OFF or QFLAG_TALK;
         local uldahopeningexitFlag = QFLAG_PUSH;
         quest:SetENpc(KEEN_EYED_MERCHANT);
         quest:SetENpc(HIGH_SPIRITED_FELLOW);
@@ -147,7 +147,7 @@ function onStateChange(player, quest, sequence)
         quest:SetENpc(TOOTH_GRINDING_TRAVELER);
         quest:SetENpc(FULL_LIPPED_FILLE);
         quest:SetENpc(YAYATOKI, yayatokiFlag);
-        quest:SetENpc(BLOCKER, QFLAG_NONE, false, true);
+        quest:SetENpc(BLOCKER, QFLAG_OFF, false, true);
         quest:SetENpc(ULDAH_OPENING_EXIT, uldahopeningexitFlag, false, true);
     end
 end

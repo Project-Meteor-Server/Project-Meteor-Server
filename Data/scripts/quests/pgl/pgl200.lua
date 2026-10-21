@@ -88,8 +88,8 @@ function onStateChange(player, quest, sequence)
 		quest:SetENpc(ENPC_SULTRY_STRUMPET);
 		quest:SetENpc(ENPC_BEAUTEOUS_BEAUTY);
 		quest:SetENpc(ENPC_ESPERAUNCE, QFLAG_TALK);
-		quest:SetENpc(ENPC_TRIGGER_GSM, QFLAG_NONE, false, true);
-		quest:SetENpc(ENPC_PRIVAREA_EXIT, QFLAG_NONE, false, true);
+		quest:SetENpc(ENPC_TRIGGER_GSM, QFLAG_OFF, false, true);
+		quest:SetENpc(ENPC_PRIVAREA_EXIT, QFLAG_OFF, false, true);
 	elseif (sequence == SEQ_010) then
 		quest:SetENpc(ENPC_SULTRY_STRUMPET);
 		quest:SetENpc(ENPC_BEAUTEOUS_BEAUTY);

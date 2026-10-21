@@ -86,12 +86,12 @@ function onStateChange(player, quest, sequence)
 	elseif (sequence == SEQ_005) then
 		quest:SetENpc(MINFILIA, QFLAG_TALK);
 		quest:SetENpc(EVENT_DOOR_OFFICE_W, QFLAG_PUSH, false, true);
-		quest:SetENpc(EVENT_DOOR_OFFICE_E, QFLAG_NONE, false, true);
+		quest:SetENpc(EVENT_DOOR_OFFICE_E, QFLAG_OFF, false, true);
 		quest:SetENpc(TATARU);
 	elseif (sequence == SEQ_010) then
 		quest:SetENpc(MINFILIA, QFLAG_TALK);
 		quest:SetENpc(EVENT_DOOR_OFFICE_W, QFLAG_PUSH, false, true);
-		quest:SetENpc(EVENT_DOOR_OFFICE_E, QFLAG_NONE, false, true);
+		quest:SetENpc(EVENT_DOOR_OFFICE_E, QFLAG_OFF, false, true);
 		quest:SetENpc(TATARU);
 	elseif (sequence == SEQ_020) then
 		quest:SetENpc(TATARU, QFLAG_TALK);
@@ -111,7 +111,7 @@ function onStateChange(player, quest, sequence)
 	end
 	
 	-- All the other ENpcs in the Waking Sands
-	quest:SetENpc(MARKET_ENTRENCE, QFLAG_NONE, false, true);
+	quest:SetENpc(MARKET_ENTRENCE, QFLAG_OFF, false, true);
 	quest:SetENpc(EVENT_DOOR_EXIT, QFLAG_PUSH, false, true);
 	quest:SetENpc(SATZFLOH);
 	quest:SetENpc(PERCEVAINS);

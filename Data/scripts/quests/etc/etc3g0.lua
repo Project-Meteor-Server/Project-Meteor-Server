@@ -57,11 +57,11 @@ function onStateChange(player, quest, sequence)
 	local data = quest:GetData();
 	if (sequence == SEQ_000) then
         quest:SetENpc(KINNISON);
-		quest:SetENpc(SYBELL,           (not data:GetFlag(FLAG_TALKED_SYBELL) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(KHUMA_MOSHROCA,   (not data:GetFlag(FLAG_TALKED_KHUMA_MOSHROCA) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(NELLAURE,         (not data:GetFlag(FLAG_TALKED_NELLAURE) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(MESTONNAUX,       (not data:GetFlag(FLAG_TALKED_MESTONNAUX) and QFLAG_TALK or QFLAG_NONE));
-		quest:SetENpc(LEFWYNE,          (not data:GetFlag(FLAG_TALKED_LEFWYNE) and QFLAG_TALK or QFLAG_NONE));
+		quest:SetENpc(SYBELL,           (not data:GetFlag(FLAG_TALKED_SYBELL) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(KHUMA_MOSHROCA,   (not data:GetFlag(FLAG_TALKED_KHUMA_MOSHROCA) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(NELLAURE,         (not data:GetFlag(FLAG_TALKED_NELLAURE) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(MESTONNAUX,       (not data:GetFlag(FLAG_TALKED_MESTONNAUX) and QFLAG_TALK or QFLAG_OFF));
+		quest:SetENpc(LEFWYNE,          (not data:GetFlag(FLAG_TALKED_LEFWYNE) and QFLAG_TALK or QFLAG_OFF));
 	elseif (sequence == SEQ_001) then
 		quest:SetENpc(KINNISON, QFLAG_REWARD);
 	end	

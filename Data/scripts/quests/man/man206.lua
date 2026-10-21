@@ -96,7 +96,7 @@ function onStateChange(player, quest, sequence)
 		quest:SetENpc(ZOXIO);
 		quest:SetENpc(DILUXIO);
 		quest:SetENpc(EVENT_DOOR_OFFICE_W, QFLAG_PUSH, false, true);
-		quest:SetENpc(EVENT_DOOR_OFFICE_E, QFLAG_NONE, false, true);
+		quest:SetENpc(EVENT_DOOR_OFFICE_E, QFLAG_OFF, false, true);
 	end
 	
 	-- These ENPCs appear between accepting the quest and before completing it.
@@ -138,12 +138,12 @@ function onStateChange(player, quest, sequence)
 		quest:SetENpc(ZOXIO);
 		quest:SetENpc(DILUXIO);
 		quest:SetENpc(DOKIXIA);
-		quest:SetENpc(DUTY_CUTSCENE_TRIGGER, QFLAG_NONE, false, true);
+		quest:SetENpc(DUTY_CUTSCENE_TRIGGER, QFLAG_OFF, false, true);
 	end
 		
 	-- Waking Sands
-	quest:SetENpc(MARKET_ENTRENCE, sequence == SEQ_ACCEPT and QFLAG_PUSH or QFLAG_NONE, false, true);
-	quest:SetENpc(EVENT_DOOR_EXIT, QFLAG_NONE, false, true);
+	quest:SetENpc(MARKET_ENTRENCE, sequence == SEQ_ACCEPT and QFLAG_PUSH or QFLAG_OFF, false, true);
+	quest:SetENpc(EVENT_DOOR_EXIT, QFLAG_OFF, false, true);
 end
 
 function onTalk(player, quest, npc)
