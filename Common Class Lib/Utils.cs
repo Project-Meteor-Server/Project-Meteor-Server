@@ -245,11 +245,31 @@ namespace Meteor.Common
             {
                 for (var bitCount = 0; bitCount < 8; bitCount++)
                 {
-                    if (i + bitCount >= array.Length)
+                    if (i + bitCount >= array.Length - 1)
                         break;
                     data[dataCounter] = (byte)(((array[i + bitCount] ? 1 : 0) << 7 - bitCount) | data[dataCounter]);
                 }
                 dataCounter++;
+            }
+
+            return data;
+        }
+
+        public static bool[] ConvertBinaryStreamToBoolArray(byte[] bytes)
+        {
+            bool[] data = new bool[bytes.Length * 8];
+
+            int boolCounter = 0;
+            for (int i = 0; i < bytes.Length; i ++)
+            {
+                if (bytes[i] == 0)
+                {
+                    boolCounter += 8;
+                    continue;
+                }
+
+                for (int bitCount = 0; bitCount < 8; bitCount++)
+                    data[boolCounter++] = (bytes[i] >> bitCount & 1) == 1;                
             }
 
             return data;
@@ -267,7 +287,20 @@ namespace Meteor.Common
 
         public static string ReadNullTermString(BinaryReader reader, int maxSize = 0x20)
         {
-            return Encoding.ASCII.GetString(reader.ReadBytes(maxSize)).Trim(new[] { '\0' });
+            long pos = reader.BaseStream.Position;
+            int size = 0;
+            for (int i = 0; i < maxSize; i++)
+            {
+                if (reader.ReadByte() == 0)
+                {
+                    size = i;
+                    break;
+                }
+            }
+            reader.BaseStream.Seek(pos, SeekOrigin.Begin);
+            string result =  Encoding.ASCII.GetString(reader.ReadBytes(size));
+            reader.BaseStream.Seek(pos + maxSize, SeekOrigin.Begin);
+            return result;
         }
 
         public static void WriteNullTermString(BinaryWriter writer, string value, int maxSize = 0x20)

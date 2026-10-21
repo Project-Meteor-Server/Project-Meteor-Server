@@ -14,14 +14,7 @@ Sets player or <targetname>'s maximum tp to <tp> and heals them to full.
 function onTrigger(player, argc, tp)
     local sender = "[setmaxtp] ";
     
+    tp = tonumber(tp) or 0;
+	player:AddTP(tp);
     
-    
-    if player then
-        tp = tonumber(tp) or 0;
-        location = INVENTORY_CURRENCY;
-        
-        player:SetTP(tp);
-    else
-        print(sender.."unable to add experience, ensure player name is valid.");
-    end;
 end;

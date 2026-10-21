@@ -26,6 +26,11 @@
       "params": []
     },
     {
+      "name": "GetRecipeResolver",
+      "returns": "RecipeResolver",
+      "params": []
+    },
+    {
       "name": "GetStaticActor",
       "returns": "Actor",
       "params": [
@@ -62,18 +67,28 @@
       "fullName": "Meteor.Map.Actors.Actor",
       "members": [
         {
+          "name": "DisplayName",
+          "type": "string",
+          "writable": true
+        },
+        {
           "name": "INVALID_ACTORID",
           "type": "number",
           "static": true,
           "writable": true
         },
         {
-          "name": "actorId",
+          "name": "Id",
           "type": "number",
           "writable": true
         },
         {
-          "name": "actorName",
+          "name": "LocalizedDisplayName",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Name",
           "type": "string",
           "writable": true
         },
@@ -103,27 +118,12 @@
           "writable": true
         },
         {
-          "name": "customDisplayName",
-          "type": "string",
-          "writable": true
-        },
-        {
-          "name": "displayNameId",
-          "type": "number",
-          "writable": true
-        },
-        {
           "name": "eventConditions",
           "type": "EventList",
           "writable": true
         },
         {
           "name": "isAtSpawn",
-          "type": "boolean",
-          "writable": true
-        },
-        {
-          "name": "isZoning",
           "type": "boolean",
           "writable": true
         },
@@ -183,16 +183,6 @@
           "writable": true
         },
         {
-          "name": "privateArea",
-          "type": "string",
-          "writable": true
-        },
-        {
-          "name": "privateAreaType",
-          "type": "number",
-          "writable": true
-        },
-        {
           "name": "rotation",
           "type": "number",
           "writable": true
@@ -213,23 +203,18 @@
           "writable": true
         },
         {
-          "name": "zone",
-          "type": "Area",
-          "writable": true
-        },
-        {
           "name": "zone2",
           "type": "Area",
           "writable": true
         },
         {
-          "name": "zoneId",
-          "type": "number",
+          "name": "CurrentArea",
+          "type": "Area",
           "writable": true
         },
         {
-          "name": "zoneId2",
-          "type": "number",
+          "name": "IsZoneing",
+          "type": "boolean",
           "writable": true
         }
       ],
@@ -488,7 +473,7 @@
             },
             {
               "name": "pushEnabled",
-              "type": "boolean",
+              "type": "boolean?",
               "optional": true
             },
             {
@@ -535,16 +520,6 @@
         {
           "name": "GetSubState",
           "returns": "SubState",
-          "params": []
-        },
-        {
-          "name": "GetZone",
-          "returns": "Area",
-          "params": []
-        },
-        {
-          "name": "GetZoneID",
-          "returns": "number",
           "params": []
         },
         {
@@ -695,8 +670,13 @@
               "optional": true
             },
             {
-              "name": "zoneId",
-              "type": "number",
+              "name": "instant",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "player",
+              "type": "Player",
               "optional": true
             }
           ]
@@ -850,11 +830,6 @@
           "writable": true
         },
         {
-          "name": "regionId",
-          "type": "number",
-          "writable": true
-        },
-        {
           "name": "weatherCommon",
           "type": "number",
           "writable": true
@@ -870,9 +845,16 @@
           "writable": true
         },
         {
-          "name": "zoneName",
-          "type": "string",
-          "writable": true
+          "name": "RegionId",
+          "type": "number"
+        },
+        {
+          "name": "ZoneId",
+          "type": "number"
+        },
+        {
+          "name": "ZoneName",
+          "type": "string"
         }
       ],
       "methods": [
@@ -893,6 +875,24 @@
             {
               "name": "actor",
               "type": "Actor"
+            },
+            {
+              "name": "packet",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "BroadcastPacketAroundPoint",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
             },
             {
               "name": "packet",
@@ -1184,6 +1184,16 @@
           "params": []
         },
         {
+          "name": "GetPrivateAreaName",
+          "returns": "string",
+          "params": []
+        },
+        {
+          "name": "GetPrivateAreaType",
+          "returns": "number",
+          "params": []
+        },
+        {
           "name": "GetSpawnPackets",
           "returns": "any[]",
           "params": []
@@ -1191,6 +1201,16 @@
         {
           "name": "GetWeatherDirector",
           "returns": "Director",
+          "params": []
+        },
+        {
+          "name": "IsPrivate",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsPublic",
+          "returns": "boolean",
           "params": []
         },
         {
@@ -4201,8 +4221,63 @@
       "methods": []
     },
     {
+      "name": "DebugWork",
+      "fullName": "Meteor.Map.Actors.Debug.DebugWork",
+      "members": [
+        {
+          "name": "enableWidget",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "printDisp",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "printDispFront",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "printProcessing",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "printProcessingLog",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "serverTimeOffset",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": []
+    },
+    {
       "name": "DebugProg",
       "fullName": "Meteor.Map.Actors.DebugProg",
+      "base": "Actor",
+      "members": [],
+      "methods": [
+        {
+          "name": "CreateScriptBindPacket",
+          "returns": "any",
+          "params": []
+        },
+        {
+          "name": "GetSpawnPackets",
+          "returns": "any[]",
+          "params": []
+        }
+      ]
+    },
+    {
+      "name": "DebugProg2",
+      "fullName": "Meteor.Map.Actors.DebugProg2",
       "base": "Actor",
       "members": [],
       "methods": [
@@ -4450,6 +4525,11 @@
       "fullName": "Meteor.Map.Actors.Player",
       "base": "Character",
       "members": [
+        {
+          "name": "LoginDreamCode",
+          "type": "number",
+          "writable": true
+        },
         {
           "name": "MAXEXP",
           "type": "number[]",
@@ -4812,6 +4892,11 @@
           "writable": true
         },
         {
+          "name": "questStateManager",
+          "type": "QuestStateManager",
+          "writable": true
+        },
+        {
           "name": "rentalExpireTime",
           "type": "number",
           "writable": true
@@ -4835,15 +4920,35 @@
           "name": "timers",
           "type": "number[]",
           "writable": true
+        },
+        {
+          "name": "SNpcCoordinate",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "SNpcNickname",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "SNpcPersonality",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "SNpcSkin",
+          "type": "number",
+          "writable": true
         }
       ],
       "methods": [
         {
           "name": "AbandonQuest",
-          "returns": "nil",
+          "returns": "boolean",
           "params": [
             {
-              "name": "id",
+              "name": "questId",
               "type": "number"
             }
           ]
@@ -4864,12 +4969,37 @@
           ]
         },
         {
+          "name": "AcceptQuest",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "instance",
+              "type": "Quest"
+            },
+            {
+              "name": "isSilent",
+              "type": "boolean",
+              "optional": true
+            }
+          ]
+        },
+        {
           "name": "AcceptTrade",
           "returns": "nil",
           "params": [
             {
               "name": "accepted",
               "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "AddAwardedRecipe",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "recipe",
+              "type": "Recipe"
             }
           ]
         },
@@ -4918,17 +5048,12 @@
           ]
         },
         {
-          "name": "AddQuest",
+          "name": "AddNpcLs",
           "returns": "nil",
           "params": [
             {
-              "name": "name",
-              "type": "string"
-            },
-            {
-              "name": "isSilent",
-              "type": "boolean",
-              "optional": true
+              "name": "npcLsId",
+              "type": "number"
             }
           ]
         },
@@ -4944,6 +5069,31 @@
               "name": "isSilent",
               "type": "boolean",
               "optional": true
+            }
+          ]
+        },
+        {
+          "name": "AddQuest",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "isSilent",
+              "type": "boolean",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "AddRecentRecipe",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "recipe",
+              "type": "Recipe"
             }
           ]
         },
@@ -5033,26 +5183,6 @@
           "params": []
         },
         {
-          "name": "CanAcceptQuest",
-          "returns": "boolean",
-          "params": [
-            {
-              "name": "name",
-              "type": "string"
-            }
-          ]
-        },
-        {
-          "name": "CanAcceptQuest",
-          "returns": "boolean",
-          "params": [
-            {
-              "name": "id",
-              "type": "number"
-            }
-          ]
-        },
-        {
           "name": "CanUse",
           "returns": "boolean",
           "params": [
@@ -5107,11 +5237,35 @@
           ]
         },
         {
+          "name": "ChangeIntoNpc",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "npc",
+              "type": "Npc"
+            }
+          ]
+        },
+        {
           "name": "ChangeMusic",
           "returns": "nil",
           "params": [
             {
               "name": "musicId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "ChangeMusic",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "musicId",
+              "type": "number"
+            },
+            {
+              "name": "musicTrackMode",
               "type": "number"
             }
           ]
@@ -5172,18 +5326,8 @@
           "returns": "nil",
           "params": [
             {
-              "name": "name",
-              "type": "string"
-            }
-          ]
-        },
-        {
-          "name": "CompleteQuest",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "id",
-              "type": "number"
+              "name": "completed",
+              "type": "Quest"
             }
           ]
         },
@@ -5201,6 +5345,11 @@
         {
           "name": "Create0x132Packets",
           "returns": "any[]",
+          "params": []
+        },
+        {
+          "name": "CreateNamePacket",
+          "returns": "any",
           "params": []
         },
         {
@@ -5344,6 +5493,11 @@
           "params": []
         },
         {
+          "name": "ForceQuestStateUpdate",
+          "returns": "nil",
+          "params": []
+        },
+        {
           "name": "GetActorInInstance",
           "returns": "Actor",
           "params": [
@@ -5352,6 +5506,11 @@
               "type": "number"
             }
           ]
+        },
+        {
+          "name": "GetAwardedRecipes",
+          "returns": "Recipe[]",
+          "params": []
         },
         {
           "name": "GetCurrentClassOrJob",
@@ -5449,6 +5608,11 @@
           "params": []
         },
         {
+          "name": "GetLoginDreamCode",
+          "returns": "number",
+          "params": []
+        },
+        {
           "name": "GetMountState",
           "returns": "number",
           "params": []
@@ -5493,6 +5657,16 @@
           "returns": "number",
           "params": [
             {
+              "name": "quest",
+              "type": "Quest"
+            }
+          ]
+        },
+        {
+          "name": "GetQuestSlot",
+          "returns": "number",
+          "params": [
+            {
               "name": "id",
               "type": "number"
             }
@@ -5507,6 +5681,31 @@
               "type": "Npc"
             }
           ]
+        },
+        {
+          "name": "GetRecentRecipes",
+          "returns": "Recipe[]",
+          "params": []
+        },
+        {
+          "name": "GetSNpcCoordinate",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "GetSNpcNickname",
+          "returns": "string",
+          "params": []
+        },
+        {
+          "name": "GetSNpcPersonality",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "GetSNpcSkin",
+          "returns": "number",
+          "params": []
         },
         {
           "name": "GetSpawnPackets",
@@ -5541,11 +5740,6 @@
               "type": "Npc"
             }
           ]
-        },
-        {
-          "name": "GetZone",
-          "returns": "Area",
-          "params": []
         },
         {
           "name": "GraphicChange",
@@ -5602,8 +5796,18 @@
           ]
         },
         {
-          "name": "HandleNpcLS",
+          "name": "HandleBNpcKill",
           "returns": "nil",
+          "params": [
+            {
+              "name": "bnpcClassId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "HandleNpcLs",
+          "returns": "boolean",
           "params": [
             {
               "name": "id",
@@ -5642,6 +5846,26 @@
             {
               "name": "slot",
               "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "HasNpcLs",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "npcLsId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "HasQuest",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "questInstance",
+              "type": "Quest"
             }
           ]
         },
@@ -5720,17 +5944,7 @@
           "returns": "boolean",
           "params": [
             {
-              "name": "questName",
-              "type": "string"
-            }
-          ]
-        },
-        {
-          "name": "IsQuestCompleted",
-          "returns": "boolean",
-          "params": [
-            {
-              "name": "questId",
+              "name": "id",
               "type": "number"
             }
           ]
@@ -5938,6 +6152,26 @@
           ]
         },
         {
+          "name": "OnWorkSyncRequest",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "propertyName",
+              "type": "string"
+            },
+            {
+              "name": "from",
+              "type": "number",
+              "optional": true
+            },
+            {
+              "name": "to",
+              "type": "number",
+              "optional": true
+            }
+          ]
+        },
+        {
           "name": "PartyDisband",
           "returns": "nil",
           "params": []
@@ -6073,12 +6307,12 @@
           ]
         },
         {
-          "name": "RemoveQuestByQuestId",
+          "name": "RemoveQuest",
           "returns": "nil",
           "params": [
             {
-              "name": "id",
-              "type": "number"
+              "name": "name",
+              "type": "string"
             }
           ]
         },
@@ -6097,14 +6331,19 @@
           "returns": "nil",
           "params": [
             {
-              "name": "oldId",
-              "type": "number"
+              "name": "oldQuestInstance",
+              "type": "Quest"
             },
             {
-              "name": "newId",
-              "type": "number"
+              "name": "questName",
+              "type": "string"
             }
           ]
+        },
+        {
+          "name": "ResetMusic",
+          "returns": "nil",
+          "params": []
         },
         {
           "name": "RunEventFunction",
@@ -6213,7 +6452,7 @@
           ]
         },
         {
-          "name": "SendGameMessageCustomSender",
+          "name": "SendGameMessageDisplayName",
           "returns": "nil",
           "params": [
             {
@@ -6240,7 +6479,7 @@
           ]
         },
         {
-          "name": "SendGameMessageDisplayIDSender",
+          "name": "SendGameMessageLocalizedDisplayName",
           "returns": "nil",
           "params": [
             {
@@ -6442,6 +6681,16 @@
           ]
         },
         {
+          "name": "SetLoginDreamCode",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "code",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "SetMountState",
           "returns": "nil",
           "params": [
@@ -6452,11 +6701,11 @@
           ]
         },
         {
-          "name": "SetNpcLS",
+          "name": "SetNpcLs",
           "returns": "nil",
           "params": [
             {
-              "name": "npcLSId",
+              "name": "npcLsId",
               "type": "number"
             },
             {
@@ -6476,11 +6725,43 @@
           ]
         },
         {
+          "name": "SetQuestComplete",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "id",
+              "type": "number"
+            },
+            {
+              "name": "flag",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
           "name": "SetRepairRequest",
           "returns": "nil",
           "params": [
             {
               "name": "type",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetSNpc",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "nickname",
+              "type": "string"
+            },
+            {
+              "name": "actorClassId",
+              "type": "number"
+            },
+            {
+              "name": "classType",
               "type": "number"
             }
           ]
@@ -6675,9 +6956,14 @@
     },
     {
       "name": "Quest",
-      "fullName": "Meteor.Map.Actors.Quest",
+      "fullName": "Meteor.Map.Actors.QuestNS.Quest",
       "base": "Actor",
       "members": [
+        {
+          "name": "SEQ_COMPLETED",
+          "type": "number",
+          "static": true
+        },
         {
           "name": "SEQ_NOT_STARTED",
           "type": "number",
@@ -6686,7 +6972,236 @@
       ],
       "methods": [
         {
-          "name": "AddENpc",
+          "name": "EndOfNpcLsMsgs",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "GetData",
+          "returns": "QuestData",
+          "params": []
+        },
+        {
+          "name": "GetJournalInformation",
+          "returns": "any[]",
+          "params": []
+        },
+        {
+          "name": "GetJournalMapMarkerList",
+          "returns": "any[]",
+          "params": []
+        },
+        {
+          "name": "GetNpcLsMsgStep",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "GetQuestId",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "GetQuestState",
+          "returns": "QuestState",
+          "params": []
+        },
+        {
+          "name": "GetSequence",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "HasData",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "HasNpcLsMsgs",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "from",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "IsInstance",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsMainScenario",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsQuestENPC",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "caller",
+              "type": "Player"
+            },
+            {
+              "name": "npc",
+              "type": "Npc"
+            }
+          ]
+        },
+        {
+          "name": "IsQuestENPCByScript",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "caller",
+              "type": "Player"
+            },
+            {
+              "name": "npc",
+              "type": "Npc"
+            }
+          ]
+        },
+        {
+          "name": "NewNpcLsMsg",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "from",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "OnAbandon",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "OnAccept",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "OnCommand",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "caller",
+              "type": "Player"
+            },
+            {
+              "name": "npc",
+              "type": "Npc"
+            },
+            {
+              "name": "triggerName",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "name": "OnComplete",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "OnEmote",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "caller",
+              "type": "Player"
+            },
+            {
+              "name": "npc",
+              "type": "Npc"
+            },
+            {
+              "name": "triggerName",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "name": "OnKillBNpc",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "caller",
+              "type": "Player"
+            },
+            {
+              "name": "classId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "OnNotice",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "caller",
+              "type": "Player"
+            },
+            {
+              "name": "triggerName",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "name": "OnNpcLs",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "caller",
+              "type": "Player"
+            }
+          ]
+        },
+        {
+          "name": "OnPush",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "caller",
+              "type": "Player"
+            },
+            {
+              "name": "npc",
+              "type": "Npc"
+            },
+            {
+              "name": "triggerName",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "name": "OnTalk",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "caller",
+              "type": "Player"
+            },
+            {
+              "name": "npc",
+              "type": "Npc"
+            }
+          ]
+        },
+        {
+          "name": "ReadNpcLsMsg",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "SetENpc",
           "returns": "nil",
           "params": [
             {
@@ -6704,12 +7219,12 @@
               "optional": true
             },
             {
-              "name": "isEmoteEnabled",
+              "name": "isPushEnabled",
               "type": "boolean",
               "optional": true
             },
             {
-              "name": "isPushEnabled",
+              "name": "isEmoteEnabled",
               "type": "boolean",
               "optional": true
             },
@@ -6721,12 +7236,69 @@
           ]
         },
         {
+          "name": "SetTimeUpdate",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "val",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "StartSequence",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "sequence",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "StartSequenceForNpcLs",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "sequence",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Update",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "tick",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "UpdateENPCs",
+          "returns": "nil",
+          "params": []
+        }
+      ]
+    },
+    {
+      "name": "QuestData",
+      "fullName": "Meteor.Map.Actors.QuestNS.QuestData",
+      "members": [
+        {
+          "name": "Dirty",
+          "type": "boolean"
+        }
+      ],
+      "methods": [
+        {
           "name": "ClearData",
           "returns": "nil",
           "params": []
         },
         {
-          "name": "ClearENpcs",
+          "name": "ClearDirty",
           "returns": "nil",
           "params": []
         },
@@ -6741,27 +7313,12 @@
           ]
         },
         {
+          "name": "ClearNpcLs",
+          "returns": "nil",
+          "params": []
+        },
+        {
           "name": "DecCounter",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "num",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "DoAbandon",
-          "returns": "nil",
-          "params": []
-        },
-        {
-          "name": "DoComplete",
-          "returns": "nil",
-          "params": []
-        },
-        {
-          "name": "GetCounter",
           "returns": "number",
           "params": [
             {
@@ -6771,11 +7328,11 @@
           ]
         },
         {
-          "name": "GetENpcInstance",
-          "returns": "ENpcQuestInstance",
+          "name": "GetCounter",
+          "returns": "number",
           "params": [
             {
-              "name": "classId",
+              "name": "num",
               "type": "number"
             }
           ]
@@ -6796,28 +7353,23 @@
           "params": []
         },
         {
-          "name": "GetJournalInformation",
-          "returns": "any[]",
-          "params": []
-        },
-        {
-          "name": "GetJournalMapMarkerList",
-          "returns": "any[]",
-          "params": []
-        },
-        {
-          "name": "GetQuestId",
+          "name": "GetMsgStep",
           "returns": "number",
           "params": []
         },
         {
-          "name": "GetSequence",
+          "name": "GetNpcLsFrom",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "GetTime",
           "returns": "number",
           "params": []
         },
         {
           "name": "IncCounter",
-          "returns": "nil",
+          "returns": "number",
           "params": [
             {
               "name": "num",
@@ -6826,95 +7378,12 @@
           ]
         },
         {
-          "name": "IsQuestENPC",
-          "returns": "boolean",
-          "params": [
-            {
-              "name": "caller",
-              "type": "Player"
-            },
-            {
-              "name": "npc",
-              "type": "Npc"
-            }
-          ]
-        },
-        {
-          "name": "OnEmote",
+          "name": "IncrementNpcLsMsgStep",
           "returns": "nil",
-          "params": [
-            {
-              "name": "caller",
-              "type": "Player"
-            },
-            {
-              "name": "npc",
-              "type": "Npc"
-            },
-            {
-              "name": "command",
-              "type": "Command"
-            }
-          ]
+          "params": []
         },
         {
-          "name": "OnNotice",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "caller",
-              "type": "Player"
-            },
-            {
-              "name": "npc",
-              "type": "Npc"
-            }
-          ]
-        },
-        {
-          "name": "OnNpcLS",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "caller",
-              "type": "Player"
-            },
-            {
-              "name": "npcLSId",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "OnPush",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "caller",
-              "type": "Player"
-            },
-            {
-              "name": "npc",
-              "type": "Npc"
-            }
-          ]
-        },
-        {
-          "name": "OnTalk",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "caller",
-              "type": "Player"
-            },
-            {
-              "name": "npc",
-              "type": "Npc"
-            }
-          ]
-        },
-        {
-          "name": "SaveData",
+          "name": "Save",
           "returns": "nil",
           "params": []
         },
@@ -6943,17 +7412,29 @@
           ]
         },
         {
-          "name": "StartSequence",
+          "name": "SetNpcLsFrom",
           "returns": "nil",
           "params": [
             {
-              "name": "sequence",
+              "name": "from",
               "type": "number"
             }
           ]
         },
         {
-          "name": "UpdateENpc",
+          "name": "SetTimeNow",
+          "returns": "nil",
+          "params": []
+        }
+      ]
+    },
+    {
+      "name": "QuestState",
+      "fullName": "Meteor.Map.Actors.QuestNS.QuestState",
+      "members": [],
+      "methods": [
+        {
+          "name": "AddENpc",
           "returns": "nil",
           "params": [
             {
@@ -6961,20 +7442,67 @@
               "type": "number"
             },
             {
-              "name": "param",
-              "type": "number"
+              "name": "flagType",
+              "type": "number",
+              "optional": true
             },
             {
-              "name": "value",
-              "type": "any"
+              "name": "isTalkEnabled",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "isPushEnabled",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "isEmoteEnabled",
+              "type": "boolean",
+              "optional": true
+            },
+            {
+              "name": "isSpawned",
+              "type": "boolean",
+              "optional": true
             }
           ]
+        },
+        {
+          "name": "DeleteState",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "GetENpc",
+          "returns": "QuestENpc",
+          "params": [
+            {
+              "name": "classId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "HasENpc",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "classId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "UpdateState",
+          "returns": "nil",
+          "params": []
         }
       ]
     },
     {
-      "name": "ENpcQuestInstance",
-      "fullName": "Meteor.Map.Actors.Quest.ENpcQuestInstance",
+      "name": "QuestENpc",
+      "fullName": "Meteor.Map.Actors.QuestNS.QuestState.QuestENpc",
       "members": [
         {
           "name": "actorClassId",
@@ -7006,39 +7534,205 @@
           "writable": true
         }
       ],
+      "methods": [
+        {
+          "name": "IsChanged",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "flagType",
+              "type": "number"
+            },
+            {
+              "name": "isTalkEnabled",
+              "type": "boolean"
+            },
+            {
+              "name": "isPushEnabled",
+              "type": "boolean"
+            },
+            {
+              "name": "isEmoteEnabled",
+              "type": "boolean"
+            },
+            {
+              "name": "isSpawned",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "Update",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "flagType",
+              "type": "number"
+            },
+            {
+              "name": "isTalkEnabled",
+              "type": "boolean"
+            },
+            {
+              "name": "isPushEnabled",
+              "type": "boolean"
+            },
+            {
+              "name": "isEmoteEnabled",
+              "type": "boolean"
+            },
+            {
+              "name": "isSpawned",
+              "type": "boolean"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QuestFlag",
+      "fullName": "Meteor.Map.Actors.QuestNS.QuestState.QuestFlag",
+      "enum": true,
+      "enumValues": [
+        "None",
+        "Map",
+        "Plate"
+      ],
+      "members": [],
       "methods": []
     },
     {
-      "name": "QuestData",
-      "fullName": "Meteor.Map.Actors.Quest.QuestData",
-      "members": [
+      "name": "QuestStateManager",
+      "fullName": "Meteor.Map.Actors.QuestNS.QuestStateManager",
+      "members": [],
+      "methods": [
         {
-          "name": "counter1",
-          "type": "number",
-          "writable": true
+          "name": "ForceAddActiveQuest",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "questInstance",
+              "type": "Quest"
+            }
+          ]
         },
         {
-          "name": "counter2",
-          "type": "number",
-          "writable": true
+          "name": "ForceQuestCompleteFlag",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "questId",
+              "type": "number"
+            },
+            {
+              "name": "flag",
+              "type": "boolean"
+            }
+          ]
         },
         {
-          "name": "counter3",
-          "type": "number",
-          "writable": true
+          "name": "ForceQuestStateUpdate",
+          "returns": "nil",
+          "params": []
         },
         {
-          "name": "counter4",
-          "type": "number",
-          "writable": true
+          "name": "GetActiveQuest",
+          "returns": "Quest",
+          "params": [
+            {
+              "name": "id",
+              "type": "number"
+            }
+          ]
         },
         {
-          "name": "flags",
-          "type": "number",
-          "writable": true
+          "name": "GetCompletionSliceBytes",
+          "returns": "number[]",
+          "params": [
+            {
+              "name": "from",
+              "type": "number"
+            },
+            {
+              "name": "to",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetQuestsForNpc",
+          "returns": "Quest[]",
+          "params": [
+            {
+              "name": "npc",
+              "type": "Npc"
+            },
+            {
+              "name": "isPrivateArea",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "Init",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "journalQuests",
+              "type": "Quest[]"
+            },
+            {
+              "name": "completedQuests",
+              "type": "boolean[]"
+            }
+          ]
+        },
+        {
+          "name": "IsQuestComplete",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "questId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Update",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "tick",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "UpdateLevel",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "level",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "UpdateQuestAbandoned",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "UpdateQuestCompleted",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "quest",
+              "type": "Quest"
+            }
+          ]
         }
-      ],
-      "methods": []
+      ]
     },
     {
       "name": "StaticActors",
@@ -7154,6 +7848,12 @@
           "writable": true
         },
         {
+          "name": "OPTIONS_SCRIPTPATH",
+          "type": "string",
+          "static": true,
+          "writable": true
+        },
+        {
           "name": "OPTIONS_TIMESTAMP",
           "type": "boolean",
           "static": true,
@@ -7181,11 +7881,1126 @@
       ]
     },
     {
+      "name": "AccessoryItem",
+      "fullName": "Meteor.Map.DataObjects.AccessoryItem",
+      "base": "EquipmentItem",
+      "members": [
+        {
+          "name": "power",
+          "type": "number"
+        },
+        {
+          "name": "size",
+          "type": "number"
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "ArmorItem",
+      "fullName": "Meteor.Map.DataObjects.ArmorItem",
+      "base": "EquipmentItem",
+      "members": [
+        {
+          "name": "criticalDefense",
+          "type": "number"
+        },
+        {
+          "name": "damageDefenseType1",
+          "type": "number"
+        },
+        {
+          "name": "damageDefenseType2",
+          "type": "number"
+        },
+        {
+          "name": "damageDefenseType3",
+          "type": "number"
+        },
+        {
+          "name": "damageDefenseType4",
+          "type": "number"
+        },
+        {
+          "name": "damageDefenseValue1",
+          "type": "number"
+        },
+        {
+          "name": "damageDefenseValue2",
+          "type": "number"
+        },
+        {
+          "name": "damageDefenseValue3",
+          "type": "number"
+        },
+        {
+          "name": "damageDefenseValue4",
+          "type": "number"
+        },
+        {
+          "name": "defense",
+          "type": "number"
+        },
+        {
+          "name": "evasion",
+          "type": "number"
+        },
+        {
+          "name": "magicDefense",
+          "type": "number"
+        },
+        {
+          "name": "magicResistance",
+          "type": "number"
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "EquipmentItem",
+      "fullName": "Meteor.Map.DataObjects.EquipmentItem",
+      "base": "ItemData",
+      "members": [
+        {
+          "name": "AdditionalEffect",
+          "type": "number"
+        },
+        {
+          "name": "equipPoint",
+          "type": "number"
+        },
+        {
+          "name": "equipTribe",
+          "type": "number"
+        },
+        {
+          "name": "graphicsColorId",
+          "type": "number"
+        },
+        {
+          "name": "graphicsEquipmentId",
+          "type": "number"
+        },
+        {
+          "name": "graphicsVariantId",
+          "type": "number"
+        },
+        {
+          "name": "graphicsWeaponId",
+          "type": "number"
+        },
+        {
+          "name": "materialBindPermission",
+          "type": "boolean"
+        },
+        {
+          "name": "materializeTable",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusType1",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusType10",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusType2",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusType3",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusType4",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusType5",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusType6",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusType7",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusType8",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusType9",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusValue1",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusValue10",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusValue2",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusValue3",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusValue4",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusValue5",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusValue6",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusValue7",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusValue8",
+          "type": "number"
+        },
+        {
+          "name": "paramBonusValue9",
+          "type": "number"
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "GuildleveData",
+      "fullName": "Meteor.Map.DataObjects.GuildleveData",
+      "members": [
+        {
+          "name": "aetheryte",
+          "type": "number"
+        },
+        {
+          "name": "aimNum",
+          "type": "number[]"
+        },
+        {
+          "name": "borderId",
+          "type": "number"
+        },
+        {
+          "name": "classType",
+          "type": "number"
+        },
+        {
+          "name": "factionCreditRequired",
+          "type": "number"
+        },
+        {
+          "name": "favorCount",
+          "type": "number"
+        },
+        {
+          "name": "id",
+          "type": "number"
+        },
+        {
+          "name": "itemTarget",
+          "type": "number[]"
+        },
+        {
+          "name": "level",
+          "type": "number"
+        },
+        {
+          "name": "location",
+          "type": "number"
+        },
+        {
+          "name": "mobTarget",
+          "type": "number[]"
+        },
+        {
+          "name": "objective",
+          "type": "number"
+        },
+        {
+          "name": "plateId",
+          "type": "number"
+        },
+        {
+          "name": "skill",
+          "type": "number"
+        },
+        {
+          "name": "timeLimit",
+          "type": "number"
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "InventoryItem",
+      "fullName": "Meteor.Map.DataObjects.InventoryItem",
+      "members": [
+        {
+          "name": "DEALINGMODE_NONE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "DEALINGMODE_PRICED",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "DEALINGMODE_REFERENCED",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MODE_SEEK_ITEM",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MODE_SEEK_MELD",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MODE_SEEK_REPAIR",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MODE_SELL_FSTACK",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MODE_SELL_PSTACK",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MODE_SELL_SINGLE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "TAG_ATTACHED",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "TAG_DEALING",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "TAG_EXCLUSIVE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "itemData",
+          "type": "ItemData"
+        },
+        {
+          "name": "itemId",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "itemPackage",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "linkSlot",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "modifiers",
+          "type": "ItemModifier",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "type": "Character",
+          "writable": true
+        },
+        {
+          "name": "quality",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "quantity",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "slot",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "uniqueId",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "ChangeQuantity",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "quantityDelta",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "ClearOwner",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "GetBazaarMode",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "GetItemData",
+          "returns": "ItemData",
+          "params": []
+        },
+        {
+          "name": "GetOfferedTo",
+          "returns": "InventoryItem",
+          "params": []
+        },
+        {
+          "name": "GetTradeQuantity",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "IsSelling",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "SaveDealingInfo",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "cmd",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "SetAsOfferTo",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "mode",
+              "type": "number"
+            },
+            {
+              "name": "seeked",
+              "type": "InventoryItem"
+            }
+          ]
+        },
+        {
+          "name": "SetNormal",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "SetOwner",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "owner",
+              "type": "Character"
+            },
+            {
+              "name": "itemPackage",
+              "type": "number"
+            },
+            {
+              "name": "slot",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetQuantity",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "quantity",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetSelling",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "mode",
+              "type": "number"
+            },
+            {
+              "name": "price",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetTradeQuantity",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "quantity",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "ToPacketBytes",
+          "returns": "number[]",
+          "params": []
+        },
+        {
+          "name": "UpdateOfferedSlot",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "delta",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ItemModifier",
+      "fullName": "Meteor.Map.DataObjects.InventoryItem.ItemModifier",
+      "members": [
+        {
+          "name": "durability",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "mainQuality",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "materiaGrade",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "materiaId",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "materiaLife",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "materiaType",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "param1",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "param2",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "param3",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "polish",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "spiritbind",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "subQuality",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "use",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "WriteBytes",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "binWriter",
+              "type": "any"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ItemData",
+      "fullName": "Meteor.Map.DataObjects.ItemData",
+      "members": [
+        {
+          "name": "catalogID",
+          "type": "number"
+        },
+        {
+          "name": "category",
+          "type": "string"
+        },
+        {
+          "name": "compatibility",
+          "type": "number"
+        },
+        {
+          "name": "durability",
+          "type": "number"
+        },
+        {
+          "name": "effectDuration",
+          "type": "number"
+        },
+        {
+          "name": "effectMagnitude",
+          "type": "number"
+        },
+        {
+          "name": "effectRate",
+          "type": "number"
+        },
+        {
+          "name": "icon",
+          "type": "number"
+        },
+        {
+          "name": "isExclusive",
+          "type": "boolean"
+        },
+        {
+          "name": "isRare",
+          "type": "boolean"
+        },
+        {
+          "name": "isUseable",
+          "type": "number"
+        },
+        {
+          "name": "kind",
+          "type": "number"
+        },
+        {
+          "name": "level",
+          "type": "number"
+        },
+        {
+          "name": "levelType",
+          "type": "number"
+        },
+        {
+          "name": "mainSkill",
+          "type": "number"
+        },
+        {
+          "name": "maxStack",
+          "type": "number"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "rarity",
+          "type": "number"
+        },
+        {
+          "name": "recastGroup",
+          "type": "number"
+        },
+        {
+          "name": "recastTime",
+          "type": "number"
+        },
+        {
+          "name": "repairItem",
+          "type": "number"
+        },
+        {
+          "name": "repairItemNum",
+          "type": "number"
+        },
+        {
+          "name": "repairLevel",
+          "type": "number"
+        },
+        {
+          "name": "repairLicense",
+          "type": "number"
+        },
+        {
+          "name": "repairSkill",
+          "type": "number"
+        },
+        {
+          "name": "sellPrice",
+          "type": "number"
+        },
+        {
+          "name": "shieldBlocking",
+          "type": "number"
+        },
+        {
+          "name": "subSkill",
+          "type": "number"
+        }
+      ],
+      "methods": [
+        {
+          "name": "GetItemHQValue",
+          "returns": "number",
+          "params": [
+            {
+              "name": "value1",
+              "type": "number"
+            },
+            {
+              "name": "value2",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetShieldGuardTime",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "IsAccessory",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsAccessory",
+          "static": true,
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "catalogID",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "IsAlchemistWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsAmmoWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsAmulet",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsArchanistWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsArmor",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsArmor",
+          "static": true,
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "catalogID",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "IsArmorerWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsArrowWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsAttackWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsAxeWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsBattleWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsBlackSmithWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsBotanistWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsBowWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsBulletWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsCarpenterWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsConjurerWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsCraftWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsCulinarianWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsDrink",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsEnchantMateria",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsEquipment",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsEventItem",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsFishingBaitWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsFishingLureWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsFishingWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsFood",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsGoldSmithWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsGunWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsHarvestWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsHostilityItem",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsImportant",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsLanceWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsLongRangeWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsLostAfterUsed",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsMaceWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsMagicWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsManualGuardShieldWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsMaterial",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsMinerWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsMoney",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsMysticWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsNailWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsPotion",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsRapierWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsShepherdWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsShieldWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsShotWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsSwordWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsTannerWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsThaumaturgeWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsThrowWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsUsable",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsUseForBattle",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsUseFree",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsWeapon",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsWeapon",
+          "static": true,
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "catalogID",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "IsWeaverWeapon",
+          "returns": "boolean",
+          "params": []
+        }
+      ]
+    },
+    {
+      "name": "QuestGameData",
+      "fullName": "Meteor.Map.DataObjects.QuestGameData",
+      "members": [
+        {
+          "name": "ClassName",
+          "type": "string"
+        },
+        {
+          "name": "Id",
+          "type": "number"
+        },
+        {
+          "name": "MinGCRank",
+          "type": "number"
+        },
+        {
+          "name": "MinLevel",
+          "type": "number"
+        },
+        {
+          "name": "Name",
+          "type": "string"
+        },
+        {
+          "name": "PrerequisiteQuest",
+          "type": "number"
+        }
+      ],
+      "methods": []
+    },
+    {
       "name": "Recipe",
       "fullName": "Meteor.Map.DataObjects.Recipe",
       "members": [
         {
           "name": "allowedCrafters",
+          "type": "number[]"
+        },
+        {
+          "name": "crystalId1",
+          "type": "number"
+        },
+        {
+          "name": "crystalId2",
+          "type": "number"
+        },
+        {
+          "name": "crystalQuantity1",
+          "type": "number"
+        },
+        {
+          "name": "crystalQuantity2",
+          "type": "number"
+        },
+        {
+          "name": "id",
+          "type": "number"
+        },
+        {
+          "name": "materials",
           "type": "number[]"
         },
         {
@@ -7278,6 +9093,687 @@
       ]
     },
     {
+      "name": "RecruitmentDetails",
+      "fullName": "Meteor.Map.DataObjects.RecruitmentDetails",
+      "members": [
+        {
+          "name": "classjobId",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "comment",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "discipleId",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "locationId",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "maxLvl",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "minLvl",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "num",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "purposeId",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "recruiterName",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "subTaskId",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "timeSinceStart",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "SeamlessBoundry",
+      "fullName": "Meteor.Map.DataObjects.SeamlessBoundry",
+      "members": [
+        {
+          "name": "merge_x1",
+          "type": "number"
+        },
+        {
+          "name": "merge_x2",
+          "type": "number"
+        },
+        {
+          "name": "merge_y1",
+          "type": "number"
+        },
+        {
+          "name": "merge_y2",
+          "type": "number"
+        },
+        {
+          "name": "regionId",
+          "type": "number"
+        },
+        {
+          "name": "zone1_x1",
+          "type": "number"
+        },
+        {
+          "name": "zone1_x2",
+          "type": "number"
+        },
+        {
+          "name": "zone1_y1",
+          "type": "number"
+        },
+        {
+          "name": "zone1_y2",
+          "type": "number"
+        },
+        {
+          "name": "zone2_x1",
+          "type": "number"
+        },
+        {
+          "name": "zone2_x2",
+          "type": "number"
+        },
+        {
+          "name": "zone2_y1",
+          "type": "number"
+        },
+        {
+          "name": "zone2_y2",
+          "type": "number"
+        },
+        {
+          "name": "zoneId1",
+          "type": "number"
+        },
+        {
+          "name": "zoneId2",
+          "type": "number"
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "SearchEntry",
+      "fullName": "Meteor.Map.DataObjects.SearchEntry",
+      "members": [
+        {
+          "name": "classes",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "currentClass",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "grandCompany",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "jobs",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "langauges",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "location",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "preferredClass",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "status",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "WriteSearchEntry",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "writer",
+              "type": "any"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Session",
+      "fullName": "Meteor.Map.DataObjects.Session",
+      "members": [
+        {
+          "name": "actorInstanceList",
+          "type": "Actor[]",
+          "writable": true
+        },
+        {
+          "name": "errorMessage",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "id",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "isUpdatesLocked",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "languageCode",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "CheckIfDCing",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "ClearInstance",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "GetActor",
+          "returns": "Player",
+          "params": []
+        },
+        {
+          "name": "LockUpdates",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "f",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "Ping",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "QueuePacket",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "subPacket",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "QueuePacket",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "packets",
+              "type": "any[]"
+            }
+          ]
+        },
+        {
+          "name": "UpdateInstance",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "list",
+              "type": "Actor[]"
+            },
+            {
+              "name": "force",
+              "type": "boolean",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "UpdatePlayerActorPosition",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "rot",
+              "type": "number"
+            },
+            {
+              "name": "moveState",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "UpdateQuestNpcInInstance",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "questInstance",
+              "type": "QuestENpc"
+            },
+            {
+              "name": "clearInstance",
+              "type": "boolean",
+              "optional": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "WeaponItem",
+      "fullName": "Meteor.Map.DataObjects.WeaponItem",
+      "base": "EquipmentItem",
+      "members": [
+        {
+          "name": "ammoVirtualDamagePower",
+          "type": "number"
+        },
+        {
+          "name": "attack",
+          "type": "number"
+        },
+        {
+          "name": "craftMagicProcessing",
+          "type": "number"
+        },
+        {
+          "name": "craftProcessControl",
+          "type": "number"
+        },
+        {
+          "name": "craftProcessing",
+          "type": "number"
+        },
+        {
+          "name": "critical",
+          "type": "number"
+        },
+        {
+          "name": "damageAttributeType1",
+          "type": "number"
+        },
+        {
+          "name": "damageAttributeType2",
+          "type": "number"
+        },
+        {
+          "name": "damageAttributeType3",
+          "type": "number"
+        },
+        {
+          "name": "damageAttributeValue1",
+          "type": "number"
+        },
+        {
+          "name": "damageAttributeValue2",
+          "type": "number"
+        },
+        {
+          "name": "damageAttributeValue3",
+          "type": "number"
+        },
+        {
+          "name": "damageInterval",
+          "type": "number"
+        },
+        {
+          "name": "damagePower",
+          "type": "number"
+        },
+        {
+          "name": "dps",
+          "type": "number"
+        },
+        {
+          "name": "frequency",
+          "type": "number"
+        },
+        {
+          "name": "graphicsOffhandEquipmentId",
+          "type": "number"
+        },
+        {
+          "name": "graphicsOffhandVariantId",
+          "type": "number"
+        },
+        {
+          "name": "graphicsOffhandWeaponId",
+          "type": "number"
+        },
+        {
+          "name": "harvestLimit",
+          "type": "number"
+        },
+        {
+          "name": "harvestPotency",
+          "type": "number"
+        },
+        {
+          "name": "harvestRate",
+          "type": "number"
+        },
+        {
+          "name": "magicAttack",
+          "type": "number"
+        },
+        {
+          "name": "magicCritical",
+          "type": "number"
+        },
+        {
+          "name": "magicRate",
+          "type": "number"
+        },
+        {
+          "name": "parry",
+          "type": "number"
+        },
+        {
+          "name": "rate",
+          "type": "number"
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "ZoneConnection",
+      "fullName": "Meteor.Map.DataObjects.ZoneConnection",
+      "members": [
+        {
+          "name": "buffer",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "lastPartialSize",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "socket",
+          "type": "any",
+          "writable": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "Disconnect",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "FlushQueuedSendPackets",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "GetAddress",
+          "returns": "string",
+          "params": []
+        },
+        {
+          "name": "IsConnected",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "QueuePacket",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "subpacket",
+              "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "RequestZoneChange",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "sessionId",
+              "type": "number"
+            },
+            {
+              "name": "destinationZoneId",
+              "type": "number"
+            },
+            {
+              "name": "spawnType",
+              "type": "number"
+            },
+            {
+              "name": "spawnX",
+              "type": "number"
+            },
+            {
+              "name": "spawnY",
+              "type": "number"
+            },
+            {
+              "name": "spawnZ",
+              "type": "number"
+            },
+            {
+              "name": "spawnRotation",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PlayerWork",
+      "fullName": "Meteor.Map.DataObjects.chara.PlayerWork",
+      "members": [
+        {
+          "name": "birthdayDay",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "birthdayMonth",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "castCommandClient",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "castEndClient",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "comboCostBonusRate",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "comboNextCommandId",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "guardian",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "initialTown",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "isContentsCommand",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "isRemainBonusPoint",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "npcLinkshellChatCalling",
+          "type": "boolean[]",
+          "writable": true
+        },
+        {
+          "name": "npcLinkshellChatExtra",
+          "type": "boolean[]",
+          "writable": true
+        },
+        {
+          "name": "questGuildleve",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "questGuildleveComplete",
+          "type": "boolean[]",
+          "writable": true
+        },
+        {
+          "name": "questScenario",
+          "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "questScenarioComplete",
+          "type": "boolean[]",
+          "writable": true
+        },
+        {
+          "name": "restBonusExpRate",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "tribe",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "variableCommandConfirmRaise",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "variableCommandConfirmRaisePlace",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "variableCommandConfirmRaiseSender",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "variableCommandConfirmRaiseSenderByID",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "variableCommandConfirmRaiseSenderSex",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "variableCommandConfirmWarp",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "variableCommandConfirmWarpPlace",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "variableCommandConfirmWarpSender",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "variableCommandConfirmWarpSenderByID",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "variableCommandConfirmWarpSenderSex",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": []
+    },
+    {
       "name": "Database",
       "fullName": "Meteor.Map.Database",
       "members": [],
@@ -7328,21 +9824,6 @@
             {
               "name": "item",
               "type": "InventoryItem"
-            }
-          ]
-        },
-        {
-          "name": "CompleteQuest",
-          "static": true,
-          "returns": "nil",
-          "params": [
-            {
-              "name": "player",
-              "type": "Player"
-            },
-            {
-              "name": "questId",
-              "type": "number"
             }
           ]
         },
@@ -7400,6 +9881,29 @@
             },
             {
               "name": "lsCrest",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "CreateOrUpdateSNpc",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            },
+            {
+              "name": "nickname",
+              "type": "string"
+            },
+            {
+              "name": "skin",
+              "type": "number"
+            },
+            {
+              "name": "personality",
               "type": "number"
             }
           ]
@@ -7549,6 +10053,12 @@
           ]
         },
         {
+          "name": "GetQuestGamedata",
+          "static": true,
+          "returns": "table\u003Cnumber, QuestGameData\u003E",
+          "params": []
+        },
+        {
           "name": "GetRecipeGamedata",
           "static": true,
           "returns": "boolean",
@@ -7571,21 +10081,6 @@
             {
               "name": "sessionId",
               "type": "string"
-            }
-          ]
-        },
-        {
-          "name": "IsQuestCompleted",
-          "static": true,
-          "returns": "boolean",
-          "params": [
-            {
-              "name": "player",
-              "type": "Player"
-            },
-            {
-              "name": "questId",
-              "type": "number"
             }
           ]
         },
@@ -7769,6 +10264,17 @@
           ]
         },
         {
+          "name": "SaveCompletedQuests",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            }
+          ]
+        },
+        {
           "name": "SaveGuildleve",
           "static": true,
           "returns": "nil",
@@ -7873,21 +10379,6 @@
             {
               "name": "player",
               "type": "Player"
-            }
-          ]
-        },
-        {
-          "name": "SaveQuest",
-          "static": true,
-          "returns": "nil",
-          "params": [
-            {
-              "name": "player",
-              "type": "Player"
-            },
-            {
-              "name": "quest",
-              "type": "Quest"
             }
           ]
         },
@@ -8027,6 +10518,21 @@
             {
               "name": "updated",
               "type": "InventoryItem[]"
+            }
+          ]
+        },
+        {
+          "name": "UpdateQuest",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            },
+            {
+              "name": "quest",
+              "type": "Quest"
             }
           ]
         },
@@ -8398,6 +10904,56 @@
           ]
         },
         {
+          "name": "GetQuestGamedata",
+          "static": true,
+          "returns": "QuestGameData",
+          "params": [
+            {
+              "name": "id",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetQuestGamedataAllGCRanked",
+          "static": true,
+          "returns": "QuestGameData[]",
+          "params": []
+        },
+        {
+          "name": "GetQuestGamedataAllPrerequisite",
+          "static": true,
+          "returns": "QuestGameData[]",
+          "params": []
+        },
+        {
+          "name": "GetQuestGamedataByMaxLvl",
+          "static": true,
+          "returns": "QuestGameData[]",
+          "params": [
+            {
+              "name": "lvl",
+              "type": "number"
+            },
+            {
+              "name": "all",
+              "type": "boolean",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "GetQuestGamedataByPrerequisite",
+          "static": true,
+          "returns": "QuestGameData[]",
+          "params": [
+            {
+              "name": "questId",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "GetServer",
           "static": true,
           "returns": "Server",
@@ -8471,6 +11027,12 @@
               "type": "number"
             }
           ]
+        },
+        {
+          "name": "ResolveRecipe",
+          "static": true,
+          "returns": "RecipeResolver",
+          "params": []
         },
         {
           "name": "StartServer",
@@ -8836,20 +11398,6 @@
               "type": "Player"
             },
             {
-              "name": "zoneEntrance",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "DoPlayerMoveInZone",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "player",
-              "type": "Player"
-            },
-            {
               "name": "spawnX",
               "type": "number"
             },
@@ -8882,20 +11430,6 @@
             },
             {
               "name": "destinationZoneId",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "DoZoneChange",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "player",
-              "type": "Player"
-            },
-            {
-              "name": "zoneEntrance",
               "type": "number"
             }
           ]
@@ -9041,6 +11575,26 @@
           ]
         },
         {
+          "name": "GetArea",
+          "returns": "Area",
+          "params": [
+            {
+              "name": "zoneId",
+              "type": "number"
+            },
+            {
+              "name": "privateAreaName",
+              "type": "string",
+              "optional": true
+            },
+            {
+              "name": "privateAreaType",
+              "type": "number",
+              "optional": true
+            }
+          ]
+        },
+        {
           "name": "GetBattleCommand",
           "returns": "BattleCommand",
           "params": [
@@ -9100,24 +11654,6 @@
           ]
         },
         {
-          "name": "GetPrivateArea",
-          "returns": "PrivateArea",
-          "params": [
-            {
-              "name": "zoneId",
-              "type": "number"
-            },
-            {
-              "name": "privateArea",
-              "type": "string"
-            },
-            {
-              "name": "privateAreaType",
-              "type": "number"
-            }
-          ]
-        },
-        {
           "name": "GetRelationGroup",
           "returns": "RelationGroup",
           "params": [
@@ -9143,26 +11679,6 @@
           "params": [
             {
               "name": "actorId",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "GetZone",
-          "returns": "Zone",
-          "params": [
-            {
-              "name": "zoneId",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "GetZoneEntrance",
-          "returns": "ZoneEntrance",
-          "params": [
-            {
-              "name": "entranceId",
               "type": "number"
             }
           ]
@@ -9224,22 +11740,17 @@
           "params": []
         },
         {
+          "name": "LoadENPCs",
+          "returns": "nil",
+          "params": []
+        },
+        {
           "name": "LoadSeamlessBoundryList",
           "returns": "nil",
           "params": []
         },
         {
-          "name": "LoadSpawnLocations",
-          "returns": "nil",
-          "params": []
-        },
-        {
           "name": "LoadStatusEffects",
-          "returns": "nil",
-          "params": []
-        },
-        {
-          "name": "LoadZoneEntranceList",
           "returns": "nil",
           "params": []
         },
@@ -9522,6 +12033,139 @@
           ]
         },
         {
+          "name": "WarpToCharaPosition",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            },
+            {
+              "name": "target",
+              "type": "Character"
+            }
+          ]
+        },
+        {
+          "name": "WarpToPosition",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "rotation",
+              "type": "number"
+            },
+            {
+              "name": "debugInstant",
+              "type": "boolean",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "WarpToPrivateArea",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            },
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "type",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "WarpToPrivateArea",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            },
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "type",
+              "type": "number"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "rotation",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "WarpToPublicArea",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            }
+          ]
+        },
+        {
+          "name": "WarpToPublicArea",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "rotation",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "ZoneThreadLoop",
           "returns": "nil",
           "params": [
@@ -9671,13 +12315,18 @@
       "fullName": "Meteor.Map.actors.EventList.PushBoxEventCondition",
       "members": [
         {
-          "name": "bgObj",
+          "name": "conditionName",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "instance",
           "type": "number",
           "writable": true
         },
         {
-          "name": "conditionName",
-          "type": "string",
+          "name": "isEnabled",
+          "type": "boolean",
           "writable": true
         },
         {
@@ -9713,6 +12362,11 @@
           "writable": true
         },
         {
+          "name": "isEnabled",
+          "type": "boolean",
+          "writable": true
+        },
+        {
           "name": "outwards",
           "type": "boolean",
           "writable": true
@@ -9737,6 +12391,11 @@
         {
           "name": "conditionName",
           "type": "string",
+          "writable": true
+        },
+        {
+          "name": "isEnabled",
+          "type": "boolean",
           "writable": true
         },
         {
@@ -9796,6 +12455,11 @@
           ]
         },
         {
+          "name": "CanExitPrivateArea",
+          "returns": "boolean",
+          "params": []
+        },
+        {
           "name": "CreateScriptBindPacket",
           "returns": "any",
           "params": []
@@ -9813,6 +12477,11 @@
         {
           "name": "GetPrivateAreaType",
           "returns": "number",
+          "params": []
+        },
+        {
+          "name": "IsPublic",
+          "returns": "boolean",
           "params": []
         },
         {
@@ -9861,12 +12530,22 @@
       "fullName": "Meteor.Map.actors.area.SpawnLocation",
       "members": [
         {
-          "name": "animId",
+          "name": "classId",
           "type": "number",
           "writable": true
         },
         {
-          "name": "classId",
+          "name": "mapObjInstanceId",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "mapObjLayoutId",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "motionPack",
           "type": "number",
           "writable": true
         },
@@ -9882,11 +12561,6 @@
         },
         {
           "name": "rot",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "state",
           "type": "number",
           "writable": true
         },
@@ -10031,11 +12705,11 @@
           "returns": "PrivateArea",
           "params": [
             {
-              "name": "type",
+              "name": "name",
               "type": "string"
             },
             {
-              "name": "number",
+              "name": "type",
               "type": "number"
             }
           ]
@@ -15343,6 +18017,16 @@
           ]
         },
         {
+          "name": "GetItemQuantity",
+          "returns": "number",
+          "params": [
+            {
+              "name": "itemId",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "GetNextEmptySlot",
           "returns": "number",
           "params": []
@@ -16798,1747 +19482,6 @@
       "methods": []
     },
     {
-      "name": "AccessoryItem",
-      "fullName": "Meteor.Map.dataobjects.AccessoryItem",
-      "base": "EquipmentItem",
-      "members": [
-        {
-          "name": "power",
-          "type": "number"
-        },
-        {
-          "name": "size",
-          "type": "number"
-        }
-      ],
-      "methods": []
-    },
-    {
-      "name": "ArmorItem",
-      "fullName": "Meteor.Map.dataobjects.ArmorItem",
-      "base": "EquipmentItem",
-      "members": [
-        {
-          "name": "criticalDefense",
-          "type": "number"
-        },
-        {
-          "name": "damageDefenseType1",
-          "type": "number"
-        },
-        {
-          "name": "damageDefenseType2",
-          "type": "number"
-        },
-        {
-          "name": "damageDefenseType3",
-          "type": "number"
-        },
-        {
-          "name": "damageDefenseType4",
-          "type": "number"
-        },
-        {
-          "name": "damageDefenseValue1",
-          "type": "number"
-        },
-        {
-          "name": "damageDefenseValue2",
-          "type": "number"
-        },
-        {
-          "name": "damageDefenseValue3",
-          "type": "number"
-        },
-        {
-          "name": "damageDefenseValue4",
-          "type": "number"
-        },
-        {
-          "name": "defense",
-          "type": "number"
-        },
-        {
-          "name": "evasion",
-          "type": "number"
-        },
-        {
-          "name": "magicDefense",
-          "type": "number"
-        },
-        {
-          "name": "magicResistance",
-          "type": "number"
-        }
-      ],
-      "methods": []
-    },
-    {
-      "name": "EquipmentItem",
-      "fullName": "Meteor.Map.dataobjects.EquipmentItem",
-      "base": "ItemData",
-      "members": [
-        {
-          "name": "AdditionalEffect",
-          "type": "number"
-        },
-        {
-          "name": "equipPoint",
-          "type": "number"
-        },
-        {
-          "name": "equipTribe",
-          "type": "number"
-        },
-        {
-          "name": "graphicsColorId",
-          "type": "number"
-        },
-        {
-          "name": "graphicsEquipmentId",
-          "type": "number"
-        },
-        {
-          "name": "graphicsVariantId",
-          "type": "number"
-        },
-        {
-          "name": "graphicsWeaponId",
-          "type": "number"
-        },
-        {
-          "name": "materialBindPermission",
-          "type": "boolean"
-        },
-        {
-          "name": "materializeTable",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusType1",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusType10",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusType2",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusType3",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusType4",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusType5",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusType6",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusType7",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusType8",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusType9",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusValue1",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusValue10",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusValue2",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusValue3",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusValue4",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusValue5",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusValue6",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusValue7",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusValue8",
-          "type": "number"
-        },
-        {
-          "name": "paramBonusValue9",
-          "type": "number"
-        }
-      ],
-      "methods": []
-    },
-    {
-      "name": "GuildleveData",
-      "fullName": "Meteor.Map.dataobjects.GuildleveData",
-      "members": [
-        {
-          "name": "aetheryte",
-          "type": "number"
-        },
-        {
-          "name": "aimNum",
-          "type": "number[]"
-        },
-        {
-          "name": "borderId",
-          "type": "number"
-        },
-        {
-          "name": "classType",
-          "type": "number"
-        },
-        {
-          "name": "factionCreditRequired",
-          "type": "number"
-        },
-        {
-          "name": "favorCount",
-          "type": "number"
-        },
-        {
-          "name": "id",
-          "type": "number"
-        },
-        {
-          "name": "itemTarget",
-          "type": "number[]"
-        },
-        {
-          "name": "level",
-          "type": "number"
-        },
-        {
-          "name": "location",
-          "type": "number"
-        },
-        {
-          "name": "mobTarget",
-          "type": "number[]"
-        },
-        {
-          "name": "objective",
-          "type": "number"
-        },
-        {
-          "name": "plateId",
-          "type": "number"
-        },
-        {
-          "name": "skill",
-          "type": "number"
-        },
-        {
-          "name": "timeLimit",
-          "type": "number"
-        }
-      ],
-      "methods": []
-    },
-    {
-      "name": "InventoryItem",
-      "fullName": "Meteor.Map.dataobjects.InventoryItem",
-      "members": [
-        {
-          "name": "DEALINGMODE_NONE",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "DEALINGMODE_PRICED",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "DEALINGMODE_REFERENCED",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "MODE_SEEK_ITEM",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "MODE_SEEK_MELD",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "MODE_SEEK_REPAIR",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "MODE_SELL_FSTACK",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "MODE_SELL_PSTACK",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "MODE_SELL_SINGLE",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "TAG_ATTACHED",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "TAG_DEALING",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "TAG_EXCLUSIVE",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "itemData",
-          "type": "ItemData"
-        },
-        {
-          "name": "itemId",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "itemPackage",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "linkSlot",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "modifiers",
-          "type": "ItemModifier",
-          "writable": true
-        },
-        {
-          "name": "owner",
-          "type": "Character",
-          "writable": true
-        },
-        {
-          "name": "quality",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "quantity",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "slot",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "uniqueId",
-          "type": "number",
-          "writable": true
-        }
-      ],
-      "methods": [
-        {
-          "name": "ChangeQuantity",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "quantityDelta",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "ClearOwner",
-          "returns": "nil",
-          "params": []
-        },
-        {
-          "name": "GetBazaarMode",
-          "returns": "number",
-          "params": []
-        },
-        {
-          "name": "GetItemData",
-          "returns": "ItemData",
-          "params": []
-        },
-        {
-          "name": "GetOfferedTo",
-          "returns": "InventoryItem",
-          "params": []
-        },
-        {
-          "name": "GetTradeQuantity",
-          "returns": "number",
-          "params": []
-        },
-        {
-          "name": "IsSelling",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "SaveDealingInfo",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "cmd",
-              "type": "any"
-            }
-          ]
-        },
-        {
-          "name": "SetAsOfferTo",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "mode",
-              "type": "number"
-            },
-            {
-              "name": "seeked",
-              "type": "InventoryItem"
-            }
-          ]
-        },
-        {
-          "name": "SetNormal",
-          "returns": "nil",
-          "params": []
-        },
-        {
-          "name": "SetOwner",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "owner",
-              "type": "Character"
-            },
-            {
-              "name": "itemPackage",
-              "type": "number"
-            },
-            {
-              "name": "slot",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "SetQuantity",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "quantity",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "SetSelling",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "mode",
-              "type": "number"
-            },
-            {
-              "name": "price",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "SetTradeQuantity",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "quantity",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "ToPacketBytes",
-          "returns": "number[]",
-          "params": []
-        },
-        {
-          "name": "UpdateOfferedSlot",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "delta",
-              "type": "number"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "ItemModifier",
-      "fullName": "Meteor.Map.dataobjects.InventoryItem.ItemModifier",
-      "members": [
-        {
-          "name": "durability",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "mainQuality",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "materiaGrade",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "materiaId",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "materiaLife",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "materiaType",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "param1",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "param2",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "param3",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "polish",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "spiritbind",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "subQuality",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "use",
-          "type": "number",
-          "writable": true
-        }
-      ],
-      "methods": [
-        {
-          "name": "WriteBytes",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "binWriter",
-              "type": "any"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "ItemData",
-      "fullName": "Meteor.Map.dataobjects.ItemData",
-      "members": [
-        {
-          "name": "catalogID",
-          "type": "number"
-        },
-        {
-          "name": "category",
-          "type": "string"
-        },
-        {
-          "name": "compatibility",
-          "type": "number"
-        },
-        {
-          "name": "durability",
-          "type": "number"
-        },
-        {
-          "name": "effectDuration",
-          "type": "number"
-        },
-        {
-          "name": "effectMagnitude",
-          "type": "number"
-        },
-        {
-          "name": "effectRate",
-          "type": "number"
-        },
-        {
-          "name": "icon",
-          "type": "number"
-        },
-        {
-          "name": "isExclusive",
-          "type": "boolean"
-        },
-        {
-          "name": "isRare",
-          "type": "boolean"
-        },
-        {
-          "name": "isUseable",
-          "type": "number"
-        },
-        {
-          "name": "kind",
-          "type": "number"
-        },
-        {
-          "name": "level",
-          "type": "number"
-        },
-        {
-          "name": "levelType",
-          "type": "number"
-        },
-        {
-          "name": "mainSkill",
-          "type": "number"
-        },
-        {
-          "name": "maxStack",
-          "type": "number"
-        },
-        {
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "name": "rarity",
-          "type": "number"
-        },
-        {
-          "name": "recastGroup",
-          "type": "number"
-        },
-        {
-          "name": "recastTime",
-          "type": "number"
-        },
-        {
-          "name": "repairItem",
-          "type": "number"
-        },
-        {
-          "name": "repairItemNum",
-          "type": "number"
-        },
-        {
-          "name": "repairLevel",
-          "type": "number"
-        },
-        {
-          "name": "repairLicense",
-          "type": "number"
-        },
-        {
-          "name": "repairSkill",
-          "type": "number"
-        },
-        {
-          "name": "sellPrice",
-          "type": "number"
-        },
-        {
-          "name": "shieldBlocking",
-          "type": "number"
-        },
-        {
-          "name": "subSkill",
-          "type": "number"
-        }
-      ],
-      "methods": [
-        {
-          "name": "GetItemHQValue",
-          "returns": "number",
-          "params": [
-            {
-              "name": "value1",
-              "type": "number"
-            },
-            {
-              "name": "value2",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "GetShieldGuardTime",
-          "returns": "number",
-          "params": []
-        },
-        {
-          "name": "IsAccessory",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsAccessory",
-          "static": true,
-          "returns": "boolean",
-          "params": [
-            {
-              "name": "catalogID",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "IsAlchemistWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsAmmoWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsAmulet",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsArchanistWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsArmor",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsArmor",
-          "static": true,
-          "returns": "boolean",
-          "params": [
-            {
-              "name": "catalogID",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "IsArmorerWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsArrowWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsAttackWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsAxeWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsBattleWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsBlackSmithWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsBotanistWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsBowWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsBulletWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsCarpenterWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsConjurerWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsCraftWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsCulinarianWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsDrink",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsEnchantMateria",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsEquipment",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsEventItem",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsFishingBaitWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsFishingLureWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsFishingWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsFood",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsGoldSmithWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsGunWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsHarvestWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsHostilityItem",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsImportant",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsLanceWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsLongRangeWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsLostAfterUsed",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsMaceWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsMagicWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsManualGuardShieldWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsMaterial",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsMinerWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsMoney",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsMysticWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsNailWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsPotion",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsRapierWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsShepherdWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsShieldWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsShotWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsSwordWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsTannerWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsThaumaturgeWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsThrowWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsUsable",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsUseForBattle",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsUseFree",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsWeapon",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "IsWeapon",
-          "static": true,
-          "returns": "boolean",
-          "params": [
-            {
-              "name": "catalogID",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "IsWeaverWeapon",
-          "returns": "boolean",
-          "params": []
-        }
-      ]
-    },
-    {
-      "name": "RecruitmentDetails",
-      "fullName": "Meteor.Map.dataobjects.RecruitmentDetails",
-      "members": [
-        {
-          "name": "classjobId",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "comment",
-          "type": "string",
-          "writable": true
-        },
-        {
-          "name": "discipleId",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "locationId",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "maxLvl",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "minLvl",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "num",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "purposeId",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "recruiterName",
-          "type": "string",
-          "writable": true
-        },
-        {
-          "name": "subTaskId",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "timeSinceStart",
-          "type": "number",
-          "writable": true
-        }
-      ],
-      "methods": []
-    },
-    {
-      "name": "SeamlessBoundry",
-      "fullName": "Meteor.Map.dataobjects.SeamlessBoundry",
-      "members": [
-        {
-          "name": "merge_x1",
-          "type": "number"
-        },
-        {
-          "name": "merge_x2",
-          "type": "number"
-        },
-        {
-          "name": "merge_y1",
-          "type": "number"
-        },
-        {
-          "name": "merge_y2",
-          "type": "number"
-        },
-        {
-          "name": "regionId",
-          "type": "number"
-        },
-        {
-          "name": "zone1_x1",
-          "type": "number"
-        },
-        {
-          "name": "zone1_x2",
-          "type": "number"
-        },
-        {
-          "name": "zone1_y1",
-          "type": "number"
-        },
-        {
-          "name": "zone1_y2",
-          "type": "number"
-        },
-        {
-          "name": "zone2_x1",
-          "type": "number"
-        },
-        {
-          "name": "zone2_x2",
-          "type": "number"
-        },
-        {
-          "name": "zone2_y1",
-          "type": "number"
-        },
-        {
-          "name": "zone2_y2",
-          "type": "number"
-        },
-        {
-          "name": "zoneId1",
-          "type": "number"
-        },
-        {
-          "name": "zoneId2",
-          "type": "number"
-        }
-      ],
-      "methods": []
-    },
-    {
-      "name": "SearchEntry",
-      "fullName": "Meteor.Map.dataobjects.SearchEntry",
-      "members": [
-        {
-          "name": "classes",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "currentClass",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "grandCompany",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "jobs",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "langauges",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "location",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "name",
-          "type": "string",
-          "writable": true
-        },
-        {
-          "name": "preferredClass",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "status",
-          "type": "number",
-          "writable": true
-        }
-      ],
-      "methods": [
-        {
-          "name": "WriteSearchEntry",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "writer",
-              "type": "any"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Session",
-      "fullName": "Meteor.Map.dataobjects.Session",
-      "members": [
-        {
-          "name": "actorInstanceList",
-          "type": "Actor[]",
-          "writable": true
-        },
-        {
-          "name": "errorMessage",
-          "type": "string",
-          "writable": true
-        },
-        {
-          "name": "id",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "isUpdatesLocked",
-          "type": "boolean",
-          "writable": true
-        },
-        {
-          "name": "languageCode",
-          "type": "number",
-          "writable": true
-        }
-      ],
-      "methods": [
-        {
-          "name": "CheckIfDCing",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "ClearInstance",
-          "returns": "nil",
-          "params": []
-        },
-        {
-          "name": "GetActor",
-          "returns": "Player",
-          "params": []
-        },
-        {
-          "name": "LockUpdates",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "f",
-              "type": "boolean"
-            }
-          ]
-        },
-        {
-          "name": "Ping",
-          "returns": "nil",
-          "params": []
-        },
-        {
-          "name": "QueuePacket",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "subPacket",
-              "type": "any"
-            }
-          ]
-        },
-        {
-          "name": "QueuePacket",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "packets",
-              "type": "any[]"
-            }
-          ]
-        },
-        {
-          "name": "UpdateInstance",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "list",
-              "type": "Actor[]"
-            },
-            {
-              "name": "force",
-              "type": "boolean",
-              "optional": true
-            }
-          ]
-        },
-        {
-          "name": "UpdatePlayerActorPosition",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "x",
-              "type": "number"
-            },
-            {
-              "name": "y",
-              "type": "number"
-            },
-            {
-              "name": "z",
-              "type": "number"
-            },
-            {
-              "name": "rot",
-              "type": "number"
-            },
-            {
-              "name": "moveState",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "name": "UpdateQuestNpcInInstance",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "questInstance",
-              "type": "ENpcQuestInstance"
-            },
-            {
-              "name": "clearInstance",
-              "type": "boolean",
-              "optional": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "WeaponItem",
-      "fullName": "Meteor.Map.dataobjects.WeaponItem",
-      "base": "EquipmentItem",
-      "members": [
-        {
-          "name": "ammoVirtualDamagePower",
-          "type": "number"
-        },
-        {
-          "name": "attack",
-          "type": "number"
-        },
-        {
-          "name": "craftMagicProcessing",
-          "type": "number"
-        },
-        {
-          "name": "craftProcessControl",
-          "type": "number"
-        },
-        {
-          "name": "craftProcessing",
-          "type": "number"
-        },
-        {
-          "name": "critical",
-          "type": "number"
-        },
-        {
-          "name": "damageAttributeType1",
-          "type": "number"
-        },
-        {
-          "name": "damageAttributeType2",
-          "type": "number"
-        },
-        {
-          "name": "damageAttributeType3",
-          "type": "number"
-        },
-        {
-          "name": "damageAttributeValue1",
-          "type": "number"
-        },
-        {
-          "name": "damageAttributeValue2",
-          "type": "number"
-        },
-        {
-          "name": "damageAttributeValue3",
-          "type": "number"
-        },
-        {
-          "name": "damageInterval",
-          "type": "number"
-        },
-        {
-          "name": "damagePower",
-          "type": "number"
-        },
-        {
-          "name": "dps",
-          "type": "number"
-        },
-        {
-          "name": "frequency",
-          "type": "number"
-        },
-        {
-          "name": "graphicsOffhandEquipmentId",
-          "type": "number"
-        },
-        {
-          "name": "graphicsOffhandVariantId",
-          "type": "number"
-        },
-        {
-          "name": "graphicsOffhandWeaponId",
-          "type": "number"
-        },
-        {
-          "name": "harvestLimit",
-          "type": "number"
-        },
-        {
-          "name": "harvestPotency",
-          "type": "number"
-        },
-        {
-          "name": "harvestRate",
-          "type": "number"
-        },
-        {
-          "name": "magicAttack",
-          "type": "number"
-        },
-        {
-          "name": "magicCritical",
-          "type": "number"
-        },
-        {
-          "name": "magicRate",
-          "type": "number"
-        },
-        {
-          "name": "parry",
-          "type": "number"
-        },
-        {
-          "name": "rate",
-          "type": "number"
-        }
-      ],
-      "methods": []
-    },
-    {
-      "name": "ZoneConnection",
-      "fullName": "Meteor.Map.dataobjects.ZoneConnection",
-      "members": [
-        {
-          "name": "buffer",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "lastPartialSize",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "socket",
-          "type": "any",
-          "writable": true
-        }
-      ],
-      "methods": [
-        {
-          "name": "Disconnect",
-          "returns": "nil",
-          "params": []
-        },
-        {
-          "name": "FlushQueuedSendPackets",
-          "returns": "nil",
-          "params": []
-        },
-        {
-          "name": "GetAddress",
-          "returns": "string",
-          "params": []
-        },
-        {
-          "name": "IsConnected",
-          "returns": "boolean",
-          "params": []
-        },
-        {
-          "name": "QueuePacket",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "subpacket",
-              "type": "any"
-            }
-          ]
-        },
-        {
-          "name": "RequestZoneChange",
-          "returns": "nil",
-          "params": [
-            {
-              "name": "sessionId",
-              "type": "number"
-            },
-            {
-              "name": "destinationZoneId",
-              "type": "number"
-            },
-            {
-              "name": "spawnType",
-              "type": "number"
-            },
-            {
-              "name": "spawnX",
-              "type": "number"
-            },
-            {
-              "name": "spawnY",
-              "type": "number"
-            },
-            {
-              "name": "spawnZ",
-              "type": "number"
-            },
-            {
-              "name": "spawnRotation",
-              "type": "number"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "PlayerWork",
-      "fullName": "Meteor.Map.dataobjects.chara.PlayerWork",
-      "members": [
-        {
-          "name": "birthdayDay",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "birthdayMonth",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "castCommandClient",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "castEndClient",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "comboCostBonusRate",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "comboNextCommandId",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "guardian",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "initialTown",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "isContentsCommand",
-          "type": "boolean",
-          "writable": true
-        },
-        {
-          "name": "isRemainBonusPoint",
-          "type": "boolean",
-          "writable": true
-        },
-        {
-          "name": "npcLinkshellChatCalling",
-          "type": "boolean[]",
-          "writable": true
-        },
-        {
-          "name": "npcLinkshellChatExtra",
-          "type": "boolean[]",
-          "writable": true
-        },
-        {
-          "name": "questGuildleve",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "questGuildleveComplete",
-          "type": "boolean[]",
-          "writable": true
-        },
-        {
-          "name": "questScenario",
-          "type": "number[]",
-          "writable": true
-        },
-        {
-          "name": "questScenarioComplete",
-          "type": "boolean[]",
-          "writable": true
-        },
-        {
-          "name": "restBonusExpRate",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "tribe",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "variableCommandConfirmRaise",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "variableCommandConfirmRaisePlace",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "variableCommandConfirmRaiseSender",
-          "type": "string",
-          "writable": true
-        },
-        {
-          "name": "variableCommandConfirmRaiseSenderByID",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "variableCommandConfirmRaiseSenderSex",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "variableCommandConfirmWarp",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "variableCommandConfirmWarpPlace",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "variableCommandConfirmWarpSender",
-          "type": "string",
-          "writable": true
-        },
-        {
-          "name": "variableCommandConfirmWarpSenderByID",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "variableCommandConfirmWarpSenderSex",
-          "type": "number",
-          "writable": true
-        }
-      ],
-      "methods": []
-    },
-    {
       "name": "LuaEngine",
       "fullName": "Meteor.Map.lua.LuaEngine",
       "members": [
@@ -19849,38 +20792,6 @@
       "methods": []
     },
     {
-      "name": "ParameterDataRequestPacket",
-      "fullName": "Meteor.Map.packets.receive.ParameterDataRequestPacket",
-      "members": [
-        {
-          "name": "OPCODE",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "PACKET_SIZE",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "actorID",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "invalidPacket",
-          "type": "boolean",
-          "writable": true
-        },
-        {
-          "name": "paramName",
-          "type": "string",
-          "writable": true
-        }
-      ],
-      "methods": []
-    },
-    {
       "name": "PingPacket",
       "fullName": "Meteor.Map.packets.receive.PingPacket",
       "members": [
@@ -20000,6 +20911,53 @@
         },
         {
           "name": "z",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "WorkSyncRequestPacket",
+      "fullName": "Meteor.Map.packets.receive.WorkSyncRequestPacket",
+      "members": [
+        {
+          "name": "OPCODE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "PACKET_SIZE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "actorID",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "from",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "invalidPacket",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "propertyName",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "requestingBitfield",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "to",
           "type": "number",
           "writable": true
         }
@@ -20915,11 +21873,11 @@
               "type": "number"
             },
             {
-              "name": "mapID",
+              "name": "regionId",
               "type": "number"
             },
             {
-              "name": "regionID",
+              "name": "placeId",
               "type": "number"
             }
           ]
@@ -21713,11 +22671,11 @@
               "type": "number"
             },
             {
-              "name": "val1",
+              "name": "layoutId",
               "type": "number"
             },
             {
-              "name": "val2",
+              "name": "instanceId",
               "type": "number"
             }
           ]
@@ -21837,6 +22795,11 @@
             {
               "name": "customName",
               "type": "string"
+            },
+            {
+              "name": "isSexMale",
+              "type": "boolean",
+              "optional": true
             }
           ]
         }
@@ -21955,6 +22918,20 @@
         }
       ],
       "methods": [
+        {
+          "name": "AddBitfield",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "id",
+              "type": "number"
+            },
+            {
+              "name": "data",
+              "type": "number[]"
+            }
+          ]
+        },
         {
           "name": "AddBuffer",
           "returns": "boolean",
@@ -26088,11 +27065,6 @@
           "name": "PACKET_SIZE",
           "type": "number",
           "static": true
-        },
-        {
-          "name": "cutsceneFlags",
-          "type": "boolean[]",
-          "writable": true
         }
       ],
       "methods": [
@@ -26109,16 +27081,20 @@
               "type": "string"
             },
             {
-              "name": "sNpcActorIdOffset",
-              "type": "number"
-            },
-            {
               "name": "sNpcSkin",
               "type": "number"
             },
             {
               "name": "sNpcPersonality",
               "type": "number"
+            },
+            {
+              "name": "sNpcCoordinate",
+              "type": "number"
+            },
+            {
+              "name": "completedQuests",
+              "type": "boolean[]"
             }
           ]
         }

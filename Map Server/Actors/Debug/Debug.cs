@@ -32,10 +32,10 @@ namespace Meteor.Map.Actors
         public DebugProg()
             : base(0x5FF80002)
         {
-            this.displayNameId = 0;
-            this.customDisplayName = "debug";
+            this.LocalizedDisplayName = 0;
+            this.DisplayName = "debug";
 
-            this.actorName = "debug";
+            this.Name = "debug";
             this.className = "Debug";
         }
 
@@ -43,7 +43,7 @@ namespace Meteor.Map.Actors
         {
             List<LuaParam> lParams;
             lParams = LuaUtils.CreateLuaParamList("/System/Debug.prog", false, false, false, false, true, 0xC51F, true, true);
-            return ActorInstantiatePacket.BuildPacket(actorId, actorName, className, lParams);
+            return ActorInstantiatePacket.BuildPacket(Id, Name, className, lParams);
         }
 
         public override List<SubPacket> GetSpawnPackets()

@@ -45,7 +45,7 @@ namespace  Meteor.Map.packets.send.actor.events
                     binWriter.Write((UInt32)0x44533088);
                     binWriter.Write((Single)100.0f);
                     binWriter.Seek(4, SeekOrigin.Current);
-                    binWriter.Write((Byte)(condition.outwards ? 0x11 : 0x1)); //If == 0x10, Inverted Bounding Box
+                    binWriter.Write((Byte)(condition.outwards ? 0x10 : 0x0)); //If == 0x10, Inverted Bounding Box
                     binWriter.Write((Byte)0);
                     binWriter.Write((Byte)(condition.silent ? 0x1 : 0x0)); //Silent Trigger
                     binWriter.Write(Encoding.ASCII.GetBytes(condition.conditionName), 0, Encoding.ASCII.GetByteCount(condition.conditionName) >= 0x24 ? 0x24 : Encoding.ASCII.GetByteCount(condition.conditionName));

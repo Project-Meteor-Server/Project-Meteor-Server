@@ -43,7 +43,7 @@ namespace  Meteor.Map.packets.send.actor.events
                 {
                     binWriter.Write((Byte)condition.unknown1); //Seen: 0, 1, E
                     binWriter.Write((Byte)condition.unknown2); //Seen: 0, 1
-                    binWriter.Write(Encoding.ASCII.GetBytes(condition.conditionName), 0, Encoding.ASCII.GetByteCount(condition.conditionName) >= 0x24 ? 0x24 : Encoding.ASCII.GetByteCount(condition.conditionName));
+                    binWriter.Write(Encoding.ASCII.GetBytes(condition.conditionName), 0, Encoding.ASCII.GetByteCount(condition.conditionName) >= 0x20 ? 0x20 : Encoding.ASCII.GetByteCount(condition.conditionName));
                 }
             }
 

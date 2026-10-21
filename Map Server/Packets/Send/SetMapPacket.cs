@@ -30,7 +30,7 @@ namespace Meteor.Map.packets.send
         public const ushort OPCODE = 0x0005;
         public const uint PACKET_SIZE = 0x30;
 
-        public static SubPacket BuildPacket(uint playerActorID, uint mapID, uint regionID)
+        public static SubPacket BuildPacket(uint playerActorID, uint regionId, uint placeId)
         {
             byte[] data = new byte[PACKET_SIZE - 0x20];
 
@@ -38,8 +38,8 @@ namespace Meteor.Map.packets.send
             {
                 using (BinaryWriter binWriter = new BinaryWriter(mem))
                 {
-                    binWriter.Write((uint)mapID);
-                    binWriter.Write((uint)regionID);
+                    binWriter.Write((uint)regionId);
+                    binWriter.Write((uint)placeId);
                     binWriter.Write((uint)0x28);
                 }
             }

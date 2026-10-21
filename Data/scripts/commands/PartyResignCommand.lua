@@ -6,7 +6,7 @@ Handles leaving a party
 
 --]]
 
-function onEventStarted(player, actor, triggerName)
-	player:PartyLeave(name);	
+function onEventStarted(player, actor, eventType, eventName)
+	player:PartyLeave();	
 	player:EndEvent();
 end

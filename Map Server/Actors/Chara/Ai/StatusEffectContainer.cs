@@ -97,7 +97,7 @@ namespace Meteor.Map.actors.chara.ai
             {
                 //Unsure why 10105 is the textId used
                 //Also unsure why magicshield is used
-                CommandResult action = new CommandResult(owner.actorId, 10105, (uint)(HitEffect.MagicEffectType | HitEffect.MagicShield | HitEffect.NoResist), dotTick);
+                CommandResult action = new CommandResult(owner.Id, 10105, (uint)(HitEffect.MagicEffectType | HitEffect.MagicShield | HitEffect.NoResist), dotTick);
                 utils.BattleUtils.HandleStoneskin(owner, action);
                 // todo: figure out how to make red numbers appear for enemies getting hurt by dots
                 resultContainer.AddAction(action);
@@ -202,7 +202,7 @@ namespace Meteor.Map.actors.chara.ai
                 if (newEffect != null && !newEffect.GetSilentOnGain())
                 {
                     if (actionContainer != null)
-                        actionContainer.AddAction(new CommandResult(owner.actorId, worldmasterTextId, newEffect.GetStatusEffectId() | (uint)HitEffect.StatusEffectType));
+                        actionContainer.AddAction(new CommandResult(owner.Id, worldmasterTextId, newEffect.GetStatusEffectId() | (uint)HitEffect.StatusEffectType));
                 }
 
                 // wont send a message about losing effect here
@@ -254,7 +254,7 @@ namespace Meteor.Map.actors.chara.ai
                 {
                     //Only send a message if we're using an actioncontainer and the effect normally sends a message when it's lost
                     if (actionContainer != null)
-                        actionContainer.AddAction(new CommandResult(owner.actorId, worldmasterTextId, effect.GetStatusEffectId() | (playEffect ? 0 : (uint)HitEffect.StatusLossType)));
+                        actionContainer.AddAction(new CommandResult(owner.Id, worldmasterTextId, effect.GetStatusEffectId() | (playEffect ? 0 : (uint)HitEffect.StatusLossType)));
                 }
 
                 //hidden effects not in charawork
@@ -382,7 +382,7 @@ namespace Meteor.Map.actors.chara.ai
         {
             owner.charaWork.status[index] = statusId;
 
-            statusSubpackets.Add(SetActorStatusPacket.BuildPacket(owner.actorId, (ushort)index, statusId));
+            statusSubpackets.Add(SetActorStatusPacket.BuildPacket(owner.Id, (ushort)index, statusId));
             owner.updateFlags |= ActorUpdateFlags.Status;
         }
 
@@ -439,7 +439,7 @@ namespace Meteor.Map.actors.chara.ai
             SetStatusAtIndex(index, (ushort) (newEffectId - 200000));
             SetTimeAtIndex(index, time);
 
-            return new CommandResult(owner.actorId, 30330, (uint) HitEffect.StatusEffectType | newEffectId);
+            return new CommandResult(owner.Id, 30330, (uint) HitEffect.StatusEffectType | newEffectId);
         }
     }
 }

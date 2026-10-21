@@ -27,7 +27,7 @@ markers = {         -- [id] = {overheadIcon, textIcon}
 }
 
 
-function onEventStarted(player, actor, triggerName, commandValue, category, unk1, unk2, targetActor, unk3, unk4, unk5, unk6)
+function onEventStarted(player, actor, eventType, eventName, commandValue, category, unk1, unk2, targetActor, unk3, unk4, unk5, unk6)
 	
     workName = "charaWork.parameterTemp.targetInformation";
     uiFunc = "charaWork/stateForAll";

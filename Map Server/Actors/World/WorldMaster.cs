@@ -31,10 +31,10 @@ namespace Meteor.Map.Actors
     {
         public WorldMaster() : base(0x5FF80001)
         {
-            this.displayNameId = 0;
-            this.customDisplayName = "worldMaster";
+            this.LocalizedDisplayName = 0;
+            this.DisplayName = "worldMaster";
 
-            this.actorName = "worldMaster";
+            this.Name = "worldMaster";
             this.className = "WorldMaster";
         }
 
@@ -42,7 +42,7 @@ namespace Meteor.Map.Actors
         {
             List<LuaParam> lParams;
             lParams = LuaUtils.CreateLuaParamList("/World/WorldMaster_event", false, false, false, false, false, null);
-            return ActorInstantiatePacket.BuildPacket(actorId, actorName, className, lParams);
+            return ActorInstantiatePacket.BuildPacket(Id, Name, className, lParams);
         }
 
         public override List<SubPacket> GetSpawnPackets()

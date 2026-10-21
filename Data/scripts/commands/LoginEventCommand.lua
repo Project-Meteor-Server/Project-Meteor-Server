@@ -8,7 +8,7 @@ Handles post-dream events.
 
 require ("global")
 
-function onEventStarted(player, actor, triggerName, dreamCode, innCode, narg1, narg2, bedActor)
+function onEventStarted(player, actor, eventType, eventName, dreamCode, innCode, narg1, narg2, bedActor)
 	
 	--In Plain Sight
 	if (dreamCode == 1) then

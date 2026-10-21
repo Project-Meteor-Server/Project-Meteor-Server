@@ -6,11 +6,11 @@ Handles disbanding the party.
 
 --]]
 
-function onEventStarted(player, actor, triggerName)
+function onEventStarted(player, actor, eventType, eventName)
 	worldMaster = GetWorldMaster();		
 	
 	if (player:IsPartyLeader()) then
-		player:PartyDisband(name)
+		player:PartyDisband()
 	else
 		player:SendGameMessage(player, worldMaster, 30540, 0x20);
 	end

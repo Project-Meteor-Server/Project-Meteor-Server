@@ -23,7 +23,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace Meteor.Map.dataobjects
+namespace Meteor.Map.DataObjects
 {
     class SearchEntry
     {

@@ -6,7 +6,7 @@ Handles requesting to change party leader and various errors.
 
 --]]
 
-function onEventStarted(player, actor, triggerName, name, arg2, arg3, arg4, actorId)
+function onEventStarted(player, actor, eventType, eventName, name, arg2, arg3, arg4, actorId)
 	worldMaster = GetWorldMaster();		
 	
 	if (player:IsPartyLeader()) then

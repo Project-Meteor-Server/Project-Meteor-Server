@@ -18,7 +18,7 @@ function onTrigger(player, argc)
 		player:SendGameMessage(player, worldMaster, 34108, 0x20);	
 		player:SendGameMessage(player, worldMaster, 50011, 0x20);	
 
-		director = player:GetZone():CreateDirector("Quest/QuestDirectorMan0l001");
+		director = player.CurrentArea:CreateDirector("Quest/QuestDirectorMan0l001");
 		player:AddDirector(director);
 		player:SetLoginDirector(director);
 		

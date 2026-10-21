@@ -26,7 +26,7 @@ namespace Meteor.Map.Actors
 
         public Command(uint actorID, string name) : base(actorID)
         {
-            actorName = name;
+            Name = name;
         }
 
     }

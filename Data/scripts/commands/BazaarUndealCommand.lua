@@ -13,7 +13,7 @@ Handles canceling bazaar items
 
 --]]
 
-function onEventStarted(player, actor, triggerName, rewardItem, seekItem, bazaarType, narg, bazaarActor, rewardAmount, seekAmount, narg, narg, type9ItemIds)
+function onEventStarted(player, actor, eventType, eventName, rewardItem, seekItem, bazaarType, narg, bazaarActor, rewardAmount, seekAmount, narg, narg, type9ItemIds)
 	
 	GetWorldManager():RemoveFromBazaar(player, player:GetItem(rewardItem));
 		

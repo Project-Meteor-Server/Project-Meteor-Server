@@ -3,25 +3,46 @@ require("global");
 local initClassItems, initRaceItems;
 
 function onBeginLogin(player)		
-	--New character, set the initial quest
+	-- New character, set the initial quest
 	if (player:GetPlayTime(false) == 0) then
 		initialTown = player:GetInitialTown();
 		if (initialTown == 1 and player:HasQuest(110001) == false) then
-			--player:AddQuest(110001);
+			player:AddQuest(110001);
 			player:SetHomePoint(1280001);
 		elseif (initialTown == 2 and player:HasQuest(110005) == false) then
-			--player:AddQuest(110005);
+			player:AddQuest(110005);
 			player:SetHomePoint(1280061);
 		elseif (initialTown == 3 and player:HasQuest(110009) == false) then
-			--player:AddQuest(110009);
+			player:AddQuest(110009);
 			player:SetHomePoint(1280031);
 		end		
 		
 	end
+	
+	-- Set Dream Packet if waking up in the inn
+	if (player.CurrentArea.ZoneId == 244) then
+		local dreamCode = 35;
+	
+		-- In Plain Sight wakeup dream
+		if (player:HasItem(10011243) and not player:HasQuest(110829)) then
+			dreamCode = 1;
+		-- The Usual Suspect wakeup dream
+		elseif (player:HasItem(10011252) and not player:HasQuest(110849)) then
+			dreamCode = 2;
+		-- Nael Van Darnus nightmare
+		--elseif (player:???) then
+		--	dreamCode = 20;
+		-- Random item
+		--elseif (player:???) then
+		--	dreamCode = math.random(21, 33);
+		end
+		
+		player:SetLoginDreamCode(dreamCode);
+	end
 
-	--For Opening. Set Director and reset position incase d/c
-	if (player:HasQuest(110001) == true and player:GetZoneID() == 193) then
-		director = player:GetZone():CreateDirector("OpeningDirector", false);		
+	-- For Opening. Set Director and reset position incase d/c
+	if (player:HasQuest(110001) == true and player.CurrentArea.ZoneId == 193) then
+		director = player.CurrentArea:CreateDirector("OpeningDirector", false);		
 		player:AddDirector(director);
 		director:StartDirector(true);
 		player:SetLoginDirector(director);		
@@ -31,10 +52,9 @@ function onBeginLogin(player)
 		player.positionY = 10.35;
 		player.positionZ = -36.91;
 		player.rotation = 0.025;
-		player:GetQuest(110001):ClearQuestData();
-		player:GetQuest(110001):ClearQuestFlags();
-	elseif (player:HasQuest(110005) == true and player:GetZoneID() == 166) then 
-		director = player:GetZone():CreateDirector("OpeningDirector", false);		
+		player:GetQuest(110001):GetData():ClearData();
+	elseif (player:HasQuest(110005) == true and player.CurrentArea.ZoneId == 166) then 
+		director = player.CurrentArea:CreateDirector("OpeningDirector", false);		
 		player:AddDirector(director);
 		director:StartDirector(false);		
 		player:SetLoginDirector(director);		
@@ -44,21 +64,19 @@ function onBeginLogin(player)
 		player.positionY = 4.21;
 		player.positionZ = -706.1074;
 		player.rotation = -1.26721;
-		player:GetQuest(110005):ClearQuestData();
-		player:GetQuest(110005):ClearQuestFlags();
-	elseif (player:HasQuest(110009) == true and player:GetZoneID() == 184) then
-		--director = player:GetZone():CreateDirector("OpeningDirector", false);		
-		--player:AddDirector(director);
-		--director:StartDirector(false);		
-		--player:SetLoginDirector(director);		
-		--player:KickEvent(director, "noticeEvent", true);
-		--
+		player:GetQuest(110005):GetData():ClearData();
+	elseif (player:HasQuest(110009) == true and player.CurrentArea.ZoneId == 184) then
+		director = player.CurrentArea:CreateDirector("OpeningDirector", false);		
+		player:AddDirector(director);
+		director:StartDirector(true);
+		player:SetLoginDirector(director);		
+		player:KickEvent(director, "noticeEvent", true);
+		
 		player.positionX = 5.364327;
 		player.positionY = 196.0;
 		player.positionZ = 133.6561;
 		player.rotation = -2.849384;
-		player:GetQuest(110009):ClearQuestData();
-		player:GetQuest(110009):ClearQuestFlags();
+		player:GetQuest(110009):GetData():ClearData();
 	end	
 end
 

@@ -22,8 +22,8 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 using Meteor.Common;
 using System;
 using System.Collections.Generic;
-using Meteor.Map.dataobjects;
-using Meteor.Map.dataobjects.chara;
+using Meteor.Map.DataObjects;
+using Meteor.Map.DataObjects.chara;
 using Meteor.Map.lua;
 using Meteor.Map.packets.WorldPackets.Send.Group;
 using Meteor.Map.utils;
@@ -36,6 +36,7 @@ using Meteor.Map.actors.chara.ai.controllers;
 using Meteor.Map.actors.chara.ai.utils;
 using Meteor.Map.actors.chara.ai.state;
 using Meteor.Map.actors.chara;
+using Meteor.Map.Actors.QuestNS;
 using Meteor.Map.packets.send;
 using Meteor.Map.packets.send.actor;
 using Meteor.Map.packets.send.events;
@@ -45,6 +46,7 @@ using Meteor.Map.packets.send.actor.battle;
 using Meteor.Map.packets.receive.events;
 using static Meteor.Map.LuaUtils;
 using Meteor.Map.packets.send.actor.events;
+using System.Text;
 
 namespace Meteor.Map.Actors
 {
@@ -116,6 +118,7 @@ namespace Meteor.Map.Actors
         public uint lastPlayTimeUpdate;
         public bool isGM = false;
         public bool isZoneChanging = true;
+        public byte LoginDreamCode = 0;
 
         //Trading
         private Player otherTrader = null;
@@ -147,6 +150,12 @@ namespace Meteor.Map.Actors
         public Quest[] questScenario = new Quest[16];
         public uint[] questGuildleve = new uint[8];
 
+        // The craft menu's Recent and Awarded recipe lists, newest first. The menu shows 8.
+        private const int MAX_RECIPE_LIST = 8;
+        private readonly List<Recipe> recentRecipes = new List<Recipe>();
+        private readonly List<Recipe> awardedRecipes = new List<Recipe>();
+        public QuestStateManager questStateManager;
+
         //Aetheryte
         public uint homepoint = 0;
         public byte homepointInn = 0;
@@ -163,6 +172,12 @@ namespace Meteor.Map.Actors
         private List<Director> ownedDirectors = new List<Director>();
         private Director loginInitDirector = null;
 
+        //SNpc (Path Companion)
+        public string SNpcNickname { set; get; }
+        public byte SNpcSkin { set; get; }
+        public byte SNpcPersonality { set; get; }
+        public short SNpcCoordinate { set; get; }
+
         List<ushort> hotbarSlotsToUpdate = new List<ushort>();
 
         public PlayerWork playerWork = new PlayerWork();
@@ -172,7 +187,7 @@ namespace Meteor.Map.Actors
         public Player(Session cp, uint actorID) : base(actorID)
         {
             playerSession = cp;
-            actorName = String.Format("_pc{0:00000000}", actorID);
+            Name = String.Format("_pc{0:00000000}", actorID);
             className = "Player";
 
             moveSpeeds[0] = SetActorSpeedPacket.DEFAULT_STOP;
@@ -240,8 +255,7 @@ namespace Meteor.Map.Actors
             charaWork.command[15] = 0xA0F00000 | 22015;            
 
             charaWork.commandAcquired[27150 - 26000] = true;
-
-            playerWork.questScenarioComplete[110001 - 110001] = true;
+            
             playerWork.questGuildleveComplete[120050 - 120001] = true;
 
             for (int i = 0; i < charaWork.additionalCommandAcquired.Length; i++ )
@@ -267,25 +281,33 @@ namespace Meteor.Map.Actors
 
             charaWork.parameterTemp.tp = 0;
 
+            SNpcNickname = "???";
+            SNpcSkin = 1;
+            SNpcPersonality = 1;
+            SNpcCoordinate = 1;
+
             Database.LoadPlayerCharacter(this);
             lastPlayTimeUpdate = Utils.UnixTimeStampUTC();
 
             this.aiContainer = new AIContainer(this, new PlayerController(this), null, new TargetFind(this));
             allegiance = CharacterTargetingAllegiance.Player;
             CalculateBaseStats();
+
+            questStateManager = new QuestStateManager(this);
+            questStateManager.Init(questScenario, playerWork.questScenarioComplete);
         }
 
         public List<SubPacket> Create0x132Packets()
         {
             List<SubPacket> packets = new List<SubPacket>();
-            packets.Add(_0x132Packet.BuildPacket(actorId, 0xB, "commandForced"));
-            packets.Add(_0x132Packet.BuildPacket(actorId, 0xA, "commandDefault"));
-            packets.Add(_0x132Packet.BuildPacket(actorId, 0x6, "commandWeak"));
-            packets.Add(_0x132Packet.BuildPacket(actorId, 0x4, "commandContent"));
-            packets.Add(_0x132Packet.BuildPacket(actorId, 0x6, "commandJudgeMode"));
-            packets.Add(_0x132Packet.BuildPacket(actorId, 0x100, "commandRequest"));
-            packets.Add(_0x132Packet.BuildPacket(actorId, 0x100, "widgetCreate"));
-            packets.Add(_0x132Packet.BuildPacket(actorId, 0x100, "macroRequest"));
+            packets.Add(_0x132Packet.BuildPacket(Id, 0xB, "commandForced"));
+            packets.Add(_0x132Packet.BuildPacket(Id, 0xA, "commandDefault"));
+            packets.Add(_0x132Packet.BuildPacket(Id, 0x6, "commandWeak"));
+            packets.Add(_0x132Packet.BuildPacket(Id, 0x4, "commandContent"));
+            packets.Add(_0x132Packet.BuildPacket(Id, 0x6, "commandJudgeMode"));
+            packets.Add(_0x132Packet.BuildPacket(Id, 0x100, "commandRequest"));
+            packets.Add(_0x132Packet.BuildPacket(Id, 0x100, "widgetCreate"));
+            packets.Add(_0x132Packet.BuildPacket(Id, 0x100, "macroRequest"));
             return packets;
         }
 
@@ -303,7 +325,7 @@ namespace Meteor.Map.Actors
         public override SubPacket CreateScriptBindPacket(Player requestPlayer)
         {
             List<LuaParam> lParams;
-            if (IsMyPlayer(requestPlayer.actorId))
+            if (IsMyPlayer(requestPlayer.Id))
             {
                 if (loginInitDirector != null)
                     lParams = LuaUtils.CreateLuaParamList("/Chara/Player/Player_work", false, false, true, loginInitDirector, true, 0, false, timers, true);
@@ -313,31 +335,49 @@ namespace Meteor.Map.Actors
             else
                 lParams = LuaUtils.CreateLuaParamList("/Chara/Player/Player_work", false, false, false, false, false, true);
 
-            ActorInstantiatePacket.BuildPacket(actorId, actorName, className, lParams).DebugPrintSubPacket();
+            ActorInstantiatePacket.BuildPacket(Id, Name, className, lParams).DebugPrintSubPacket();
 
 
-            return ActorInstantiatePacket.BuildPacket(actorId, actorName, className, lParams);
+            return ActorInstantiatePacket.BuildPacket(Id, Name, className, lParams);
         }
 
         public override List<SubPacket> GetSpawnPackets(Player requestPlayer, ushort spawnType)
         {
             List<SubPacket> subpackets = new List<SubPacket>();
             subpackets.Add(CreateAddActorPacket(8));
-            if (IsMyPlayer(requestPlayer.actorId))
+            if (IsMyPlayer(requestPlayer.Id))
                 subpackets.AddRange(Create0x132Packets());
             subpackets.Add(CreateSpeedPacket());
             subpackets.Add(CreateSpawnPositonPacket(this, spawnType));
             subpackets.Add(CreateAppearancePacket());
             subpackets.Add(CreateNamePacket());
-            subpackets.Add(_0xFPacket.BuildPacket(actorId));
+            subpackets.Add(_0xFPacket.BuildPacket(Id));
             subpackets.Add(CreateStatePacket());
             subpackets.Add(CreateSubStatePacket());
             subpackets.Add(CreateInitStatusPacket());
             subpackets.Add(CreateSetActorIconPacket());
             subpackets.Add(CreateIsZoneingPacket());
-            subpackets.AddRange(CreatePlayerRelatedPackets(requestPlayer.actorId));
+            subpackets.AddRange(CreatePlayerRelatedPackets(requestPlayer.Id));
             subpackets.Add(CreateScriptBindPacket(requestPlayer));
             return subpackets;
+        }
+
+        public new SubPacket CreateNamePacket()
+        {
+            bool isMale = true;
+            switch (playerWork.tribe)
+            {
+                case 2:
+                case 5:
+                case 7:
+                case 9:
+                case 11:
+                case 12:
+                case 13:
+                    isMale = false;
+                    break;
+            }
+            return SetActorNamePacket.BuildPacket(Id, DisplayName != null ? 0 : LocalizedDisplayName, LocalizedDisplayName == 0xFFFFFFFF | LocalizedDisplayName == 0x0 | DisplayName != null ? DisplayName : "", isMale);
         }
 
         public List<SubPacket> CreatePlayerRelatedPackets(uint requestingPlayerActorId)
@@ -345,46 +385,47 @@ namespace Meteor.Map.Actors
             List<SubPacket> subpackets = new List<SubPacket>();
 
             if (gcCurrent != 0)
-                subpackets.Add(SetGrandCompanyPacket.BuildPacket(actorId, gcCurrent, gcRankLimsa, gcRankGridania, gcRankUldah));
+                subpackets.Add(SetGrandCompanyPacket.BuildPacket(Id, gcCurrent, gcRankLimsa, gcRankGridania, gcRankUldah));
 
             if (currentTitle != 0)
-                subpackets.Add(SetPlayerTitlePacket.BuildPacket(actorId, currentTitle));
+                subpackets.Add(SetPlayerTitlePacket.BuildPacket(Id, currentTitle));
 
             if (currentJob != 0)
-                subpackets.Add(SetCurrentJobPacket.BuildPacket(actorId, currentJob));
+                subpackets.Add(SetCurrentJobPacket.BuildPacket(Id, currentJob));
 
             if (IsMyPlayer(requestingPlayerActorId))
             {
-                subpackets.Add(SetSpecialEventWorkPacket.BuildPacket(actorId));
+                subpackets.Add(SetSpecialEventWorkPacket.BuildPacket(Id));
 
                 if (hasChocobo && chocoboName != null && !chocoboName.Equals(""))
                 {
-                    subpackets.Add(SetChocoboNamePacket.BuildPacket(actorId, chocoboName));
-                    subpackets.Add(SetHasChocoboPacket.BuildPacket(actorId, hasChocobo));
+                    subpackets.Add(SetChocoboNamePacket.BuildPacket(Id, chocoboName));
+                    subpackets.Add(SetHasChocoboPacket.BuildPacket(Id, hasChocobo));
                 }
 
                 if (hasGoobbue)
-                    subpackets.Add(SetHasGoobbuePacket.BuildPacket(actorId, hasGoobbue));
+                    subpackets.Add(SetHasGoobbuePacket.BuildPacket(Id, hasGoobbue));
 
-                subpackets.Add(SetAchievementPointsPacket.BuildPacket(actorId, achievementPoints));
+                subpackets.Add(SetAchievementPointsPacket.BuildPacket(Id, achievementPoints));
 
                 subpackets.Add(Database.GetLatestAchievements(this));
                 subpackets.Add(Database.GetAchievementsPacket(this));
             }
 
             if (mountState == 1)
-                subpackets.Add(SetCurrentMountChocoboPacket.BuildPacket(actorId, chocoboAppearance, rentalExpireTime, rentalMinLeft));
+                subpackets.Add(SetCurrentMountChocoboPacket.BuildPacket(Id, chocoboAppearance, rentalExpireTime, rentalMinLeft));
             else if (mountState == 2)
-                subpackets.Add(SetCurrentMountGoobbuePacket.BuildPacket(actorId, 1));
+                subpackets.Add(SetCurrentMountGoobbuePacket.BuildPacket(Id, 1));
 
             //Inn Packets (Dream, Cutscenes, Armoire)   
-            if (zone.isInn)
+            if (CurrentArea.isInn)
             {
                 SetCutsceneBookPacket cutsceneBookPacket = new SetCutsceneBookPacket();
+                bool[] testComplete = new bool[2048]; //TODO: Change to playerwork.scenarioComplete
                 for (int i = 0; i < 2048; i++)
-                    cutsceneBookPacket.cutsceneFlags[i] = true;
-                QueuePacket(cutsceneBookPacket.BuildPacket(actorId, "<Path Companion>", 11, 1, 1));
-                QueuePacket(SetPlayerDreamPacket.BuildPacket(actorId, 0x16, GetInnCode()));
+                    testComplete[i] = true;
+                QueuePacket(cutsceneBookPacket.BuildPacket(Id, SNpcNickname, SNpcSkin, SNpcPersonality, SNpcCoordinate, testComplete));
+                QueuePacket(SetPlayerDreamPacket.BuildPacket(Id, LoginDreamCode, GetInnCode()));
             }
 
             return subpackets;
@@ -559,39 +600,39 @@ namespace Meteor.Map.Actors
 
         public void SendSeamlessZoneInPackets()
         {
-            QueuePacket(SetMusicPacket.BuildPacket(actorId, zone.bgmDay, SetMusicPacket.EFFECT_FADEIN));
-            QueuePacket(SetWeatherPacket.BuildPacket(actorId, SetWeatherPacket.WEATHER_CLEAR, 1));
+            QueuePacket(SetMusicPacket.BuildPacket(Id, CurrentArea.bgmDay, SetMusicPacket.EFFECT_FADEIN));
+            QueuePacket(SetWeatherPacket.BuildPacket(Id, SetWeatherPacket.WEATHER_CLEAR, 1));
         }
 
         public void SendZoneInPackets(WorldManager world, ushort spawnType)
         {
-            QueuePacket(SetActorIsZoningPacket.BuildPacket(actorId, false));
-            QueuePacket(SetDalamudPacket.BuildPacket(actorId, 0));
+            QueuePacket(SetActorIsZoningPacket.BuildPacket(Id, false));
+            QueuePacket(SetDalamudPacket.BuildPacket(Id, 7));
 
             //Music Packets
             if (currentMainState == SetActorStatePacket.MAIN_STATE_MOUNTED)
             {
                 if (rentalExpireTime != 0)
-                    QueuePacket(SetMusicPacket.BuildPacket(actorId, 64, 0x01)); //Rental
+                    QueuePacket(SetMusicPacket.BuildPacket(Id, 64, 0x01)); //Rental
                 else
                 {
                     if (mountState == 1)
-                        QueuePacket(SetMusicPacket.BuildPacket(actorId, 83, 0x01)); //Mount
+                        QueuePacket(SetMusicPacket.BuildPacket(Id, 83, 0x01)); //Mount
                     else
-                        QueuePacket(SetMusicPacket.BuildPacket(actorId, 98, 0x01)); //Goobbue
+                        QueuePacket(SetMusicPacket.BuildPacket(Id, 98, 0x01)); //Goobbue
                 }
             }
             else
-                QueuePacket(SetMusicPacket.BuildPacket(actorId, zone.bgmDay, 0x01)); //Zone
+                QueuePacket(SetMusicPacket.BuildPacket(Id, CurrentArea.bgmDay, 0x01)); //Zone
 
-            QueuePacket(SetWeatherPacket.BuildPacket(actorId, SetWeatherPacket.WEATHER_CLEAR, 1));
+            QueuePacket(SetWeatherPacket.BuildPacket(Id, SetWeatherPacket.WEATHER_CLEAR, 1));
 
-            QueuePacket(SetMapPacket.BuildPacket(actorId, zone.regionId, zone.actorId));
+            QueuePacket(SetMapPacket.BuildPacket(Id, CurrentArea.RegionId, CurrentArea.ZoneId));
 
             QueuePackets(GetSpawnPackets(this, spawnType));
 
             #region Inventory & Equipment
-            QueuePacket(InventoryBeginChangePacket.BuildPacket(actorId, true));
+            QueuePacket(InventoryBeginChangePacket.BuildPacket(Id, true));
             itemPackages[ItemPackage.NORMAL].SendFullPackage(this);
             itemPackages[ItemPackage.CURRENCY_CRYSTALS].SendFullPackage(this);
             itemPackages[ItemPackage.KEYITEMS].SendFullPackage(this);
@@ -599,12 +640,12 @@ namespace Meteor.Map.Actors
             itemPackages[ItemPackage.MELDREQUEST].SendFullPackage(this);
             itemPackages[ItemPackage.LOOT].SendFullPackage(this);
             equipment.SendUpdate(this);
-            playerSession.QueuePacket(InventoryEndChangePacket.BuildPacket(actorId));
+            playerSession.QueuePacket(InventoryEndChangePacket.BuildPacket(Id));
             #endregion
 
             playerSession.QueuePacket(GetInitPackets());
 
-            List<SubPacket> areaMasterSpawn = zone.GetSpawnPackets();
+            List<SubPacket> areaMasterSpawn = CurrentArea.GetSpawnPackets();
             List<SubPacket> debugSpawn = world.GetDebugActor().GetSpawnPackets();
             List<SubPacket> worldMasterSpawn = world.GetActor().GetSpawnPackets();
 
@@ -612,9 +653,9 @@ namespace Meteor.Map.Actors
             playerSession.QueuePacket(debugSpawn);
             playerSession.QueuePacket(worldMasterSpawn);
 
-            if (zone.GetWeatherDirector() != null)
+            if (CurrentArea.GetWeatherDirector() != null)
             {
-                playerSession.QueuePacket(zone.GetWeatherDirector().GetSpawnPackets());
+                playerSession.QueuePacket(CurrentArea.GetWeatherDirector().GetSpawnPackets());
             }
 
             foreach (Director director in ownedDirectors)
@@ -639,15 +680,15 @@ namespace Meteor.Map.Actors
             while (true)
             {
                 if (slots.Count - currentIndex >= 64)
-                    QueuePacket(InventoryRemoveX64Packet.BuildPacket(actorId, slots, ref currentIndex));
+                    QueuePacket(InventoryRemoveX64Packet.BuildPacket(Id, slots, ref currentIndex));
                 else if (slots.Count - currentIndex >= 32)
-                    QueuePacket(InventoryRemoveX32Packet.BuildPacket(actorId, slots, ref currentIndex));
+                    QueuePacket(InventoryRemoveX32Packet.BuildPacket(Id, slots, ref currentIndex));
                 else if (slots.Count - currentIndex >= 16)
-                    QueuePacket(InventoryRemoveX16Packet.BuildPacket(actorId, slots, ref currentIndex));
+                    QueuePacket(InventoryRemoveX16Packet.BuildPacket(Id, slots, ref currentIndex));
                 else if (slots.Count - currentIndex >= 8)
-                    QueuePacket(InventoryRemoveX08Packet.BuildPacket(actorId, slots, ref currentIndex));
+                    QueuePacket(InventoryRemoveX08Packet.BuildPacket(Id, slots, ref currentIndex));
                 else if (slots.Count - currentIndex == 1)
-                    QueuePacket(InventoryRemoveX01Packet.BuildPacket(actorId, slots[currentIndex]));
+                    QueuePacket(InventoryRemoveX01Packet.BuildPacket(Id, slots[currentIndex]));
                 else
                     break;
             }
@@ -656,7 +697,7 @@ namespace Meteor.Map.Actors
 
         public bool IsMyPlayer(uint otherActorId)
         {
-            return actorId == otherActorId;
+            return Id == otherActorId;
         }
 
         public void QueuePacket(SubPacket packet)
@@ -676,7 +717,7 @@ namespace Meteor.Map.Actors
             {
                 BasePacket packet = new BasePacket(path);
 
-                packet.ReplaceActorID(actorId);
+                packet.ReplaceActorID(Id);
                 var packets = packet.GetSubpackets();
                 QueuePackets(packets);
             }
@@ -694,7 +735,7 @@ namespace Meteor.Map.Actors
                 if (sendToSelf)
                 {
 
-                    SubPacket clonedPacket = new SubPacket(packet, actorId);
+                    SubPacket clonedPacket = new SubPacket(packet, Id);
                     QueuePacket(clonedPacket);
                 }
 
@@ -707,7 +748,7 @@ namespace Meteor.Map.Actors
                         if (p.Equals(this))
                             continue;
 
-                        SubPacket clonedPacket = new SubPacket(packet, a.actorId);
+                        SubPacket clonedPacket = new SubPacket(packet, a.Id);
                         p.QueuePacket(clonedPacket);
                     }
                 }
@@ -718,7 +759,7 @@ namespace Meteor.Map.Actors
         {
             if (sendToSelf)
             {
-                SubPacket clonedPacket = new SubPacket(packet, actorId);
+                SubPacket clonedPacket = new SubPacket(packet, Id);
                 QueuePacket(clonedPacket);
             }
 
@@ -731,7 +772,7 @@ namespace Meteor.Map.Actors
                     if (p.Equals(this))
                         continue;
 
-                    SubPacket clonedPacket = new SubPacket(packet, a.actorId);
+                    SubPacket clonedPacket = new SubPacket(packet, a.Id);
                     p.QueuePacket(clonedPacket);
                 }
             }
@@ -739,7 +780,7 @@ namespace Meteor.Map.Actors
 
         public void ChangeAnimation(uint animId)
         {
-            Actor a = zone.FindActorInArea(currentTarget);
+            Actor a = CurrentArea.FindActorInArea(currentTarget);
             if (a is Npc)
                 ((Npc)a).animationId = animId;
         }
@@ -748,14 +789,14 @@ namespace Meteor.Map.Actors
         {
             if (flag)
             {
-                BroadcastPacket(SetActorIconPacket.BuildPacket(actorId, SetActorIconPacket.DISCONNECTING), true);
+                BroadcastPacket(SetActorIconPacket.BuildPacket(Id, SetActorIconPacket.DISCONNECTING), true);
             }
             else
             {
                 if (isGM)
-                    BroadcastPacket(SetActorIconPacket.BuildPacket(actorId, SetActorIconPacket.ISGM), true);
+                    BroadcastPacket(SetActorIconPacket.BuildPacket(Id, SetActorIconPacket.ISGM), true);
                 else
-                    BroadcastPacket(SetActorIconPacket.BuildPacket(actorId, 0), true);
+                    BroadcastPacket(SetActorIconPacket.BuildPacket(Id, 0), true);
             }
         }
 
@@ -764,7 +805,7 @@ namespace Meteor.Map.Actors
             playerSession.LockUpdates(true);
 
             //Remove actor from zone and main server list
-            zone.RemoveActorFromZone(this);
+            CurrentArea.RemoveActorFromZone(this);
 
             //Set Destination to 0
             this.destinationZone = 0;
@@ -777,6 +818,13 @@ namespace Meteor.Map.Actors
             Database.SavePlayerPlayTime(this);
             Database.SavePlayerPosition(this);
             Database.SavePlayerStatusEffects(this);
+
+            //Save Quests
+            foreach (Quest quest in questScenario)
+            {
+                if (quest != null)
+                    quest.GetData().Save();
+            }    
         }
 
         public void CleanupAndSave(uint destinationZone, ushort spawnType, float destinationX, float destinationY, float destinationZ, float destinationRot)
@@ -784,7 +832,7 @@ namespace Meteor.Map.Actors
             playerSession.LockUpdates(true);
 
             //Remove actor from zone and main server list
-            zone.RemoveActorFromZone(this);
+            CurrentArea.RemoveActorFromZone(this);
 
             //Clean up parties
             RemoveFromCurrentPartyAndCleanup();
@@ -805,20 +853,15 @@ namespace Meteor.Map.Actors
             Database.SavePlayerStatusEffects(this);
         }
 
-        public Area GetZone()
-        {
-            return zone;
-        }
-
         public void SendMessage(uint logType, string sender, string message)
         {
-            QueuePacket(SendMessagePacket.BuildPacket(actorId, logType, sender, message));
+            QueuePacket(SendMessagePacket.BuildPacket(Id, logType, sender, message));
         }
 
         //Only use at logout since it's intensive
         private byte GetInnCode()
         {
-            if (zone.isInn)
+            if (CurrentArea.isInn)
             {
                 Vector3 position = new Vector3(positionX, 0, positionZ);
                 if (Utils.Distance(position, new Vector3(0, 0, 0)) <= 20f)
@@ -829,6 +872,16 @@ namespace Meteor.Map.Actors
                     return 1;
             }
             return 0;
+        }
+
+        public void SetLoginDreamCode(byte code)
+        {
+            LoginDreamCode = code;
+        }
+
+        public byte GetLoginDreamCode()
+        {
+            return LoginDreamCode;
         }
 
         public void SetSleeping()
@@ -860,14 +913,14 @@ namespace Meteor.Map.Actors
         public void Logout()
         {
             // todo: really this should be in CleanupAndSave but we might want logout/disconnect handled separately for some effects
-            QueuePacket(LogoutPacket.BuildPacket(actorId));
+            QueuePacket(LogoutPacket.BuildPacket(Id));
             statusEffects.RemoveStatusEffectsByFlags((uint)StatusEffectFlags.LoseOnLogout);
             CleanupAndSave();
         }
 
         public void QuitGame()
         {
-            QueuePacket(QuitPacket.BuildPacket(actorId));
+            QueuePacket(QuitPacket.BuildPacket(Id));
             statusEffects.RemoveStatusEffectsByFlags((uint)StatusEffectFlags.LoseOnLogout);
             CleanupAndSave();
         }
@@ -891,15 +944,29 @@ namespace Meteor.Map.Actors
 
         public void ChangeMusic(ushort musicId)
         {
-            QueuePacket(SetMusicPacket.BuildPacket(actorId, musicId, 1));
+            QueuePacket(SetMusicPacket.BuildPacket(Id, musicId, 1));
         }
+
+        public void ChangeMusic(ushort musicId, ushort musicTrackMode)
+        {
+            QueuePacket(SetMusicPacket.BuildPacket(Id, musicId, musicTrackMode));
+        }
+
+        // Back to the zone's own track, after crafting and the like change it.
+        public void ResetMusic()
+        {
+            ChangeMusic(CurrentArea.bgmDay);
+        }
+
+        
+
 
         public void SendMountAppearance()
         {
             if (mountState == 1)
-                BroadcastPacket(SetCurrentMountChocoboPacket.BuildPacket(actorId, chocoboAppearance, rentalExpireTime, rentalMinLeft), true);
+                BroadcastPacket(SetCurrentMountChocoboPacket.BuildPacket(Id, chocoboAppearance, rentalExpireTime, rentalMinLeft), true);
             else if (mountState == 2)
-                BroadcastPacket(SetCurrentMountGoobbuePacket.BuildPacket(actorId, 1), true);
+                BroadcastPacket(SetCurrentMountGoobbuePacket.BuildPacket(Id, 1), true);
         }
 
         public void SetMountState(byte mountState)
@@ -915,47 +982,57 @@ namespace Meteor.Map.Actors
 
         public void DoEmote(uint targettedActor, uint animId, uint descId)
         {
-            BroadcastPacket(ActorDoEmotePacket.BuildPacket(actorId, targettedActor, animId, descId), true);
+            BroadcastPacket(ActorDoEmotePacket.BuildPacket(Id, targettedActor, animId, descId), true);
         }
 
         public void SendGameMessage(Actor sourceActor, Actor textIdOwner, ushort textId, byte log, params object[] msgParams)
         {
             if (msgParams == null || msgParams.Length == 0)
             {
-                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().actorId, sourceActor.actorId, textIdOwner.actorId, textId, log));
+                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().Id, sourceActor.Id, textIdOwner.Id, textId, log));
             }
             else
-                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().actorId, sourceActor.actorId, textIdOwner.actorId, textId, log, LuaUtils.CreateLuaParamList(msgParams)));
+                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().Id, sourceActor.Id, textIdOwner.Id, textId, log, LuaUtils.CreateLuaParamList(msgParams)));
         }
 
         public void SendGameMessage(Actor textIdOwner, ushort textId, byte log, params object[] msgParams)
         {
             if (msgParams == null || msgParams.Length == 0)
-                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().actorId, textIdOwner.actorId, textId, log));
+                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().Id, textIdOwner.Id, textId, log));
             else
-                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().actorId, textIdOwner.actorId, textId, log, LuaUtils.CreateLuaParamList(msgParams)));
+                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().Id, textIdOwner.Id, textId, log, LuaUtils.CreateLuaParamList(msgParams)));
         }
 
-        public void SendGameMessageCustomSender(Actor textIdOwner, ushort textId, byte log, string customSender, params object[] msgParams)
+        public void SendGameMessageDisplayName(Actor textIdOwner, ushort textId, byte log, string customSender, params object[] msgParams)
         {
             if (msgParams == null || msgParams.Length == 0)
-                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().actorId, textIdOwner.actorId, textId, customSender, log));
+                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().Id, textIdOwner.Id, textId, customSender, log));
             else
-                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().actorId, textIdOwner.actorId, textId, customSender, log, LuaUtils.CreateLuaParamList(msgParams)));
+                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().Id, textIdOwner.Id, textId, customSender, log, LuaUtils.CreateLuaParamList(msgParams)));
         }
 
-        public void SendGameMessageDisplayIDSender(Actor textIdOwner, ushort textId, byte log, uint displayId, params object[] msgParams)
+        public void SendGameMessageLocalizedDisplayName(Actor textIdOwner, ushort textId, byte log, uint displayId, params object[] msgParams)
         {
             if (msgParams == null || msgParams.Length == 0)
-                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().actorId, textIdOwner.actorId, textId, displayId, log));
+                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().Id, textIdOwner.Id, textId, displayId, log));
             else
-                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().actorId, textIdOwner.actorId, textId, displayId, log, LuaUtils.CreateLuaParamList(msgParams)));
+                QueuePacket(GameMessagePacket.BuildPacket(Server.GetWorldManager().GetActor().Id, textIdOwner.Id, textId, displayId, log, LuaUtils.CreateLuaParamList(msgParams)));
         }
 
         public void BroadcastWorldMessage(ushort worldMasterId, params object[] msgParams)
         {
             //SubPacket worldMasterMessage = 
-            //zone.BroadcastPacketAroundActor(this, worldMasterMessage);
+            //CurrentArea.BroadcastPacketAroundActor(this, worldMasterMessage);
+        }
+
+        public void ChangeIntoNpc(Npc npc)
+        {
+            uint[] npcAppearIds = new uint[appearanceIds.Length];
+            for (int i = 0; i < appearanceIds.Length; i++)
+                npcAppearIds[i] = npc.appearanceIds[i];
+
+            SetActorAppearancePacket setappearance = new SetActorAppearancePacket(npc.modelId, npcAppearIds);
+            BroadcastPacket(setappearance.BuildPacket(Id), true);
         }
 
         public void GraphicChange(uint slot, uint graphicId)
@@ -1076,7 +1153,7 @@ namespace Meteor.Map.Actors
 
                 charaInfo1.AddTarget();
 
-                QueuePacket(charaInfo1.BuildPacket(actorId));
+                QueuePacket(charaInfo1.BuildPacket(Id));
             }
             else if (lastStep == 1)
             {
@@ -1107,9 +1184,45 @@ namespace Meteor.Map.Actors
 
                 charaInfo1.AddTarget();
 
-                QueuePacket(charaInfo1.BuildPacket(actorId));
+                QueuePacket(charaInfo1.BuildPacket(Id));
             }
            
+        }
+
+        private void SendAchievedAetheryte(ushort from, ushort to)
+        {
+            Bitstream fakeAetheryte = new Bitstream(512, true);
+
+            SetActorPropetyPacket completedQuestWorkUpdate = new SetActorPropetyPacket(from, to, "work/achieveAetheryte");
+            completedQuestWorkUpdate.AddBitfield(Utils.MurmurHash2("work.event_achieve_aetheryte", 0), fakeAetheryte.GetSlice(from, to));
+            completedQuestWorkUpdate.AddTarget();
+            QueuePacket(completedQuestWorkUpdate.BuildPacket(Id));
+        }
+
+        private void SendCompletedQuests(ushort from, ushort to)
+        {
+            byte[] data = questStateManager.GetCompletionSliceBytes(from, to);
+
+            SetActorPropetyPacket completedQuestWorkUpdate = new SetActorPropetyPacket(from, to, "playerWork/journal");            
+            completedQuestWorkUpdate.AddBitfield(Utils.MurmurHash2("playerWork.questScenarioComplete", 0), data);
+            completedQuestWorkUpdate.AddTarget();
+            QueuePacket(completedQuestWorkUpdate.BuildPacket(Id));
+        }
+
+        public void OnWorkSyncRequest(string propertyName, ushort from = 0, ushort to = 0)
+        {               
+            switch (propertyName)
+            {
+                case "charaWork/exp":
+                    SendCharaExpInfo();
+                    break;
+                case "work/achieveAetheryte":
+                    SendAchievedAetheryte(from, to);
+                    break;
+                case "playerWork/questCompleteS":
+                    SendCompletedQuests(from, to);
+                    break;
+            }
         }
 
         public int GetHighestLevel()
@@ -1295,7 +1408,7 @@ namespace Meteor.Map.Actors
         {
             foreach (Actor a in playerSession.actorInstanceList)
             {
-                if (a.actorId == actorId)
+                if (a.Id == actorId)
                     return a;
             }
 
@@ -1325,6 +1438,36 @@ namespace Meteor.Map.Actors
         public uint GetHomePoint()
         {
             return homepoint;
+        }
+
+        public List<Recipe> GetRecentRecipes()
+        {
+            return recentRecipes;
+        }
+
+        public List<Recipe> GetAwardedRecipes()
+        {
+            return awardedRecipes;
+        }
+
+        public void AddRecentRecipe(Recipe recipe)
+        {
+            AddToRecipeList(recentRecipes, recipe);
+        }
+
+        public void AddAwardedRecipe(Recipe recipe)
+        {
+            AddToRecipeList(awardedRecipes, recipe);
+        }
+
+        private static void AddToRecipeList(List<Recipe> list, Recipe recipe)
+        {
+            if (recipe == null)
+                return;
+            list.Remove(recipe);
+            list.Insert(0, recipe);
+            if (list.Count > MAX_RECIPE_LIST)
+                list.RemoveAt(MAX_RECIPE_LIST);
         }
 
         public byte GetHomePointInn()
@@ -1374,6 +1517,362 @@ namespace Meteor.Map.Actors
             return -1;
         }
 
+        #region Quests - Script Related
+        // Add quest from an active quest in the player's quest state. Quest scripts will use this to add a quest.
+        public bool AcceptQuest(Quest instance, bool isSilent = false)
+        {
+            if (instance == null)
+                return false;
+
+            int freeSlot = GetFreeQuestSlot();
+
+            if (freeSlot == -1)
+            {
+                SendGameMessage(Server.GetWorldManager().GetActor(), 25234, 0x20); // "You cannot accept any more quests at this time."
+                return false;
+            }
+
+            playerWork.questScenario[freeSlot] = instance.Id;
+            questScenario[freeSlot] = instance;
+            SendQuestClientUpdate(freeSlot);
+
+            if (!isSilent)
+            {
+                WorldMaster worldMaster = Server.GetWorldManager().GetActor();
+                SendDataPacket("attention", worldMaster, "", 25224, (object)questScenario[freeSlot].GetQuestId()); // "<Quest> accepted."
+                SendGameMessage(worldMaster, 25224, 0x20, (object)questScenario[freeSlot].GetQuestId()); // "<Quest> accepted."
+            }
+
+            instance.OnAccept();
+
+            Database.SaveQuest(this, questScenario[freeSlot], freeSlot);
+
+            return true;
+        }
+
+        // Replace a quest with another quest in the player's quest state.
+        public void ReplaceQuest(Quest oldQuestInstance, string questName)
+        {
+            for (int i = 0; i < questScenario.Length; i++)
+            {
+                if (questScenario[i] != null && questScenario[i].Equals(oldQuestInstance))
+                {                    
+                    SendQuestClientUpdate(i);
+                    oldQuestInstance.OnComplete();
+                    Database.SaveCompletedQuests(playerSession.GetActor());
+                    questStateManager.UpdateQuestCompleted(oldQuestInstance);
+                    Quest newQuestInstance = questStateManager.GetActiveQuest(((Quest)Server.GetStaticActors(questName)).GetQuestId());
+                    questScenario[i] = newQuestInstance;
+                    playerWork.questScenario[i] = questScenario[i].Id;
+                    newQuestInstance.OnAccept();
+                    Database.SaveQuest(this, questScenario[i], i);
+                    break;
+                }
+            }
+        }
+
+        public void CompleteQuest(Quest completed)
+        {
+            int slot = GetQuestSlot(completed);
+            if (slot >= 0)
+            {
+                // Remove the quest from the DB and update client work values
+                playerWork.questScenarioComplete[completed.GetQuestId() - 110001] = true;
+                questScenario[slot] = null;
+                playerWork.questScenario[slot] = 0;
+                SendQuestClientUpdate(slot);
+
+                // Reset active quest and quest state
+                completed.OnComplete();
+                Database.SaveCompletedQuests(playerSession.GetActor());
+                Database.RemoveQuest(this, completed.Id);
+                questStateManager.UpdateQuestCompleted(completed);
+
+                // Msg Player
+                SendGameMessage(Server.GetWorldManager().GetActor(), 25086, 0x20, (object)completed.GetQuestId()); // "<Quest> complete!"
+            }
+
+        }
+
+        public bool AbandonQuest(uint questId)
+        {
+            // Check if in an instance
+            if (CurrentArea.IsPrivate())
+            {
+                SendGameMessage(Server.GetWorldManager().GetActor(), 25235, 0x20); // "Quests cannot be abandoned while from within an instance."
+                return false;
+            }
+
+            // Get the quest object
+            int slot = GetQuestSlot(questId);
+            Quest abandoned = questScenario[slot];
+
+            if (abandoned == null)
+                return false;
+
+            // Check if Main Scenario
+            if (abandoned.IsMainScenario())
+            {
+                SendGameMessage(Server.GetWorldManager().GetActor(), 25233, 0x20); // "Main scenario quests cannot be abandoned."
+                return false;
+            }
+
+            // Remove the quest from the DB and update client work values
+            questScenario[slot] = null;
+            playerWork.questScenario[slot] = 0;
+            SendQuestClientUpdate(slot);
+
+            // Reset active quest and quest state
+            abandoned.OnAbandon();
+            Database.RemoveQuest(this, abandoned.Id);
+            questStateManager.UpdateQuestAbandoned();
+
+            // Msg Player
+            SendGameMessage(this, Server.GetWorldManager().GetActor(), 25236, 0x20, (object)abandoned.GetQuestId()); // "<Quest> abandoned."
+            return true;
+        }
+
+        public bool HasQuest(Quest questInstance)
+        {
+            return GetQuestSlot(questInstance) != -1;
+        }
+        #endregion
+
+        #region Quests - Debug/Misc Related
+        // Force-Add a quest by Id. Called be debug scripts.
+        public void AddQuest(int id, bool isSilent = false)
+        {
+            Actor actor = Server.GetStaticActors((0xA0F00000 | (uint)id));
+            AddQuest(actor.Name, isSilent);
+        }
+
+        // Force-Add a quest by Name. Called be debug scripts. Will try to use an active quest, otherwise adds a new instance.
+        public void AddQuest(string name, bool isSilent = false)
+        {
+            Quest baseQuest = (Quest)Server.GetStaticActors(name);
+            Quest activeQuest = questStateManager.GetActiveQuest(baseQuest.GetQuestId());
+
+            int freeSlot = GetFreeQuestSlot();
+
+            if (freeSlot == -1)
+                return;
+
+            playerWork.questScenario[freeSlot] = baseQuest.Id;
+            questScenario[freeSlot] = activeQuest ?? new Quest(this, baseQuest);
+
+            if (activeQuest == null)
+                questStateManager.ForceAddActiveQuest(questScenario[freeSlot]);
+            
+            SendQuestClientUpdate(freeSlot);
+
+            if (!isSilent)
+            {
+                SendGameMessage(Server.GetWorldManager().GetActor(), 25224, 0x20, (object)questScenario[freeSlot].GetQuestId());
+            }
+
+            questScenario[freeSlot].OnAccept();
+
+            Database.SaveQuest(this, questScenario[freeSlot], freeSlot);
+        }
+
+        public void RemoveQuest(int id)
+        {
+            for (int i = 0; i < questScenario.Length; i++)
+            {
+                if (questScenario[i] != null && questScenario[i].Id == (0xA0F00000 | id))
+                {
+                    Database.RemoveQuest(this, questScenario[i].Id);
+                    questScenario[i] = null;
+                    playerWork.questScenario[i] = 0;
+                    questStateManager.UpdateQuestAbandoned();
+                    SendQuestClientUpdate(i);
+                    break;
+                }
+            }
+        }
+
+        public void RemoveQuest(string name)
+        {
+            for (int i = 0; i < questScenario.Length; i++)
+            {
+                if (questScenario[i] != null && questScenario[i].Name.ToLower().Equals(name.ToLower()))
+                {
+                    Database.RemoveQuest(this, questScenario[i].Id);
+                    questScenario[i] = null;
+                    playerWork.questScenario[i] = 0;
+                    questStateManager.UpdateQuestAbandoned();
+                    SendQuestClientUpdate(i);
+                    break;
+                }
+            }
+        }
+
+        public bool HasQuest(string name)
+        {
+            for (int i = 0; i < questScenario.Length; i++)
+            {
+                if (questScenario[i] != null && questScenario[i].Name.ToLower().Equals(name.ToLower()))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public bool HasQuest(uint id)
+        {
+            for (int i = 0; i < questScenario.Length; i++)
+            {
+                if (questScenario[i] != null && questScenario[i].Id == (0xA0F00000 | id))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public bool IsQuestCompleted(uint id)
+        {
+            return questStateManager.IsQuestComplete(id);
+        }
+
+        public void SetQuestComplete(uint id, bool flag)
+        {
+            if (flag)
+            {
+                Quest currentQuest = GetQuest(id);
+                if (currentQuest != null)
+                {
+                    CompleteQuest(currentQuest);
+                    return;
+                }
+            }
+            questStateManager.ForceQuestCompleteFlag(id, flag);
+        }
+
+        public Quest GetQuest(uint id)
+        {
+            for (int i = 0; i < questScenario.Length; i++)
+            {
+                if (questScenario[i] != null && questScenario[i].Id == (0xA0F00000 | id))
+                    return questScenario[i];
+            }
+
+            return null;
+        }
+
+        public Quest GetQuest(string name)
+        {
+            for (int i = 0; i < questScenario.Length; i++)
+            {
+                if (questScenario[i] != null && questScenario[i].Name.ToLower().Equals(name.ToLower()))
+                    return questScenario[i];
+            }
+
+            return null;
+        }
+
+        public int GetQuestSlot(Quest quest)
+        {
+            for (int slot = 0; slot < questScenario.Length; slot++)
+            {
+                if (questScenario[slot] != null && questScenario[slot].Id == quest.Id)
+                    return slot;
+            }
+
+            return -1;
+        }
+
+        public int GetQuestSlot(uint id)
+        {
+            for (int slot = 0; slot < questScenario.Length; slot++)
+            {
+                if (questScenario[slot] != null && questScenario[slot].GetQuestId() == id)
+                    return slot;
+            }
+
+            return -1;
+        }
+        #endregion
+
+        #region SNpc Functions (Path Companion)
+        public void SetSNpc(string nickname, uint actorClassId, byte classType)
+        {
+            // Set name and appearance
+            SNpcNickname = nickname;
+            SNpcSkin = (byte) (actorClassId - 1070000);
+
+            switch (SNpcSkin % 16)
+            {
+                // Hyur Male
+                case 1:
+                    SNpcPersonality = 1;
+                    break;
+                // Hyur Female
+                case 2:
+                case 16:
+                    SNpcPersonality = 2;
+                    break;
+                // Elezen Male
+                case 3:
+                case 4:
+                    SNpcPersonality = 3;
+                    break;
+                // Elezen Female
+                case 5:
+                case 6:
+                    SNpcPersonality = 4;
+                    break;
+                // Lalafel Male
+                case 7:
+                case 8:
+                    SNpcPersonality = 5;
+                    break;
+                // Lalafel Female
+                case 9:
+                case 10:
+                    SNpcPersonality = 6;
+                    break;
+                // Miqo'te
+                case 11:
+                case 12:
+                    SNpcPersonality = 8;
+                    break;
+                // Roegadyn
+                case 13:
+                case 14:
+                    SNpcPersonality = 7;
+                    break;
+                // Highlander
+                case 15:
+                    SNpcPersonality = 9;
+                    break;
+            }
+
+            // Save to DB
+            Database.CreateOrUpdateSNpc(this, SNpcNickname, SNpcSkin, SNpcPersonality);
+        }
+
+        public string GetSNpcNickname()
+        {
+            return SNpcNickname ?? "???";
+        }
+
+        public byte GetSNpcSkin()
+        {
+            return SNpcSkin;
+        }
+
+        public byte GetSNpcPersonality()
+        {
+            return SNpcPersonality;
+        }
+
+        public short GetSNpcCoordinate()
+        {
+            return SNpcCoordinate;
+        }
+        #endregion
+
+        #region Guildleves
         public void AddGuildleve(uint id)
         {
             int freeSlot = GetFreeGuildleveSlot();
@@ -1418,177 +1917,7 @@ namespace Meteor.Map.Actors
                     }
                 }
             }
-        }
-
-        public void AddQuest(uint id, bool isSilent = false)
-        {
-            Actor actor = Server.GetStaticActors((0xA0F00000 | id));
-            AddQuest(actor.actorName, isSilent);
-        }
-
-        public void AddQuest(string name, bool isSilent = false)
-        {
-            Quest baseQuest = (Quest) Server.GetStaticActors(name);
-
-            if (baseQuest == null)
-                return;
-
-            int freeSlot = GetFreeQuestSlot();
-
-            if (freeSlot == -1)
-                return;
-
-            playerWork.questScenario[freeSlot] = baseQuest.actorId;
-            questScenario[freeSlot] = new Quest(this, baseQuest);
-            Database.SaveQuest(this, questScenario[freeSlot]);
-            SendQuestClientUpdate(freeSlot);
-
-            if (!isSilent)
-            {
-                SendGameMessage(Server.GetWorldManager().GetActor(), 25224, 0x20, (object)questScenario[freeSlot].GetQuestId());
-            }
-        }        
-
-        public void CompleteQuest(uint id)
-        {
-            Actor actor = Server.GetStaticActors((0xA0F00000 | id));
-            CompleteQuest(actor.actorName);
-        }
-
-        public void CompleteQuest(string name)
-        {
-            Actor actor = Server.GetStaticActors(name);
-
-            if (actor == null)
-                return;
-
-            uint id = actor.actorId;
-            if (HasQuest(id))
-            {
-                Database.CompleteQuest(playerSession.GetActor(), id);
-                SendGameMessage(Server.GetWorldManager().GetActor(), 25086, 0x20, (object)GetQuest(id).GetQuestId());
-                RemoveQuest(id);
-            }
-        }
-
-        //TODO: Add checks for you being in an instance or main scenario
-        public void AbandonQuest(uint id)
-        {
-            Quest quest = GetQuest(id);
-            RemoveQuestByQuestId(id);
-            quest.DoAbandon();       
-        }
-
-        public void RemoveQuestByQuestId(uint id)
-        {
-            RemoveQuest((0xA0F00000 | id));
-        }
-
-        public void RemoveQuest(uint id)
-        {
-            if (HasQuest(id))
-            {
-                for (int i = 0; i < questScenario.Length; i++)
-                {
-                    if (questScenario[i] != null && questScenario[i].actorId == id)
-                    {
-                        Database.RemoveQuest(this, questScenario[i].actorId);
-                        questScenario[i] = null;
-                        playerWork.questScenario[i] = 0;
-                        SendQuestClientUpdate(i);
-                        break;
-                    }
-                }
-            }
-        }
-
-        public void ReplaceQuest(uint oldId, uint newId)
-        {
-            if (HasQuest(oldId))
-            {
-                for (int i = 0; i < questScenario.Length; i++)
-                {
-                    if (questScenario[i] != null && questScenario[i].GetQuestId() == oldId)
-                    {
-                        Quest baseQuest = (Quest) Server.GetStaticActors((0xA0F00000 | newId));
-                        playerWork.questScenario[i] = (0xA0F00000 | newId);
-                        questScenario[i] = new Quest(this, baseQuest);
-                        Database.SaveQuest(this, questScenario[i]);
-                        SendQuestClientUpdate(i);
-                        break;
-                    }
-                }
-            }
-        }
-
-        public bool CanAcceptQuest(string name)
-        {
-            if (!IsQuestCompleted(name) && !HasQuest(name))
-                return true;
-            else
-                return false;
-        }
-
-        public bool CanAcceptQuest(uint id)
-        {
-            Actor actor = Server.GetStaticActors((0xA0F00000 | id));
-            return CanAcceptQuest(actor.actorName);
-        }
-
-        public bool IsQuestCompleted(string questName)
-        {
-            Actor actor = Server.GetStaticActors(questName);
-            return IsQuestCompleted(actor.actorId);
-        }
-
-        public bool IsQuestCompleted(uint questId)
-        {
-            return Database.IsQuestCompleted(this, 0xFFFFF & questId);
-        }
-
-        public Quest GetQuest(uint id)
-        {
-            for (int i = 0; i < questScenario.Length; i++)
-            {
-                if (questScenario[i] != null && questScenario[i].actorId == (0xA0F00000 | id))
-                    return questScenario[i];
-            }
-
-            return null;
-        }
-
-        public Quest GetQuest(string name)
-        {
-            for (int i = 0; i < questScenario.Length; i++)
-            {
-                if (questScenario[i] != null && questScenario[i].actorName.ToLower().Equals(name.ToLower()))
-                    return questScenario[i];
-            }
-
-            return null;
-        }
-
-        public bool HasQuest(string name)
-        {
-            for (int i = 0; i < questScenario.Length; i++)
-            {
-                if (questScenario[i] != null && questScenario[i].actorName.ToLower().Equals(name.ToLower()))
-                    return true;
-            }
-
-            return false;
-        }
-
-        public bool HasQuest(uint id)
-        {
-            for (int i = 0; i < questScenario.Length; i++)
-            {
-                if (questScenario[i] != null && questScenario[i].actorId == (0xA0F00000 | id))
-                    return true;
-            }
-
-            return false;
-        }
+        }      
 
         public bool HasGuildleve(uint id)
         {
@@ -1600,23 +1929,13 @@ namespace Meteor.Map.Actors
 
             return false;
         }
-
-        public int GetQuestSlot(uint id)
-        {
-            for (int i = 0; i < questScenario.Length; i++)
-            {
-                if (questScenario[i] != null && questScenario[i].actorId == (0xA0F00000 | id))
-                    return i;
-            }
-
-            return -1;
-        }
+        #endregion
 
         public Quest GetDefaultTalkQuest(Npc npc)
         {
             Quest defaultTalk = null;
 
-            switch (npc.zone.regionId)
+            switch (npc.CurrentArea.RegionId)
             {
                 case 101:
                     defaultTalk = (Quest) Server.GetStaticActors("DftSea");
@@ -1628,6 +1947,7 @@ namespace Meteor.Map.Actors
                     defaultTalk = (Quest) Server.GetStaticActors("DftFst");
                     break;
                 case 104:
+                case 107:
                     defaultTalk = (Quest) Server.GetStaticActors("DftWil");
                     break;
                 case 105:
@@ -1638,77 +1958,120 @@ namespace Meteor.Map.Actors
                     break;
             }
 
-            if (defaultTalk != null && defaultTalk.IsQuestENPC(this, npc))
+            if (defaultTalk != null && defaultTalk.IsQuestENPCByScript(this, npc))
                 return defaultTalk;
+
             return null;
         }
 
         public Quest GetTutorialQuest(Npc npc)
         {
-            switch (npc.GetActorClassId())
+            if (npc.CurrentArea.RegionId == 101 || npc.CurrentArea.RegionId == 103 || npc.CurrentArea.RegionId == 104)
             {
-                case 1000137:
-                    return (Quest)Server.GetStaticActors("Trl0l1");
-                case 1000230:
-                    return (Quest)Server.GetStaticActors("Trl0g1");
-                case 1000841:
-                    return (Quest)Server.GetStaticActors("Trl0u1");
+                switch (npc.GetActorClassId())
+                {
+                    case 1000137:
+                        return (Quest)Server.GetStaticActors("Trl0l1");
+                    case 1000230:
+                        return (Quest)Server.GetStaticActors("Trl0g1");
+                    case 1000841:
+                        return (Quest)Server.GetStaticActors("Trl0u1");
+                }
             }
             return null;
         }
 
         public Quest[] GetQuestsForNpc(Npc npc)
         {
-            return Array.FindAll(questScenario, e => e != null && e.IsQuestENPC(this, npc));
+            Quest[] quests = questStateManager.GetQuestsForNpc(npc, CurrentArea.IsPrivate());
+            Array.Sort(quests, (q1, q2) => (q1.HasData() ? 1 : 0) - (q2.HasData() ? 1 : 0));
+            return quests;
         }
 
-        public void HandleNpcLS(uint id)
+        public void ForceQuestStateUpdate()
+        {
+            questStateManager.ForceQuestStateUpdate();
+        }
+
+        public void HandleBNpcKill(uint bnpcClassId)
         {
             foreach (Quest quest in questScenario)
             {
                 if (quest != null)
-                    quest.OnNpcLS(this, id);
+                    quest.OnKillBNpc(this, bnpcClassId);
             }
         }
 
-        public void SetNpcLS(uint npcLSId, uint state)
+        public bool HandleNpcLs(uint id)
+        {
+            foreach (Quest quest in questScenario)
+            {
+                if (quest != null && quest.HasNpcLsMsgs(id))
+                {
+                    quest.OnNpcLs(this);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void AddNpcLs(uint npcLsId)
+        {
+            if (playerWork.npcLinkshellChatExtra[npcLsId - 1] == false && playerWork.npcLinkshellChatCalling[npcLsId - 1] == false)
+            {
+                SetNpcLs(npcLsId, NPCLS_INACTIVE);
+                SendGameMessage(Server.GetWorldManager().GetActor(), 25118, 0x20, npcLsId); // "<NpcLs> linkpearl obtained."
+            }
+        }
+
+        public bool HasNpcLs(uint npcLsId)
+        {
+            return !(playerWork.npcLinkshellChatExtra[npcLsId - 1] == false && playerWork.npcLinkshellChatCalling[npcLsId - 1] == false);
+        }
+
+        public void SetNpcLs(uint npcLsId, uint state)
         {            
             bool isCalling, isExtra;
             isCalling = isExtra = false;
+
+            if (npcLsId < 1 || npcLsId > 40)
+                return;
+
+            npcLsId--;
 
             switch (state)
             {
                 case NPCLS_INACTIVE:
 
-                    if (playerWork.npcLinkshellChatExtra[npcLSId] == true && playerWork.npcLinkshellChatCalling[npcLSId] == false)
+                    if (playerWork.npcLinkshellChatExtra[npcLsId] == true && playerWork.npcLinkshellChatCalling[npcLsId] == false)
                         return;
 
                     isExtra = true;
                     break;
                 case NPCLS_ACTIVE:
 
-                    if (playerWork.npcLinkshellChatExtra[npcLSId] == false && playerWork.npcLinkshellChatCalling[npcLSId] == true)
+                    if (playerWork.npcLinkshellChatExtra[npcLsId] == false && playerWork.npcLinkshellChatCalling[npcLsId] == true)
                         return;
 
                     isCalling = true;
                     break;
                 case NPCLS_ALERT:
 
-                    if (playerWork.npcLinkshellChatExtra[npcLSId] == true && playerWork.npcLinkshellChatCalling[npcLSId] == true)
+                    if (playerWork.npcLinkshellChatExtra[npcLsId] == true && playerWork.npcLinkshellChatCalling[npcLsId] == true)
                         return;
 
                     isExtra = isCalling = true;
                     break;
             }
 
-            playerWork.npcLinkshellChatExtra[npcLSId] = isExtra;
-            playerWork.npcLinkshellChatCalling[npcLSId] = isCalling;
+            playerWork.npcLinkshellChatExtra[npcLsId] = isExtra;
+            playerWork.npcLinkshellChatCalling[npcLsId] = isCalling;
 
-            Database.SaveNpcLS(this, npcLSId, isCalling, isExtra);
+            Database.SaveNpcLS(this, npcLsId, isCalling, isExtra);
 
             ActorPropertyPacketUtil propPacketUtil = new ActorPropertyPacketUtil("playerWork/npcLinkshellChat", this);
-            propPacketUtil.AddProperty(String.Format("playerWork.npcLinkshellChatExtra[{0}]", npcLSId));
-            propPacketUtil.AddProperty(String.Format("playerWork.npcLinkshellChatCalling[{0}]", npcLSId));
+            propPacketUtil.AddProperty(String.Format("playerWork.npcLinkshellChatExtra[{0}]", npcLsId));
+            propPacketUtil.AddProperty(String.Format("playerWork.npcLinkshellChatCalling[{0}]", npcLsId));
             QueuePackets(propPacketUtil.Done());
         }
 
@@ -1778,7 +2141,7 @@ namespace Meteor.Map.Actors
         {
             if (ownedDirectors.Contains(director))
             {
-                QueuePacket(RemoveActorPacket.BuildPacket(director.actorId));
+                QueuePacket(RemoveActorPacket.BuildPacket(director.Id));
                 ownedDirectors.Remove(director);
                 director.RemoveMember(this);
             }
@@ -1810,7 +2173,7 @@ namespace Meteor.Map.Actors
         {
             foreach (Director d in ownedDirectors)
             {
-                if (d.actorId == id)
+                if (d.Id == id)
                     return d;
             }
 
@@ -1825,15 +2188,15 @@ namespace Meteor.Map.Actors
             else
                 return;
 
-            QueuePacket(InventoryBeginChangePacket.BuildPacket(toBeExamined.actorId, true));
+            QueuePacket(InventoryBeginChangePacket.BuildPacket(toBeExamined.Id, true));
             toBeExamined.GetEquipment().SendUpdateAsItemPackage(this, ItemPackage.MAXSIZE_EQUIPMENT_OTHERPLAYER, ItemPackage.EQUIPMENT_OTHERPLAYER);
-            QueuePacket(InventoryEndChangePacket.BuildPacket(toBeExamined.actorId));
+            QueuePacket(InventoryEndChangePacket.BuildPacket(toBeExamined.Id));
         }        
 
         public void SendDataPacket(params object[] parameters)
         {
             List<LuaParam> lParams = LuaUtils.CreateLuaParamList(parameters);
-            SubPacket spacket = GenericDataPacket.BuildPacket(actorId, lParams);
+            SubPacket spacket = GenericDataPacket.BuildPacket(Id, lParams);
             spacket.DebugPrintSubPacket();
             QueuePacket(spacket);
         }
@@ -1857,7 +2220,7 @@ namespace Meteor.Map.Actors
                 return;
 
             List<LuaParam> lParams = LuaUtils.CreateLuaParamList(parameters);
-            SubPacket spacket = KickEventPacket.BuildPacket(actorId, actor.actorId, eventName, 5, lParams);
+            SubPacket spacket = KickEventPacket.BuildPacket(Id, actor.Id, eventName, 5, lParams);
             spacket.DebugPrintSubPacket();
             QueuePacket(spacket);
         }
@@ -1868,27 +2231,27 @@ namespace Meteor.Map.Actors
                 return;
 
             List<LuaParam> lParams = LuaUtils.CreateLuaParamList(parameters);
-            SubPacket spacket = KickEventPacket.BuildPacket(actorId, actor.actorId, eventName, 0, lParams);
+            SubPacket spacket = KickEventPacket.BuildPacket(Id, actor.Id, eventName, 5, lParams);
             spacket.DebugPrintSubPacket();
             QueuePacket(spacket);
         }
 
         public void SetEventStatus(Actor actor, string conditionName, bool enabled, byte type)
         {
-            QueuePacket(SetEventStatusPacket.BuildPacket(actor.actorId, enabled, type, conditionName));
+            QueuePacket(SetEventStatusPacket.BuildPacket(actor.Id, enabled, type, conditionName));
         }       
 
         public void RunEventFunction(string functionName, params object[] parameters)
         {
             List<LuaParam> lParams = LuaUtils.CreateLuaParamList(parameters);
-            SubPacket spacket = RunEventFunctionPacket.BuildPacket(actorId, currentEventOwner, currentEventName, currentEventType, functionName, lParams);
+            SubPacket spacket = RunEventFunctionPacket.BuildPacket(Id, currentEventOwner, currentEventName, currentEventType, functionName, lParams);
             spacket.DebugPrintSubPacket();
             QueuePacket(spacket);
         }
 
         public void EndEvent()
         {
-            SubPacket p = EndEventPacket.BuildPacket(actorId, currentEventOwner, currentEventName, currentEventType);
+            SubPacket p = EndEventPacket.BuildPacket(Id, currentEventOwner, currentEventName, currentEventType);
             p.DebugPrintSubPacket();
             QueuePacket(p);
 
@@ -1896,11 +2259,11 @@ namespace Meteor.Map.Actors
             currentEventName = "";
             currentEventType = 0;
             currentEventRunning = null;
-        }
+        }        
 
         public void BroadcastCountdown(byte countdownLength, ulong syncTime)
         {
-            BroadcastPacket(StartCountdownPacket.BuildPacket(actorId, countdownLength, syncTime, "Go!"), true);
+            BroadcastPacket(StartCountdownPacket.BuildPacket(Id, countdownLength, syncTime, "Go!"), true);
         }
         
         public void SendInstanceUpdate(bool force = false)
@@ -1910,8 +2273,8 @@ namespace Meteor.Map.Actors
             //Update Instance
             List<Actor> aroundMe = new List<Actor>();
 
-            if (zone != null)
-                aroundMe.AddRange(zone.GetActorsAroundActor(this, 50));
+            if (CurrentArea != null)
+                aroundMe.AddRange(CurrentArea.GetActorsAroundActor(this, 50));
             if (zone2 != null)
                 aroundMe.AddRange(zone2.GetActorsAroundActor(this, 50));
             playerSession.UpdateInstance(aroundMe, force);
@@ -1927,7 +2290,7 @@ namespace Meteor.Map.Actors
             if (IsInParty())
             {
                 Party party = (Party)currentParty;
-                return party.GetLeader() == actorId;
+                return party.GetLeader() == Id;
             }
             else
                 return false;
@@ -1989,7 +2352,7 @@ namespace Meteor.Map.Actors
 
             for (int i = 0; i < partyGroup.members.Count; i++)
             {
-                if (partyGroup.members[i] == actorId)
+                if (partyGroup.members[i] == Id)
                 {
                     partyGroup.members.RemoveAt(i);
                     break;
@@ -2010,8 +2373,8 @@ namespace Meteor.Map.Actors
             chocoboAppearance = appearanceId;
             chocoboName = nameResponse;
 
-            QueuePacket(SetChocoboNamePacket.BuildPacket(actorId, chocoboName));
-            QueuePacket(SetHasChocoboPacket.BuildPacket(actorId, hasChocobo));
+            QueuePacket(SetChocoboNamePacket.BuildPacket(Id, chocoboName));
+            QueuePacket(SetHasChocoboPacket.BuildPacket(Id, hasChocobo));
         }
 
         public void ChangeChocoboAppearance(byte appearanceId)
@@ -2076,7 +2439,7 @@ namespace Meteor.Map.Actors
                 {
                     rentalExpireTime = 0;
                     rentalMinLeft = 0;
-                    ChangeMusic(GetZone().bgmDay);
+                    ChangeMusic(CurrentArea.bgmDay);
                     SetMountState(0);
                     ChangeSpeed(0.0f, 2.0f, 5.0f, 5.0f);
                     ChangeState(0);
@@ -2088,7 +2451,8 @@ namespace Meteor.Map.Actors
             }
 
             aiContainer.Update(tick);
-            statusEffects.Update(tick);            
+            statusEffects.Update(tick);
+            questStateManager.Update(tick);
         }
 
         public override void PostUpdate(DateTime tick, List<SubPacket> packets = null)
@@ -2339,7 +2703,7 @@ namespace Meteor.Map.Actors
         public override void Cast(uint spellId, uint targetId = 0)
         {
             if (aiContainer.CanChangeState())
-                aiContainer.Cast(zone.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), spellId);
+                aiContainer.Cast(CurrentArea.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), spellId);
             else if (aiContainer.IsCurrentState<MagicState>())
                 // You are already casting.
                 SendGameMessage(Server.GetWorldManager().GetActor(), 32536, 0x20);
@@ -2351,7 +2715,7 @@ namespace Meteor.Map.Actors
         public override void Ability(uint abilityId, uint targetId = 0)
         {
             if (aiContainer.CanChangeState())
-                aiContainer.Ability(zone.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), abilityId);
+                aiContainer.Ability(CurrentArea.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), abilityId);
             else
                 // Please wait a moment and try again.
                 SendGameMessage(Server.GetWorldManager().GetActor(), 32535, 0x20);
@@ -2360,7 +2724,7 @@ namespace Meteor.Map.Actors
         public override void WeaponSkill(uint skillId, uint targetId = 0)
         {
             if (aiContainer.CanChangeState())
-                aiContainer.WeaponSkill(zone.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), skillId);
+                aiContainer.WeaponSkill(CurrentArea.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), skillId);
             else
                 // Please wait a moment and try again.
                 SendGameMessage(Server.GetWorldManager().GetActor(), 32535, 0x20);
@@ -2415,7 +2779,7 @@ namespace Meteor.Map.Actors
                         if (target is BattleNpc)
                         {
                             var helpingActorId = ((BattleNpc)target).GetMobMod((uint)MobModifier.CallForHelp);
-                            partyEngaged = this.actorId == helpingActorId || (((BattleNpc)target).GetMobMod((uint)MobModifier.FreeForAll) != 0);
+                            partyEngaged = this.Id == helpingActorId || (((BattleNpc)target).GetMobMod((uint)MobModifier.FreeForAll) != 0);
                         }
 
                         if (!partyEngaged)
@@ -2430,7 +2794,7 @@ namespace Meteor.Map.Actors
                             }
                         }
                     }
-                    else if (target.currentLockedTarget == actorId)
+                    else if (target.currentLockedTarget == Id)
                     {
                         partyEngaged = true;
                     }
@@ -2602,7 +2966,7 @@ namespace Meteor.Map.Actors
 
             //You earn [exp] (+[bonusPercent]%) experience points.
             //In non-english languages there are unique messages for each language, hence the use of ClassExperienceTextIds
-            actionList.Add(new CommandResult(actorId, BattleUtils.ClassExperienceTextIds[classId], 0, (ushort)exp, bonusPercent));
+            actionList.Add(new CommandResult(Id, BattleUtils.ClassExperienceTextIds[classId], 0, (ushort)exp, bonusPercent));
 
             bool leveled = false;
             int diff = MAXEXP[GetLevel() - 1] - charaWork.battleSave.skillPoint[classId - 1];            
@@ -2658,7 +3022,7 @@ namespace Meteor.Map.Actors
                 if (actionList != null)
                 {
                     if (classId == GetCurrentClassOrJob() || jobId == GetCurrentClassOrJob())
-                        actionList.Add(new CommandResult(actorId, 33926, 0, commandId));
+                        actionList.Add(new CommandResult(Id, 33926, 0, commandId));
                 }
             }
         }
@@ -2674,9 +3038,10 @@ namespace Meteor.Map.Actors
 
                 //33909: You attain level [level].
                 if (actionList != null)
-                    actionList.Add(new CommandResult(actorId, 33909, 0, (ushort)charaWork.battleSave.skillLevel[classId - 1]));
+                    actionList.Add(new CommandResult(Id, 33909, 0, (ushort)charaWork.battleSave.skillLevel[classId - 1]));
 
                 EquipAbilitiesAtLevel(classId, GetLevel(), actionList);
+                questStateManager.UpdateLevel(GetHighestLevel());
             }
         }
         
@@ -2707,7 +3072,7 @@ namespace Meteor.Map.Actors
         public void SetCurrentJob(byte jobId)
         {
             currentJob = jobId;
-            BroadcastPacket(SetCurrentJobPacket.BuildPacket(actorId, jobId), true);
+            BroadcastPacket(SetCurrentJobPacket.BuildPacket(Id, jobId), true);
             Database.LoadHotbar(this);
             SendCharaExpInfo();
         }
@@ -2918,14 +3283,14 @@ namespace Meteor.Map.Actors
         private void SendTradePackets()
         {
             //Send to self
-            QueuePacket(InventoryBeginChangePacket.BuildPacket(actorId, true));
+            QueuePacket(InventoryBeginChangePacket.BuildPacket(Id, true));
             myOfferings.SendUpdate(this);
-            QueuePacket(InventoryEndChangePacket.BuildPacket(actorId));
+            QueuePacket(InventoryEndChangePacket.BuildPacket(Id));
 
             //Send to other trader
-            otherTrader.QueuePacket(InventoryBeginChangePacket.BuildPacket(actorId, true));
+            otherTrader.QueuePacket(InventoryBeginChangePacket.BuildPacket(Id, true));
             myOfferings.SendUpdateAsItemPackage(otherTrader);
-            otherTrader.QueuePacket(InventoryEndChangePacket.BuildPacket(actorId));
+            otherTrader.QueuePacket(InventoryEndChangePacket.BuildPacket(Id));
         }
 
         public void AcceptTrade(bool accepted)
@@ -2947,9 +3312,9 @@ namespace Meteor.Map.Actors
                         offeredItem.SetNormal();
                 }
 
-                QueuePacket(InventoryBeginChangePacket.BuildPacket(actorId, true));
+                QueuePacket(InventoryBeginChangePacket.BuildPacket(Id, true));
                 myOfferings.SendUpdate(this);
-                QueuePacket(InventoryEndChangePacket.BuildPacket(actorId));
+                QueuePacket(InventoryEndChangePacket.BuildPacket(Id));
             }
 
             isTradeAccepted = false;

@@ -22,7 +22,7 @@ function onDamageTaken(effect, attacker, defender, skill, action, actionContaine
 
         defender:AddHP(absorbAmount);
         --30451: You recover [absorbAmount] HP.
-        actionContainer:AddHPAction(defender.actorId, 30451, absorbAmount)
+        actionContainer:AddHPAction(defender.Id, 30451, absorbAmount)
         --Dread Spike is lost after absorbing hp
         defender.statusEffects:RemoveStatusEffect(effect, actionContainer, 30331, false);
     end

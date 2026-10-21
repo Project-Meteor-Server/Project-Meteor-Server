@@ -24,7 +24,7 @@ function onSkillFinish(caster, target, skill, action, actionContainer)
         local amount = buff:GetExtra();
         caster:AddMP(amount);
 
-        actionContainer:AddMPAction(caster.actorId, 33007, amount);
+        actionContainer:AddMPAction(caster.Id, 33007, amount);
         caster.statusEffects:RemoveStatusEffect(buff, actionContainer, 30329);
     else
         --Blissful mind takes 25% of CURRENT HP and begins storing MP up to that point, at which point the buff changes to indicate its full

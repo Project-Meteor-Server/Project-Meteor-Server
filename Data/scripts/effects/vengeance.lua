@@ -10,6 +10,6 @@ function onDamageTaken(effect, attacker, defender, skill, action, actionContaine
         --30350: Counter! You hit target for x points of damage
         --There are counter messages for blocks, can Vengeance be blocked/parried?
         attacker:DelHP(amount, actionContainer);
-        actionContainer:AddHitAction(attacker.actorId, 30350, amount);
+        actionContainer:AddHitAction(attacker.Id, 30350, amount);
     end;
 end;

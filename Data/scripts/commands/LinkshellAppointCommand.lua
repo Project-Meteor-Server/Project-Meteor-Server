@@ -4,7 +4,7 @@ LinkshellAppointCommand Script
 
 --]]
 
-function onEventStarted(player, actor, triggerName, linkshellName, memberName, rank)
+function onEventStarted(player, actor, eventType, eventName, linkshellName, memberName, rank)
 
 	GetWorldManager():RequestWorldLinkshellRankChange(player, linkshellName, memberName, rank);	
 	player:EndEvent();

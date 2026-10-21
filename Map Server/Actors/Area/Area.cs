@@ -34,8 +34,9 @@ namespace Meteor.Map.Actors
 {
     class Area : Actor
     {
-        public string zoneName;        
-        public ushort regionId;
+        public string ZoneName { get; private set; }
+        public uint ZoneId { get; private set; }
+        public ushort RegionId { get; private set; }
         public bool isIsolated, canStealth, isInn, canRideChocobo, isInstanceRaid;
         public ushort weatherNormal, weatherCommon, weatherRare;
         public ushort bgmDay, bgmNight, bgmBattle;
@@ -59,12 +60,13 @@ namespace Meteor.Map.Actors
 
         LuaScript areaScript;
 
-        public Area(uint id, string zoneName, ushort regionId, string classPath, ushort bgmDay, ushort bgmNight, ushort bgmBattle, bool isIsolated, bool isInn, bool canRideChocobo, bool canStealth, bool isInstanceRaid)
-            : base(id)
+        public Area(uint zoneId, string zoneName, ushort regionId, string classPath, ushort bgmDay, ushort bgmNight, ushort bgmBattle, bool isIsolated, bool isInn, bool canRideChocobo, bool canStealth, bool isInstanceRaid)
+            : base((4 << 28 | zoneId << 19 | ((uint)1)))
         {
+            ZoneName = zoneName;
+            ZoneId = zoneId;
+            RegionId = regionId;
 
-            this.zoneName = zoneName;
-            this.regionId = regionId;
             this.canStealth = canStealth;
             this.isIsolated = isIsolated;
             this.isInn = isInn;
@@ -75,9 +77,9 @@ namespace Meteor.Map.Actors
             this.bgmNight = bgmNight;
             this.bgmBattle = bgmBattle;
 
-            this.displayNameId = 0;
-            this.customDisplayName = "_areaMaster";
-            this.actorName = String.Format("_areaMaster@{0:X5}", id << 8);
+            this.LocalizedDisplayName = 0;
+            this.DisplayName = "_areaMaster";
+            this.Name = String.Format("_areaMaster@{0:X5}", zoneId << 8);
 
             this.classPath = classPath;
             this.className = classPath.Substring(classPath.LastIndexOf("/") + 1);
@@ -97,11 +99,31 @@ namespace Meteor.Map.Actors
             }
         }
 
+        public virtual string GetPrivateAreaName()
+        {
+            return "";
+        }
+
+        public virtual int GetPrivateAreaType()
+        {
+            return 0;
+        }
+
+        public virtual bool IsPublic()
+        {
+            return true;
+        }
+
+        public virtual bool IsPrivate()
+        {
+            return !IsPublic();
+        }
+
         public override SubPacket CreateScriptBindPacket()
         {
             List<LuaParam> lParams;
-            lParams = LuaUtils.CreateLuaParamList(classPath, false, true, zoneName, "/Area/Zone/ZoneDefault", -1, (byte)1, true, false, false, false, false, false, false, false);
-            return ActorInstantiatePacket.BuildPacket(actorId, actorName, "ZoneDefault", lParams);
+            lParams = LuaUtils.CreateLuaParamList(classPath, false, true, ZoneName, "/Area/Zone/ZoneDefault", -1, (byte)1, true, false, false, false, false, false, false, false);
+            return ActorInstantiatePacket.BuildPacket(Id, Name, "ZoneDefault", lParams);
         }
 
         public override List<SubPacket> GetSpawnPackets()
@@ -127,8 +149,8 @@ namespace Meteor.Map.Actors
                 if (actor is Character)
                     ((Character)actor).ResetTempVars();
 
-                if (!mActorList.ContainsKey(actor.actorId))
-                    mActorList.Add(actor.actorId, actor);
+                if (!mActorList.ContainsKey(actor.Id))
+                    mActorList.Add(actor.Id, actor);
 
 
                 int gridX = (int)actor.positionX / boundingGridSize;
@@ -157,7 +179,7 @@ namespace Meteor.Map.Actors
             if (actor != null)
                 lock (mActorList)
                 {
-                    mActorList.Remove(actor.actorId);
+                    mActorList.Remove(actor.Id);
 
                     int gridX = (int)actor.positionX / boundingGridSize;
                     int gridY = (int)actor.positionZ / boundingGridSize;
@@ -365,7 +387,7 @@ namespace Meteor.Map.Actors
             {
                 foreach (Player player in mActorList.Values.OfType<Player>())
                 {
-                    if (player.customDisplayName.ToLower().Equals(name.ToLower()))
+                    if (player.DisplayName.ToLower().Equals(name.ToLower()))
                         return player;
                 }
                 return null;
@@ -459,11 +481,31 @@ namespace Meteor.Map.Actors
                     if (isIsolated)
                         continue;
 
-                    SubPacket clonedPacket = new SubPacket(packet, a.actorId);
+                    SubPacket clonedPacket = new SubPacket(packet, a.Id);
                     Player p = (Player)a;                        
                     p.QueuePacket(clonedPacket);
                 }
             }            
+        }
+
+        public void BroadcastPacketAroundPoint(float x, float y, SubPacket packet)
+        {
+            if (isIsolated)
+                return;
+
+            List<Actor> aroundActor = GetActorsAroundPoint(x, y, 50);
+            foreach (Actor a in aroundActor)
+            {
+                if (a is Player)
+                {
+                    if (isIsolated)
+                        continue;
+
+                    SubPacket clonedPacket = new SubPacket(packet, a.Id);
+                    Player p = (Player)a;
+                    p.QueuePacket(clonedPacket);
+                }
+            }
         }
 
         public void SpawnActor(SpawnLocation location)
@@ -475,15 +517,7 @@ namespace Meteor.Map.Actors
                 if (actorClass == null)
                     return;
 
-                uint zoneId;
-
-                if (this is PrivateArea)
-                    zoneId = ((PrivateArea)this).GetParentZone().actorId;
-                else
-                    zoneId = actorId;
-
-                Npc npc = new Npc(mActorList.Count + 1, actorClass, location.uniqueId, this, location.x, location.y, location.z, location.rot, location.state, location.animId, null);
-
+                Npc npc = new Npc(mActorList.Count + 1, actorClass, location.uniqueId, this, location.x, location.y, location.z, location.rot, 0, location.motionPack, null, location.mapObjLayoutId, location.mapObjInstanceId);
 
                 npc.LoadEventConditions(actorClass.eventConditions);
 
@@ -499,12 +533,6 @@ namespace Meteor.Map.Actors
 
                 if (actorClass == null)
                     return null;
-
-                uint zoneId;
-                if (this is PrivateArea)
-                    zoneId = ((PrivateArea)this).GetParentZone().actorId;
-                else
-                    zoneId = actorId;
 
                 Npc npc;
                 if (isMob)
@@ -531,13 +559,6 @@ namespace Meteor.Map.Actors
 
                 if (actorClass == null)
                     return null;
-
-                uint zoneId;
-
-                if (this is PrivateArea)
-                    zoneId = ((PrivateArea)this).GetParentZone().actorId;
-                else
-                    zoneId = actorId;
 
                 Npc npc = new Npc(mActorList.Count + 1, actorClass, uniqueId, this, x, y, z, 0, regionId, layoutId);
 
@@ -580,7 +601,7 @@ namespace Meteor.Map.Actors
 
             if (player != null && !zoneWide)
             {
-                player.QueuePacket(SetWeatherPacket.BuildPacket(player.actorId, weather, transitionTime));
+                player.QueuePacket(SetWeatherPacket.BuildPacket(player.Id, weather, transitionTime));
             }
             if (zoneWide)
             {
@@ -591,7 +612,7 @@ namespace Meteor.Map.Actors
                         if (actor.Value is Player)
                         {
                             player = ((Player)actor.Value);
-                            player.QueuePacket(SetWeatherPacket.BuildPacket(player.actorId, weather, transitionTime));
+                            player.QueuePacket(SetWeatherPacket.BuildPacket(player.Id, weather, transitionTime));
                         }
                     }
                 }
@@ -603,7 +624,7 @@ namespace Meteor.Map.Actors
             lock (directorLock)
             {
                 Director director = new Director(directorIdCount, this, path, hasContentGroup, args);
-                currentDirectors.Add(director.actorId, director);
+                currentDirectors.Add(director.Id, director);
                 directorIdCount++;
                 return director;
             }
@@ -651,7 +672,7 @@ namespace Meteor.Map.Actors
             lock (directorLock)
             {
                 GuildleveDirector director = new GuildleveDirector(directorIdCount, this, directorScriptPath, glid, difficulty, owner, args);
-                currentDirectors.Add(director.actorId, director);
+                currentDirectors.Add(director.Id, director);
                 directorIdCount++;
                 return director;
             }

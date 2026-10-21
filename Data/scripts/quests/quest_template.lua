@@ -46,10 +46,11 @@ end
 function onFinish(player, quest)
 end
 
--- Called when a sequence starts, either from the quest progressing to the next sequence, or from the 
--- player loading in with an already in progress quest. This class should add all appropriate ENPCs and 
--- configure them to the current quest state (flags, counters, etc).
-function onSequence(player, quest, seqNum)
+-- Called when a quest is initialzied in an unaccepted state, when a sequence starts, either from the quest 
+-- progressing to the next sequence, or from the player loading in with an already in progress quest. Data 
+-- changes will also trigger this function. This class should set all appropriate ENPCs and configure them 
+-- to the current quest state (flags, counters, etc).
+function onStateChange(player, quest, sequence)
 end
 
 -- Called when an ENPC is talked to; only ENPCs that are currently added to the quest will trigger this.
@@ -69,8 +70,17 @@ end
 function onNotice(player, quest, npc, eventName)
 end
 
--- Called when the player clicks on an NPC Linkshell. Check the id and send a message if there is one.
-function onNpcLS(player, npcLSId)
+-- Called when the player clicks on an NPC Linkshell. Check the from value and send a message if there is one.
+-- NPC LS sequence can come in multiple steps where a player must click the button over and over. Use 
+-- `quest:NewNpcLsMsg(<npcLsId>);` to flag the player as having a new message from a certain npc.
+-- Use `quest:ReadNpcLsMsg();` to increment msgStep and keep the ls in the active state. Use `quest:EndOfNpcLsMsgs();`
+-- to set the NPC LS to an inactive state once all msgs have been displayed.
+function onNpcLS(player, quest, from, msgStep)
+end
+
+-- Called when a player kills a BNPC. Use this for kill objectives to increment timers. Check against the
+-- current sequence and BNPC actor class id.
+function onKillBNpc(player, quest, bnpc)
 end
 
 -- This is called by the RequestQuestJournalCommand to retrieve any extra information about the quest.

@@ -19,7 +19,7 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 ===========================================================================
 */
 
-using Meteor.Map.dataobjects;
+using Meteor.Map.DataObjects;
 using System.Collections.Generic;
 using System.IO;
 

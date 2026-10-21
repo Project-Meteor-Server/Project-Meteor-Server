@@ -19,126 +19,203 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 ===========================================================================
 */
 
+using Meteor.Common;
 using Meteor.Map.lua;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
-namespace Meteor.Map.Actors
+namespace Meteor.Map.Actors.QuestNS
 {
     class Quest : Actor
     {
-        public const ushort SEQ_NOT_STARTED = ushort.MaxValue;
+        public const ushort SEQ_NOT_STARTED = 65535;
+        public const ushort SEQ_COMPLETED = 65534;
 
-        public class ENpcQuestInstance
-        {
-            public readonly uint actorClassId;
-            public byte questFlagType { set; get; }
-            public bool isSpawned { set; get; }
-            public bool isTalkEnabled { set; get; }
-            public bool isEmoteEnabled { set; get; }
-            public bool isPushEnabled { set; get; }
-
-            public ENpcQuestInstance(uint actorClassId, byte questFlagType, bool isSpawned, bool isTalkEnabled, bool isEmoteEnabled, bool isPushEnabled)
-            {
-                this.actorClassId = actorClassId;
-                this.questFlagType = questFlagType;
-                this.isSpawned = isSpawned;
-                this.isTalkEnabled = isTalkEnabled;
-                this.isEmoteEnabled = isEmoteEnabled;
-                this.isPushEnabled = isPushEnabled;
-            }
-        }
-
-        private struct QuestData
-        {
-            public UInt32 flags;
-            public UInt16 counter1;
-            public UInt16 counter2;
-            public UInt16 counter3;
-            public UInt16 counter4;
-
-            public QuestData(uint flags, ushort counter1, ushort counter2, ushort counter3) : this()
-            {
-                this.flags = flags;
-                this.counter1 = counter1;
-                this.counter2 = counter2;
-                this.counter3 = counter3;
-            }
-        }
-
-        private Player Owner;
+        private Player owner;
         private ushort currentSequence;
-        private QuestData data = new QuestData();
-        private Dictionary<uint, ENpcQuestInstance> ActiveENpcs = new Dictionary<uint, ENpcQuestInstance>();
+        private QuestState questState = null;
+        private QuestData data = null;
+        private bool isUpdating = false;
 
-        public void AddENpc(uint classId, byte flagType = 0, bool isTalkEnabled = false, bool isEmoteEnabled = false, bool isPushEnabled = false, bool isSpawned = false)
+        // Creates a Static Quest for the StaticActors list.
+        public Quest(uint actorID, string className, string classPath)
+            : base(actorID)
         {
-            if (ActiveENpcs.ContainsKey(classId))
-                return;
-
-            ENpcQuestInstance instance = new ENpcQuestInstance(classId, flagType, isSpawned, isTalkEnabled, isEmoteEnabled, isPushEnabled);
-            ActiveENpcs.Add(classId, instance);           
-            Owner.playerSession.UpdateQuestNpcInInstance(instance);
-        }
-        
-        public void ClearENpcs()
-        {
-            foreach (ENpcQuestInstance instance in ActiveENpcs.Values)            
-                Owner.playerSession.UpdateQuestNpcInInstance(instance, true);                
-            
-            ActiveENpcs.Clear();
+            Name = className;
+            this.className = className;
+            this.classPath = classPath;
         }
 
-        public void UpdateENpc(uint classId, int param, object value)
+        // Creates a Static Quest from another Static Quest
+        public Quest(Quest staticQuest)
+            : this(staticQuest.Id, staticQuest.Name, staticQuest.classPath)
+        { }
+
+        // Creates a Instance Quest that has been started.
+        public Quest(Player owner, Quest staticQuest, ushort sequence) : this(staticQuest)
         {
-            if (!ActiveENpcs.ContainsKey(classId))
-                return;
+            this.owner = owner;
+            currentSequence = sequence;
+            questState = new QuestState(owner, this);
+            questState.UpdateState();
         }
 
-        public ENpcQuestInstance GetENpcInstance(uint classId)
+        // Creates a Instance Quest that has been started with data.
+        public Quest(Player owner, Quest staticQuest, ushort sequence, uint flags, ushort counter1, ushort counter2, ushort counter3, ushort counter4, uint time, uint npcLsFrom, byte npcLsMsgStep) : this(staticQuest)
         {
-            if (ActiveENpcs.ContainsKey(classId))
-                return ActiveENpcs[classId];
-            return null;
+            this.owner = owner;
+            currentSequence = sequence;
+            data = new QuestData(owner, this, flags, counter1, counter2, counter3, counter4, time, npcLsFrom, npcLsMsgStep);
+            questState = new QuestState(owner, this);
+            questState.UpdateState();
+        }
+
+        // Creates a Instance Quest that has not been started.
+        public Quest(Player owner, Quest staticQuest) : this(owner, staticQuest, SEQ_NOT_STARTED)
+        { }
+
+        #region Getters
+        public uint GetQuestId()
+        {
+            return Id & 0xFFFFF;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj != null && obj is Quest quest)
+                return quest.Id == this.Id;
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        public bool IsInstance()
+        {
+            return questState != null;
+        }
+
+        public bool IsMainScenario()
+        {
+            uint id = GetQuestId();
+            return id >= 110001 && id <= 110021;
+        }
+
+        public ushort GetSequence()
+        {
+            return currentSequence;
+        }
+        #endregion
+
+        #region Quest Data
+
+        public QuestData GetData()
+        {
+            return data;
+        }
+
+        public bool HasData()
+        {
+            return data != null;
+        }
+        #endregion
+
+        #region Quest State
+        public void SetENpc(uint classId, byte flagType = 0, bool isTalkEnabled = true, bool isPushEnabled = false, bool isEmoteEnabled = false, bool isSpawned = false)
+        {
+            if (questState != null)
+                questState.AddENpc(classId, flagType, isTalkEnabled, isPushEnabled, isEmoteEnabled, isSpawned);
+        }
+
+        public void UpdateENPCs()
+        {
+            if (data != null && data.Dirty)
+            {
+                if (questState != null)
+                    questState.UpdateState();
+                data.ClearDirty();
+            }
+        }
+
+        public void NewNpcLsMsg(uint from)
+        {
+            if (!owner.HasNpcLs(from))
+                owner.AddNpcLs(from);
+
+            data.SetNpcLsFrom(from);
+            owner.SetNpcLs(from, Player.NPCLS_ALERT);            
+            owner.SendGameMessage(Server.GetWorldManager().GetActor(), 25119, 0x20, (object)from); // A glow emanates from the <NpcLs> linkpearl. 
+        }
+
+        public void ReadNpcLsMsg()
+        {            
+            data.IncrementNpcLsMsgStep();
+            owner.SetNpcLs(data.GetNpcLsFrom(), Player.NPCLS_ACTIVE);
+        }
+
+        public void EndOfNpcLsMsgs()
+        {
+            owner.SetNpcLs(data.GetNpcLsFrom(), Player.NPCLS_INACTIVE);
+            data.ClearNpcLs();
+        }
+
+        public bool HasNpcLsMsgs(uint from)
+        {
+            return data.GetNpcLsFrom() == from;
+        }
+
+        public int GetNpcLsMsgStep()
+        {
+            return data.GetMsgStep();
+        }
+
+        public QuestState GetQuestState()
+        {
+            return questState;
+        }
+        #endregion
+
+        #region Script Callbacks
+        public void OnCommand(Player caller, Npc npc, string triggerName)
+        {
+            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onCommand", true, npc, triggerName);
         }
 
         public void OnTalk(Player caller, Npc npc)
-        {        
-            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onTalk", true, npc);            
-        }
-
-        public void OnEmote(Player caller, Npc npc, Command command)
         {
-            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onEmote", true, npc, command);
+            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onTalk", true, npc);
         }
 
-        public void OnPush(Player caller, Npc npc)
+        public void OnEmote(Player caller, Npc npc, string triggerName)
         {
-            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onPush", true, npc);
+            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onEmote", true, npc, triggerName);
         }
 
-        public void OnNotice(Player caller, Npc npc)
+        public void OnPush(Player caller, Npc npc, string triggerName)
         {
-            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onNotice", true, npc);
+            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onPush", true, npc, triggerName);
         }
 
-        public void OnNpcLS(Player caller, uint npcLSId)
+        public void OnNotice(Player caller, string triggerName)
         {
-            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onNpcLS", true, npcLSId);
+            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onNotice", true, triggerName);
         }
 
-        public bool IsQuestENPC(Player caller, Npc npc)
+        public void OnKillBNpc(Player caller, uint classId)
         {
-            List<LuaParam> returned = LuaEngine.GetInstance().CallLuaFunctionForReturn(caller, this, "IsQuestENPC", true, npc, this);
-            bool scriptReturned = returned != null && returned.Count != 0 && returned[0].typeID == 3;
-            return scriptReturned || ActiveENpcs.ContainsKey(npc.GetActorClassId());
+            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onKillBNpc", true, classId);
         }
 
+        public void OnNpcLs(Player caller)
+        {
+            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onNpcLS", true, data.GetNpcLsFrom(), data.GetMsgStep());
+        }
 
         public object[] GetJournalInformation()
         {
-            List<LuaParam> returned = LuaEngine.GetInstance().CallLuaFunctionForReturn(Owner, this, "getJournalInformation", true);
+            List<LuaParam> returned = LuaEngine.GetInstance().CallLuaFunctionForReturn(owner, this, "getJournalInformation", true);
             if (returned != null && returned.Count != 0)
                 return LuaUtils.CreateLuaParamObjectList(returned);
             else
@@ -147,180 +224,79 @@ namespace Meteor.Map.Actors
 
         public object[] GetJournalMapMarkerList()
         {
-            List<LuaParam> returned = LuaEngine.GetInstance().CallLuaFunctionForReturn(Owner, this, "getJournalMapMarkerList", true);
+            List<LuaParam> returned = LuaEngine.GetInstance().CallLuaFunctionForReturn(owner, this, "getJournalMapMarkerList", true);
             if (returned != null && returned.Count != 0)
                 return LuaUtils.CreateLuaParamObjectList(returned);
             else
                 return new object[0];
         }
+        #endregion
 
-        public ushort GetSequence()
+        public bool IsQuestENPC(Player caller, Npc npc)
         {
-            return currentSequence;
+            //List<LuaParam> returned = LuaEngine.GetInstance().CallLuaFunctionForReturn(caller, this, "IsQuestENPC", true, npc, this);
+            //bool scriptReturned = returned != null && returned.Count != 0 && returned[0].typeID == 3;
+            return (questState?.HasENpc(npc.GetActorClassId()) ?? false);
+        }
+
+        public bool IsQuestENPCByScript(Player caller, Npc npc)
+        {
+            List<LuaParam> returned = LuaEngine.GetInstance().CallLuaFunctionForReturn(caller, this, "IsQuestENPC", true, npc, this);
+            return returned != null && returned.Count != 0 && returned[0].typeID == 3;
         }
 
         public void StartSequence(ushort sequence)
-        {            
+        {
             if (sequence == SEQ_NOT_STARTED)
                 return;
 
             // Send the message that the journal has been updated
-            if (currentSequence != SEQ_NOT_STARTED)
-                Owner.SendGameMessage(Server.GetWorldManager().GetActor(), 25116, 0x20, (object)GetQuestId());
+            owner.SendGameMessage(Server.GetWorldManager().GetActor(), 25116, 0x20, (object)GetQuestId());
 
+            currentSequence = sequence;            
+            questState.UpdateState();
+        }
+
+        public void StartSequenceForNpcLs(ushort sequence)
+        {
             currentSequence = sequence;
-            LuaEngine.GetInstance().CallLuaFunction(Owner, this, "onSequence", false, currentSequence);
+            questState.UpdateState();
         }
 
-        public void ClearData()
+        public void OnAccept()
         {
-            data.flags = data.counter1 = data.counter2 = data.counter3 = data.counter4 = 0;
-        }
-
-        public void SetFlag(int index)
-        {
-            if (index >= 0 && index < 32)
-                data.flags |= (uint)(1 << index);
-        }
-
-        public void ClearFlag(int index)
-        {
-            if (index >= 0 && index < 32)
-                data.flags &= (uint)~(1 << index);
-        }
-
-        public void IncCounter(int num)
-        {
-            switch (num)
-            {
-                case 0:
-                    data.counter1++;
-                    break;
-                case 1:
-                    data.counter2++;
-                    break;
-                case 2:
-                    data.counter3++;
-                    break;
-                case 3:
-                    data.counter4++;
-                    break;
-            }    
-        }
-
-        public void DecCounter(int num)
-        {
-            switch (num)
-            {
-                case 0:
-                    data.counter1--;
-                    break;
-                case 1:
-                    data.counter2--;
-                    break;
-                case 2:
-                    data.counter3--;
-                    break;
-                case 3:
-                    data.counter4--;
-                    break;
-            }
-        }
-
-        public void SetCounter(int num, ushort value)
-        {
-            switch (num)
-            {
-                case 0:
-                    data.counter1 = value;
-                    break;
-                case 1:
-                    data.counter2 = value;
-                    break;
-                case 2:
-                    data.counter3 = value;
-                    break;
-                case 3:
-                    data.counter4 = value;
-                    break;
-            }
-        }
-
-        public bool GetFlag(int index)
-        {
-            if (index >= 0 && index < 32)
-                return (data.flags & (uint) (1 << index)) != 0;
-            return false;
-        }
-
-        public uint GetFlags()
-        {
-            return data.flags;
-        }
-
-        public ushort GetCounter(int num)
-        {
-            switch (num)
-            {
-                case 0:
-                    return data.counter1;
-                case 1:
-                    return data.counter2;
-                case 2:
-                    return data.counter3;
-                case 3:
-                    return data.counter4;
-            }
-
-            return 0;
-        }
-
-        public void SaveData()
-        {            
-            Database.SaveQuest(Owner, this);
-        }
-
-        public Quest(uint actorID, string name)
-            : base(actorID)
-        {
-            actorName = name;            
-        }
-
-        public Quest(Player owner, Quest baseQuest): this(owner, baseQuest, SEQ_NOT_STARTED, 0, 0, 0, 0)
-        {}
-
-        public Quest(Player owner, Quest baseQuest, ushort sequence, uint flags, ushort counter1, ushort counter2, ushort counter3)
-            : base(baseQuest.actorId)
-        {
-            Owner = owner;
-            actorName = baseQuest.actorName;
-            className = baseQuest.className;
-            classPath = baseQuest.classPath;
-            currentSequence = sequence;
-            data = new QuestData(flags, counter1, counter2, counter3);
-
+            data = new QuestData(owner, this);
             if (currentSequence == SEQ_NOT_STARTED)
-                LuaEngine.GetInstance().CallLuaFunction(Owner, this, "onStart", false);
+                LuaEngine.GetInstance().CallLuaFunction(owner, this, "onStart", false);
             else
                 StartSequence(currentSequence);
         }
-       
-        public uint GetQuestId()
+
+        public void OnComplete()
         {
-            return actorId & 0xFFFFF;
+            LuaEngine.GetInstance().CallLuaFunctionForReturn(owner, this, "onFinish", true);
+            currentSequence = SEQ_COMPLETED;
+            data = null;
+            questState.UpdateState();
         }
 
-        public void DoComplete()
+        public void OnAbandon()
         {
-            LuaEngine.GetInstance().CallLuaFunctionForReturn(Owner, this, "onFinish", true);
-            Owner.SendDataPacket("attention", Server.GetWorldManager().GetActor(), "", 25225, (object)GetQuestId());
-            Owner.SendGameMessage(Server.GetWorldManager().GetActor(), 25225, 0x20, (object)GetQuestId());
+            LuaEngine.GetInstance().CallLuaFunctionForReturn(owner, this, "onFinish", false);
+            currentSequence = SEQ_NOT_STARTED;
+            data = null;
+            questState.UpdateState();
         }
 
-        public void DoAbandon()
+        public void SetTimeUpdate(bool val)
         {
-            LuaEngine.GetInstance().CallLuaFunctionForReturn(Owner, this, "onFinish", false);
-            Owner.SendGameMessage(Owner, Server.GetWorldManager().GetActor(), 25236, 0x20, (object)GetQuestId());
+            isUpdating = val;
+        }
+
+        public override void Update(DateTime tick)
+        {
+            if (isUpdating)
+                LuaEngine.GetInstance().CallLuaFunctionForReturn(owner, this, "onTimeUpdate", true, Utils.UnixTimeStampUTC());
         }
     }
 }

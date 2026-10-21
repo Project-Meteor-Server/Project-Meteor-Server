@@ -29,7 +29,7 @@ namespace Meteor.World.Packets.Send.Login
     class _0x8PingPacket
     {
         public const ushort OPCODE = 0x0008;
-        public const uint PACKET_SIZE = 0x18;
+        public const uint PACKET_SIZE = 0x8;
 
         public static SubPacket BuildPacket(uint actorID)
         {

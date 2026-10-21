@@ -17,6 +17,8 @@ namespace Meteor.Map.Tests
         public EngineFixture()
         {
             Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+            // The server reads this from its config file, which the tests don't load.
+            ConfigConstants.OPTIONS_SCRIPTPATH = "./scripts";
             Engine = ScriptEngine.Instance;
         }
 

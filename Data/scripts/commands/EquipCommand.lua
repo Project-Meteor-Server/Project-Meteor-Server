@@ -53,7 +53,7 @@ GRAPHICSLOT_L_RINGFINGER	= 24;
 GRAPHICSLOT_R_INDEXFINGER 	= 25;
 GRAPHICSLOT_L_INDEXFINGER 	= 26;
 
-function onEventStarted(player, actor, triggerName, equippedItem, param1, param2, param3, param4, param5, param6, param7, equipSlot, itemDBIds)
+function onEventStarted(player, actor, eventType, eventName, equippedItem, param1, param2, param3, param4, param5, param6, param7, equipSlot, itemDBIds)
 	equipSlot = equipSlot-1;
 	
 	--Equip Item
@@ -174,7 +174,7 @@ function equipItem(player, equipSlot, item)
 			if (gItem:IsWeaverWeapon() == true) then graphicSlot = GRAPHICSLOT_SPOFFHAND; end
 			if (gItem:IsGoldSmithWeapon() == true) then graphicSlot = GRAPHICSLOT_SPOFFHAND; end
 		end
-				
+				 
 		--Graphic Slot was set, otherwise it's a special case
 		if (graphicSlot ~= nil) then
 			player:GraphicChange(graphicSlot, item);

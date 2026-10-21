@@ -33,13 +33,13 @@ function doItemTrade(player, retainer)
 		--Retreieve
 		if (resultCode == 31) then		
 			retainer:GetItemPackage(item.itemPackage):RemoveItemAtSlot(item.slot, quantity);
-			retainer:GetItemPackage(item.itemPackage):SendUpdatePackets(player, true);
+			retainer:GetItemPackage(item.itemPackage):SendUpdate(player);
 			player:GetItemPackage(item.itemPackage):AddItem(itemId, quantity, quality);
 		--Entrust
 		elseif (resultCode == 32) then					
 			player:GetItemPackage(item.itemPackage):RemoveItemAtSlot(item.slot, quantity);
 			retainer:GetItemPackage(item.itemPackage):AddItem(itemId, quantity, quality);
-			retainer:GetItemPackage(item.itemPackage):SendUpdatePackets(player, true);
+			retainer:GetItemPackage(item.itemPackage):SendUpdate(player);
 		end
 		
 		callClientFunction(player, "eventReturnResult", resultCode, false);

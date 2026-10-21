@@ -55,17 +55,17 @@ namespace Meteor.Map.actors.chara.ai
         {
             PreparePath(dest.X, dest.Y, dest.Z, stepSize, maxPath, polyRadius);
         }
-
+        //TODO: Verify pathfind with new area setup
         public void PreparePath(float x, float y, float z, float stepSize = 1.25f, int maxPath = 40, float polyRadius = 0.0f)
         {
             var pos = new Vector3(owner.positionX, owner.positionY, owner.positionZ);
             var dest = new Vector3(x, y, z);
 
             Zone zone;
-            if (owner.GetZone() is PrivateArea || owner.GetZone() is PrivateAreaContent)
-                zone = (Zone)((PrivateArea)owner.GetZone()).GetParentZone();
+            if (owner.CurrentArea is PrivateArea || owner.CurrentArea is PrivateAreaContent)
+                zone = (Zone)((PrivateArea)owner.CurrentArea).GetParentZone();
             else
-                zone = (Zone)owner.GetZone();
+                zone = (Zone)owner.CurrentArea;
 
             var sw = new System.Diagnostics.Stopwatch();
             sw.Start();

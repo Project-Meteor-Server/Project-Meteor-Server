@@ -18,7 +18,7 @@ function onHit(effect, attacker, defender, skill, action, actionContainer)
 
         attacker:AddHP(absorbAmount);
         --30332: You absorb hp from target
-        actionContainer:AddHPAbsorbAction(defender.actorId, 30332, absorbAmount)
+        actionContainer:AddHPAbsorbAction(defender.Id, 30332, absorbAmount)
         --Bloodbath is lost after absorbing hp
         defender.statusEffects:RemoveStatusEffect(effect,actionContainer, 30331, false);
     end

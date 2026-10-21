@@ -285,7 +285,7 @@ namespace Meteor.Map.actors.chara.ai
             {
                 foreach (var actorId in party.members)
                 {
-                    AddTarget(owner.zone.FindActorInArea<Character>(actorId), withPet);
+                    AddTarget(owner.CurrentArea.FindActorInArea<Character>(actorId), withPet);
                 }
             }
         }
@@ -299,7 +299,7 @@ namespace Meteor.Map.actors.chara.ai
         private void AddAllBattleNpcs(Character target, bool withPet)
         {
             int dist = (int)maxDistance;
-            var actors = owner.zone.GetActorsAroundActor<BattleNpc>(target, dist);
+            var actors = owner.CurrentArea.GetActorsAroundActor<BattleNpc>(target, dist);
 
             foreach (BattleNpc actor in actors)
             {
@@ -309,7 +309,7 @@ namespace Meteor.Map.actors.chara.ai
 
         private void AddAllInZone(Character target, bool withPet)
         {
-            var actors = owner.zone.GetAllActors<Character>();
+            var actors = owner.CurrentArea.GetAllActors<Character>();
             foreach (Character actor in actors)
             {
                 AddTarget(actor, withPet);
@@ -319,7 +319,7 @@ namespace Meteor.Map.actors.chara.ai
         private void AddAllInRange(Character target, bool withPet)
         {
             int dist = (int)maxDistance;
-            var actors = owner.zone.GetActorsAroundActor<Character>(target, dist);
+            var actors = owner.CurrentArea.GetActorsAroundActor<Character>(target, dist);
 
             foreach (Character actor in actors)
             {
@@ -332,7 +332,7 @@ namespace Meteor.Map.actors.chara.ai
         {
             if (!(owner is BattleNpc))
             {
-                Program.Log.Error($"TargetFind.AddAllInHateList() owner [{owner.actorId}] {owner.customDisplayName} {owner.actorName} is not a BattleNpc");
+                Program.Log.Error($"TargetFind.AddAllInHateList() owner [{owner.Id}] {owner.DisplayName} {owner.Name} is not a BattleNpc");
             }
             else
             {
@@ -408,7 +408,7 @@ namespace Meteor.Map.actors.chara.ai
                 return false;
             }
 
-            if (/*target.isZoning || owner.isZoning || */target.zone != owner.zone)
+            if (/*target.isZoning || owner.isZoning || */target.CurrentArea != owner.CurrentArea)
                 return false;
 
             if (validTarget == ValidTarget.Self && aoeType == TargetFindAOEType.None && owner != target)

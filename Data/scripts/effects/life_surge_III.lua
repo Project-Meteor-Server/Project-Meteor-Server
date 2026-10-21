@@ -14,6 +14,6 @@ function onHit(effect, attacker, defender, skill, action, actionContainer)
 
         local amount = math.floor((healPercent * action.amount) + 1);
         attacker:AddHP(amount);
-        actionContainer:AddHPAbsorbAction(defender.actorId, 30332, amount);
+        actionContainer:AddHPAbsorbAction(defender.Id, 30332, amount);
     end
 end;

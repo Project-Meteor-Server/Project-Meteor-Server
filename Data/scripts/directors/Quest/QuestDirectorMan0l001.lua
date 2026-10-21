@@ -52,7 +52,7 @@ function onEventStarted(player, director, triggerName)
 	
 	wait(6); --Should be wait for mobkill
 	worldMaster = GetWorldMaster();
-	player:SendDataPacket("attention", worldMaster, "", 51073, 1);
+	attentionMessage(player, 51073, 1);
 	wait(7);
 	player:ChangeMusic(7);
 	player:ChangeState(0); 
@@ -72,10 +72,8 @@ function onEventStarted(player, director, triggerName)
 		OpenWidget (DEFEAT ENEMY)			
 	]]
 	
-	man0l0Quest:NextPhase(10);	
-	player:EndEvent();
-	
-	player:GetZone():ContentFinished();
+	man0l0Quest:StartSequence(10);	
+	player.CurrentArea:ContentFinished();
 	GetWorldManager():DoZoneChange(player, 230, "PrivateAreaMasterPast", 1, 15, -826.868469, 6, 193.745865, -0.008368492);
-	
+	player:EndEvent();
 end

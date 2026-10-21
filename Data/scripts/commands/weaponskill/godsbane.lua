@@ -20,7 +20,7 @@ function onSkillStart(caster, target, skill)
         end
 
         caster:SubtractMod(modifiersGlobal.Attack, apPerHit * berserk:GetExtra());
-        caster.Add(modifiersGlobal.Defense, defPerHit * berserk:GetExtra());
+        caster:AddMod(modifiersGlobal.Defense, defPerHit * berserk:GetExtra());
 
         berserk:SetExtra(0);
         skill.accuracyModifier = 50;

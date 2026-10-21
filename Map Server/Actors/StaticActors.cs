@@ -20,6 +20,7 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 */
 
 using Meteor.Common;
+using Meteor.Map.Actors.QuestNS;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -98,7 +99,7 @@ namespace Meteor.Map.Actors
                             if (actorType.Equals("Command"))
                                 actor = new Command(id, actorName);
                             else if (actorType.Equals("Quest"))
-                                actor = new Quest(id, actorName);
+                                actor = new Quest(id, actorName, output);
                             //else if (actorType.Equals("Status"))
                             //mStaticActors.Add(id, new Status(id, actorName));
                             else if (actorType.Equals("Judge"))
@@ -133,7 +134,7 @@ namespace Meteor.Map.Actors
         {
             foreach (Actor a in mStaticActors.Values)
             {
-                if (a.actorName.Equals(name))
+                if (a.Name.Equals(name))
                     return a;
             }
 

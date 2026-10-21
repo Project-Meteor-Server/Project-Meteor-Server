@@ -4,7 +4,7 @@ EmoteSitCommand Script
 
 --]]
 
-function onEventStarted(player, actor, triggerName, emoteId)
+function onEventStarted(player, actor, eventType, eventName, emoteId)
 
 	if (player:GetState() == 0) then						
 		if (emoteId == 0x2712) then

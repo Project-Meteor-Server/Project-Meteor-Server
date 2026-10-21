@@ -19,8 +19,8 @@ function onBeginLogin(player)
 	end
 			
 	--For Opening. Set Director and reset position incase d/c
-	if (player:HasQuest(110001) == true and player:GetZoneID() == 193) then
-		director = player:GetZone():CreateDirector("OpeningDirector", false);		
+	if (player:HasQuest(110001) == true and player.CurrentArea.ZoneId == 193) then
+		director = player.CurrentArea:CreateDirector("OpeningDirector", false);		
 		player:AddDirector(director);
 		director:StartDirector(true);
 		player:SetLoginDirector(director);		
@@ -30,10 +30,9 @@ function onBeginLogin(player)
 		player.positionY = 10.35;
 		player.positionZ = -36.91;
 		player.rotation = 0.025;
-		player:GetQuest(110001):ClearQuestData();
-		player:GetQuest(110001):ClearQuestFlags();
-	elseif (player:HasQuest(110005) == true and player:GetZoneID() == 166) then 
-		director = player:GetZone():CreateDirector("OpeningDirector", false);		
+		player:GetQuest(110001):GetData():ClearData();
+	elseif (player:HasQuest(110005) == true and player.CurrentArea.ZoneId == 166) then 
+		director = player.CurrentArea:CreateDirector("OpeningDirector", false);		
 		player:AddDirector(director);
 		director:StartDirector(false);		
 		player:SetLoginDirector(director);		
@@ -43,10 +42,9 @@ function onBeginLogin(player)
 		player.positionY = 4.21;
 		player.positionZ = -706.1074;
 		player.rotation = -1.26721;
-		player:GetQuest(110005):ClearQuestData();
-		player:GetQuest(110005):ClearQuestFlags();
-	elseif (player:HasQuest(110009) == true and player:GetZoneID() == 184) then
-		--director = player:GetZone():CreateDirector("OpeningDirector", false);		
+		player:GetQuest(110005):GetData():ClearData();
+	elseif (player:HasQuest(110009) == true and player.CurrentArea.ZoneId == 184) then
+		--director = player.CurrentArea:CreateDirector("OpeningDirector", false);		
 		--player:AddDirector(director);
 		--director:StartDirector(false);		
 		--player:SetLoginDirector(director);		
@@ -56,8 +54,7 @@ function onBeginLogin(player)
 		player.positionY = 196.0;
 		player.positionZ = 133.6561;
 		player.rotation = -2.849384;
-		player:GetQuest(110009):ClearQuestData();
-		player:GetQuest(110009):ClearQuestFlags();
+		player:GetQuest(110009):GetData():ClearData();
 	end	
 end
 
@@ -82,26 +79,26 @@ function initClassItems(player)
 	--DoW	
 	if (player.charaWork.parameterSave.state_mainSkill[0] == 2) then 		--PUG
 		player:GetItemPackage(0):AddItem({4020001, 8030701, 8050728, 8080601, 8090307});
-		player:GetEquipment():SetEquipment({0, 10, 12, 14, 15},{0, 1, 2, 3, 4});
+		player:GetEquipment():Set({0, 10, 12, 14, 15},{0, 1, 2, 3, 4},0);
 	elseif (player.charaWork.parameterSave.state_mainSkill[0] == 3) then	--GLA
 		player:GetItemPackage(0):AddItem({4030010, 8031120, 8050245, 8080601, 8090307});
-		player:GetEquipment():SetEquipment({0, 10, 12, 14, 15},{0, 1, 2, 3, 4});
+		player:GetEquipment():Set({0, 10, 12, 14, 15},{0, 1, 2, 3, 4},0);
 	elseif (player.charaWork.parameterSave.state_mainSkill[0] == 4) then	--MRD
 		player:GetItemPackage(0):AddItem({4040001, 8011001, 8050621, 8070346, 8090307});
-		player:GetEquipment():SetEquipment({0, 8, 12, 13, 15},{0, 1, 2, 3, 4});
+		player:GetEquipment():Set({0, 8, 12, 13, 15},{0, 1, 2, 3, 4},0);
 	elseif (player.charaWork.parameterSave.state_mainSkill[0] == 7) then	--ARC
 		player:GetItemPackage(0):AddItem({4070001, 8030601, 8050622, 8080601, 8090307});
-		player:GetEquipment():SetEquipment({0, 10, 12, 14, 15},{0, 1, 2, 3, 4});
+		player:GetEquipment():Set({0, 10, 12, 14, 15},{0, 1, 2, 3, 4},0);
 	elseif (player.charaWork.parameterSave.state_mainSkill[0] == 8) then	--LNC
 		player:GetItemPackage(0):AddItem({4080201, 8030801, 8051015, 8080501, 8090307});
-		player:GetEquipment():SetEquipment({0, 10, 12, 14, 15},{0, 1, 2, 3, 4});
+		player:GetEquipment():Set({0, 10, 12, 14, 15},{0, 1, 2, 3, 4},0);
 	--DoM	
 	elseif (player.charaWork.parameterSave.state_mainSkill[0] == 22) then	--THM
 		player:GetItemPackage(0):AddItem({5020001, 8030245, 8050346, 8080346, 8090208});
-		player:GetEquipment():SetEquipment({0, 10, 12, 14, 15},{0, 1, 2, 3, 4});
+		player:GetEquipment():Set({0, 10, 12, 14, 15},{0, 1, 2, 3, 4},0);
 	elseif (player.charaWork.parameterSave.state_mainSkill[0] == 23) then	--CNJ
 		player:GetItemPackage(0):AddItem({5030101, 8030445, 8050031, 8080246, 8090208});
-		player:GetEquipment():SetEquipment({0, 10, 12, 14, 15},{0, 1, 2, 3, 4});
+		player:GetEquipment():Set({0, 10, 12, 14, 15},{0, 1, 2, 3, 4},0);
 		
 	--DoH
 	elseif (player.charaWork.parameterSave.state_mainSkill[0] == 29) then	--
@@ -170,6 +167,6 @@ function initRaceItems(player)
 		player:GetItemPackage(0):AddItem(8060015);
 	end
 
-	player:GetEquipment():SetEquipment({9, 11},{5,6});
+	player:GetEquipment():Set({9, 11},{5,6},0);
 	
 end

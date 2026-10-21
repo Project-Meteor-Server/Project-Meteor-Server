@@ -13,6 +13,9 @@ function GetItemGamedata(arg1) end
 ---@return LuaEngine
 function GetLuaInstance() end
 
+---@return RecipeResolver
+function GetRecipeResolver() end
+
 ---@param arg1 string
 ---@return Actor
 function GetStaticActor(arg1) end
@@ -28,19 +31,18 @@ function GetWorldManager() end
 function GetWorldMaster() end
 
 ---@class Actor
+---@field DisplayName string
 ---@field INVALID_ACTORID number
----@field actorId number
----@field actorName string
+---@field Id number
+---@field LocalizedDisplayName number
+---@field Name string
 ---@field className string
 ---@field classParams LuaParam[]
 ---@field classPath string
 ---@field currentMainState number
 ---@field currentSubState SubState
----@field customDisplayName string
----@field displayNameId number
 ---@field eventConditions EventList
 ---@field isAtSpawn boolean
----@field isZoning boolean
 ---@field moveSpeeds number[]
 ---@field moveState number
 ---@field oldMoveState number
@@ -52,16 +54,13 @@ function GetWorldMaster() end
 ---@field positionX number
 ---@field positionY number
 ---@field positionZ number
----@field privateArea string
----@field privateAreaType number
 ---@field rotation number
 ---@field spawnedFirstTime boolean
 ---@field target Actor
 ---@field updateFlags ActorUpdateFlags
----@field zone Area
 ---@field zone2 Area
----@field zoneId number
----@field zoneId2 number
+---@field CurrentArea Area
+---@field IsZoneing boolean
 local __Actor = {}
 ---@overload fun(self: Actor, speedStop: number, speedWalk: number, speedRun: number, speedActive: number): nil
 ---@param type number
@@ -127,7 +126,7 @@ function __Actor:GetPos() end
 function __Actor:GetPosAsVector3() end
 ---@param talkEnabled? boolean
 ---@param emoteEnabled? boolean
----@param pushEnabled? boolean
+---@param pushEnabled? boolean?
 ---@param noticeEnabled? boolean
 ---@return any[]
 function __Actor:GetSetEventStatusPackets(talkEnabled, emoteEnabled, pushEnabled, noticeEnabled) end
@@ -139,10 +138,6 @@ function __Actor:GetSpawnPackets() end
 function __Actor:GetState() end
 ---@return SubState
 function __Actor:GetSubState() end
----@return Area
-function __Actor:GetZone() end
----@return number
-function __Actor:GetZoneID() end
 ---@overload fun(self: Actor, x: number, z: number, angle?: number): boolean
 ---@param target Actor
 ---@param angle? number
@@ -165,8 +160,9 @@ function __Actor:ResetMoveSpeeds() end
 ---@param y number
 ---@param z number
 ---@param rot? number
----@param zoneId? number
-function __Actor:SetPos(x, y, z, rot, zoneId) end
+---@param instant? boolean
+---@param player? Player
+function __Actor:SetPos(x, y, z, rot, instant, player) end
 ---@param triggerName string
 ---@param size number
 function __Actor:SetPushCircleRange(triggerName, size) end
@@ -197,17 +193,22 @@ __ActorUpdateFlags = {}
 ---@field maxY number
 ---@field minX number
 ---@field minY number
----@field regionId number
 ---@field weatherCommon number
 ---@field weatherNormal number
 ---@field weatherRare number
----@field zoneName string
+---@field RegionId number
+---@field ZoneId number
+---@field ZoneName string
 local __Area = {}
 ---@param actor Actor
 function __Area:AddActorToZone(actor) end
 ---@param actor Actor
 ---@param packet any
 function __Area:BroadcastPacketAroundActor(actor, packet) end
+---@param x number
+---@param y number
+---@param packet any
+function __Area:BroadcastPacketAroundPoint(x, y, packet) end
 ---@param actor Actor
 ---@param packets any[]
 function __Area:BroadcastPacketsAroundActor(actor, packets) end
@@ -274,10 +275,18 @@ function __Area:GetDirectorById(id) end
 function __Area:GetMonsters() end
 ---@return Player[]
 function __Area:GetPlayers() end
+---@return string
+function __Area:GetPrivateAreaName() end
+---@return number
+function __Area:GetPrivateAreaType() end
 ---@return any[]
 function __Area:GetSpawnPackets() end
 ---@return Director
 function __Area:GetWeatherDirector() end
+---@return boolean
+function __Area:IsPrivate() end
+---@return boolean
+function __Area:IsPublic() end
 ---@param actor Actor
 function __Area:RemoveActorFromZone(actor) end
 ---@overload fun(self: Area, classId: number, uniqueId: string, x: number, y: number, z: number, regionId: number, layoutId: number): Npc
@@ -912,12 +921,28 @@ local __Command = {}
 ---@enum DamageTakenType
 __DamageTakenType = {}
 
+---@class DebugWork
+---@field enableWidget boolean
+---@field printDisp boolean
+---@field printDispFront boolean
+---@field printProcessing boolean
+---@field printProcessingLog number
+---@field serverTimeOffset number
+local __DebugWork = {}
+
 ---@class DebugProg : Actor
 local __DebugProg = {}
 ---@return any
 function __DebugProg:CreateScriptBindPacket() end
 ---@return any[]
 function __DebugProg:GetSpawnPackets() end
+
+---@class DebugProg2 : Actor
+local __DebugProg2 = {}
+---@return any
+function __DebugProg2:CreateScriptBindPacket() end
+---@return any[]
+function __DebugProg2:GetSpawnPackets() end
 
 ---@enum DetectionType
 __DetectionType = {}
@@ -975,6 +1000,7 @@ __NpcSpawnType = {}
 local __Pet = {}
 
 ---@class Player : Character
+---@field LoginDreamCode number
 ---@field MAXEXP number[]
 ---@field NPCLS_ACTIVE number
 ---@field NPCLS_ALERT number
@@ -1047,19 +1073,31 @@ local __Pet = {}
 ---@field playerWork PlayerWork
 ---@field questGuildleve number[]
 ---@field questScenario Quest[]
+---@field questStateManager QuestStateManager
 ---@field rentalExpireTime number
 ---@field rentalMinLeft number
 ---@field repairType number
 ---@field sentRetainerSpawn boolean
 ---@field timers number[]
+---@field SNpcCoordinate number
+---@field SNpcNickname string
+---@field SNpcPersonality number
+---@field SNpcSkin number
 local __Player = {}
----@param id number
-function __Player:AbandonQuest(id) end
+---@param questId number
+---@return boolean
+function __Player:AbandonQuest(questId) end
 ---@param abilityId number
 ---@param targetId? number
 function __Player:Ability(abilityId, targetId) end
+---@param instance Quest
+---@param isSilent? boolean
+---@return boolean
+function __Player:AcceptQuest(instance, isSilent) end
 ---@param accepted boolean
 function __Player:AcceptTrade(accepted) end
+---@param recipe Recipe
+function __Player:AddAwardedRecipe(recipe) end
 ---@param director Director
 ---@param spawnImmediatly? boolean
 function __Player:AddDirector(director, spawnImmediatly) end
@@ -1070,10 +1108,14 @@ function __Player:AddDirector(director, spawnImmediatly) end
 function __Player:AddExp(exp, classId, bonusPercent) end
 ---@param id number
 function __Player:AddGuildleve(id) end
----@overload fun(self: Player, id: number, isSilent?: boolean): nil
----@param name string
+---@param npcLsId number
+function __Player:AddNpcLs(npcLsId) end
+---@overload fun(self: Player, name: string, isSilent?: boolean): nil
+---@param id number
 ---@param isSilent? boolean
-function __Player:AddQuest(name, isSilent) end
+function __Player:AddQuest(id, isSilent) end
+---@param recipe Recipe
+function __Player:AddRecentRecipe(recipe) end
 ---@param slot number
 ---@param chosenItem ItemRefParam
 ---@param tradeQuantity number
@@ -1092,10 +1134,6 @@ function __Player:BroadcastPackets(packets, sendToSelf) end
 function __Player:BroadcastWorldMessage(worldMasterId, ...) end
 function __Player:CalculateBaseStats() end
 function __Player:CalculateTraitMods() end
----@overload fun(self: Player, id: number): boolean
----@param name string
----@return boolean
-function __Player:CanAcceptQuest(name) end
 ---@param target Character
 ---@param skill BattleCommand
 ---@param error? CommandResult
@@ -1108,6 +1146,9 @@ function __Player:Cast(spellId, targetId) end
 function __Player:ChangeAnimation(animId) end
 ---@param appearanceId number
 function __Player:ChangeChocoboAppearance(appearanceId) end
+---@param npc Npc
+function __Player:ChangeIntoNpc(npc) end
+---@overload fun(self: Player, musicId: number, musicTrackMode: number): nil
 ---@param musicId number
 function __Player:ChangeMusic(musicId) end
 ---@param noUpdate? boolean
@@ -1115,14 +1156,15 @@ function __Player:CheckBazaarFlags(noUpdate) end
 ---@overload fun(self: Player, destinationZone: number, spawnType: number, destinationX: number, destinationY: number, destinationZ: number, destinationRot: number): nil
 function __Player:CleanupAndSave() end
 function __Player:ClearTradeItems() end
----@overload fun(self: Player, id: number): nil
----@param name string
-function __Player:CompleteQuest(name) end
+---@param completed Quest
+function __Player:CompleteQuest(completed) end
 ---@param classId number
 ---@return number
 function __Player.ConvertClassIdToJobId(classId) end
 ---@return any[]
 function __Player:Create0x132Packets() end
+---@return any
+function __Player:CreateNamePacket() end
 ---@param requestingPlayerActorId number
 ---@return any[]
 function __Player:CreatePlayerRelatedPackets(requestingPlayerActorId) end
@@ -1155,9 +1197,12 @@ function __Player:ExaminePlayer(examinee) end
 ---@return number
 function __Player:FindFirstCommandSlotById(commandId) end
 function __Player:FinishTradeTransaction() end
+function __Player:ForceQuestStateUpdate() end
 ---@param actorId number
 ---@return Actor
 function __Player:GetActorInInstance(actorId) end
+---@return Recipe[]
+function __Player:GetAwardedRecipes() end
 ---@return number
 function __Player:GetCurrentClassOrJob() end
 ---@return number
@@ -1191,6 +1236,8 @@ function __Player:GetInitPackets() end
 ---@return number
 function __Player:GetInitialTown() end
 ---@return number
+function __Player:GetLoginDreamCode() end
+---@return number
 function __Player:GetMountState() end
 ---@return Player
 function __Player:GetOtherTrader() end
@@ -1201,12 +1248,23 @@ function __Player:GetPlayTime(doUpdate) end
 ---@param name string
 ---@return Quest
 function __Player:GetQuest(name) end
----@param id number
+---@overload fun(self: Player, id: number): number
+---@param quest Quest
 ---@return number
-function __Player:GetQuestSlot(id) end
+function __Player:GetQuestSlot(quest) end
 ---@param npc Npc
 ---@return Quest[]
 function __Player:GetQuestsForNpc(npc) end
+---@return Recipe[]
+function __Player:GetRecentRecipes() end
+---@return number
+function __Player:GetSNpcCoordinate() end
+---@return string
+function __Player:GetSNpcNickname() end
+---@return number
+function __Player:GetSNpcPersonality() end
+---@return number
+function __Player:GetSNpcSkin() end
 ---@param requestPlayer Player
 ---@param spawnType number
 ---@return any[]
@@ -1218,15 +1276,16 @@ function __Player:GetTradeOfferings() end
 ---@param npc Npc
 ---@return Quest
 function __Player:GetTutorialQuest(npc) end
----@return Area
-function __Player:GetZone() end
 ---@overload fun(self: Player, slot: number, graphicId: number): nil
 ---@overload fun(self: Player, slot: number, weapId: number, equipId: number, variantId: number, colorId: number): nil
 ---@param slot number
 ---@param invItem InventoryItem
 function __Player:GraphicChange(slot, invItem) end
+---@param bnpcClassId number
+function __Player:HandleBNpcKill(bnpcClassId) end
 ---@param id number
-function __Player:HandleNpcLS(id) end
+---@return boolean
+function __Player:HandleNpcLs(id) end
 ---@param aetheryteId number
 ---@return boolean
 function __Player:HasAetheryteNodeUnlocked(aetheryteId) end
@@ -1237,10 +1296,14 @@ function __Player:HasGuildleve(id) end
 ---@param slot number
 ---@return boolean
 function __Player:HasItemEquippedInSlot(itemId, slot) end
----@overload fun(self: Player, id: number): boolean
----@param name string
+---@param npcLsId number
 ---@return boolean
-function __Player:HasQuest(name) end
+function __Player:HasNpcLs(npcLsId) end
+---@overload fun(self: Player, name: string): boolean
+---@overload fun(self: Player, id: number): boolean
+---@param questInstance Quest
+---@return boolean
+function __Player:HasQuest(questInstance) end
 ---@overload fun(self: Player, id: number): boolean
 ---@param trait BattleTrait
 ---@return boolean
@@ -1256,10 +1319,9 @@ function __Player:IsInZoneChange() end
 function __Player:IsMyPlayer(otherActorId) end
 ---@return boolean
 function __Player:IsPartyLeader() end
----@overload fun(self: Player, questId: number): boolean
----@param questName string
+---@param id number
 ---@return boolean
-function __Player:IsQuestCompleted(questName) end
+function __Player:IsQuestCompleted(id) end
 ---@return boolean
 function __Player:IsTradeAccepted() end
 ---@return boolean
@@ -1307,6 +1369,10 @@ function __Player:OnCast(state, actions, spell, errors) end
 ---@param skill BattleCommand
 ---@param errors CommandResult[]
 function __Player:OnWeaponSkill(state, actions, skill, errors) end
+---@param propertyName string
+---@param from? number
+---@param to? number
+function __Player:OnWorkSyncRequest(propertyName, from, to) end
 function __Player:PartyDisband() end
 function __Player:PartyLeave() end
 ---@overload fun(self: Player, actorId: number): nil
@@ -1330,15 +1396,15 @@ function __Player:RemoveDirector(director) end
 function __Player:RemoveFromCurrentPartyAndCleanup() end
 ---@param id number
 function __Player:RemoveGuildleve(id) end
+---@overload fun(self: Player, name: string): nil
 ---@param id number
 function __Player:RemoveQuest(id) end
----@param id number
-function __Player:RemoveQuestByQuestId(id) end
 ---@param slot number
 function __Player:RemoveTradeItem(slot) end
----@param oldId number
----@param newId number
-function __Player:ReplaceQuest(oldId, newId) end
+---@param oldQuestInstance Quest
+---@param questName string
+function __Player:ReplaceQuest(oldQuestInstance, questName) end
+function __Player:ResetMusic() end
 ---@param functionName string
 ---@param ... any
 function __Player:RunEventFunction(functionName, ...) end
@@ -1361,13 +1427,13 @@ function __Player:SendGameMessage(textIdOwner, textId, log, ...) end
 ---@param log number
 ---@param customSender string
 ---@param ... any
-function __Player:SendGameMessageCustomSender(textIdOwner, textId, log, customSender, ...) end
+function __Player:SendGameMessageDisplayName(textIdOwner, textId, log, customSender, ...) end
 ---@param textIdOwner Actor
 ---@param textId number
 ---@param log number
 ---@param displayId number
 ---@param ... any
-function __Player:SendGameMessageDisplayIDSender(textIdOwner, textId, log, displayId, ...) end
+function __Player:SendGameMessageLocalizedDisplayName(textIdOwner, textId, log, displayId, ...) end
 ---@param force? boolean
 function __Player:SendInstanceUpdate(force) end
 ---@param logType number
@@ -1402,15 +1468,24 @@ function __Player:SetHomePoint(aetheryteId) end
 function __Player:SetHomePointInn(townId) end
 ---@param director Director
 function __Player:SetLoginDirector(director) end
+---@param code number
+function __Player:SetLoginDreamCode(code) end
 ---@param mountState number
 function __Player:SetMountState(mountState) end
----@param npcLSId number
+---@param npcLsId number
 ---@param state number
-function __Player:SetNpcLS(npcLSId, state) end
+function __Player:SetNpcLs(npcLsId, state) end
 ---@param group Party
 function __Player:SetParty(group) end
+---@param id number
+---@param flag boolean
+function __Player:SetQuestComplete(id, flag) end
 ---@param type number
 function __Player:SetRepairRequest(type) end
+---@param nickname string
+---@param actorClassId number
+---@param classType number
+function __Player:SetSNpc(nickname, actorClassId, classType) end
 function __Player:SetSleeping() end
 ---@param flag boolean
 function __Player:SetZoneChanging(flag) end
@@ -1451,93 +1526,201 @@ function __Player:WeaponSkill(skillId, targetId) end
 function __Player:hpstuff(hp) end
 
 ---@class Quest : Actor
+---@field SEQ_COMPLETED number
 ---@field SEQ_NOT_STARTED number
 local __Quest = {}
----@param classId number
----@param flagType? number
----@param isTalkEnabled? boolean
----@param isEmoteEnabled? boolean
----@param isPushEnabled? boolean
----@param isSpawned? boolean
-function __Quest:AddENpc(classId, flagType, isTalkEnabled, isEmoteEnabled, isPushEnabled, isSpawned) end
-function __Quest:ClearData() end
-function __Quest:ClearENpcs() end
----@param index number
-function __Quest:ClearFlag(index) end
----@param num number
-function __Quest:DecCounter(num) end
-function __Quest:DoAbandon() end
-function __Quest:DoComplete() end
----@param num number
----@return number
-function __Quest:GetCounter(num) end
----@param classId number
----@return ENpcQuestInstance
-function __Quest:GetENpcInstance(classId) end
----@param index number
----@return boolean
-function __Quest:GetFlag(index) end
----@return number
-function __Quest:GetFlags() end
+function __Quest:EndOfNpcLsMsgs() end
+---@return QuestData
+function __Quest:GetData() end
 ---@return any[]
 function __Quest:GetJournalInformation() end
 ---@return any[]
 function __Quest:GetJournalMapMarkerList() end
 ---@return number
+function __Quest:GetNpcLsMsgStep() end
+---@return number
 function __Quest:GetQuestId() end
+---@return QuestState
+function __Quest:GetQuestState() end
 ---@return number
 function __Quest:GetSequence() end
----@param num number
-function __Quest:IncCounter(num) end
+---@return boolean
+function __Quest:HasData() end
+---@param from number
+---@return boolean
+function __Quest:HasNpcLsMsgs(from) end
+---@return boolean
+function __Quest:IsInstance() end
+---@return boolean
+function __Quest:IsMainScenario() end
 ---@param caller Player
 ---@param npc Npc
 ---@return boolean
 function __Quest:IsQuestENPC(caller, npc) end
 ---@param caller Player
 ---@param npc Npc
----@param command Command
-function __Quest:OnEmote(caller, npc, command) end
+---@return boolean
+function __Quest:IsQuestENPCByScript(caller, npc) end
+---@param from number
+function __Quest:NewNpcLsMsg(from) end
+function __Quest:OnAbandon() end
+function __Quest:OnAccept() end
 ---@param caller Player
 ---@param npc Npc
-function __Quest:OnNotice(caller, npc) end
----@param caller Player
----@param npcLSId number
-function __Quest:OnNpcLS(caller, npcLSId) end
+---@param triggerName string
+function __Quest:OnCommand(caller, npc, triggerName) end
+function __Quest:OnComplete() end
 ---@param caller Player
 ---@param npc Npc
-function __Quest:OnPush(caller, npc) end
+---@param triggerName string
+function __Quest:OnEmote(caller, npc, triggerName) end
+---@param caller Player
+---@param classId number
+function __Quest:OnKillBNpc(caller, classId) end
+---@param caller Player
+---@param triggerName string
+function __Quest:OnNotice(caller, triggerName) end
+---@param caller Player
+function __Quest:OnNpcLs(caller) end
+---@param caller Player
+---@param npc Npc
+---@param triggerName string
+function __Quest:OnPush(caller, npc, triggerName) end
 ---@param caller Player
 ---@param npc Npc
 function __Quest:OnTalk(caller, npc) end
-function __Quest:SaveData() end
----@param num number
----@param value number
-function __Quest:SetCounter(num, value) end
----@param index number
-function __Quest:SetFlag(index) end
+function __Quest:ReadNpcLsMsg() end
+---@param classId number
+---@param flagType? number
+---@param isTalkEnabled? boolean
+---@param isPushEnabled? boolean
+---@param isEmoteEnabled? boolean
+---@param isSpawned? boolean
+function __Quest:SetENpc(classId, flagType, isTalkEnabled, isPushEnabled, isEmoteEnabled, isSpawned) end
+---@param val boolean
+function __Quest:SetTimeUpdate(val) end
 ---@param sequence number
 function __Quest:StartSequence(sequence) end
----@param classId number
----@param param number
----@param value any
-function __Quest:UpdateENpc(classId, param, value) end
+---@param sequence number
+function __Quest:StartSequenceForNpcLs(sequence) end
+---@param tick any
+function __Quest:Update(tick) end
+function __Quest:UpdateENPCs() end
 
----@class ENpcQuestInstance
+---@class QuestData
+---@field Dirty boolean
+local __QuestData = {}
+function __QuestData:ClearData() end
+function __QuestData:ClearDirty() end
+---@param index number
+function __QuestData:ClearFlag(index) end
+function __QuestData:ClearNpcLs() end
+---@param num number
+---@return number
+function __QuestData:DecCounter(num) end
+---@param num number
+---@return number
+function __QuestData:GetCounter(num) end
+---@param index number
+---@return boolean
+function __QuestData:GetFlag(index) end
+---@return number
+function __QuestData:GetFlags() end
+---@return number
+function __QuestData:GetMsgStep() end
+---@return number
+function __QuestData:GetNpcLsFrom() end
+---@return number
+function __QuestData:GetTime() end
+---@param num number
+---@return number
+function __QuestData:IncCounter(num) end
+function __QuestData:IncrementNpcLsMsgStep() end
+function __QuestData:Save() end
+---@param num number
+---@param value number
+function __QuestData:SetCounter(num, value) end
+---@param index number
+function __QuestData:SetFlag(index) end
+---@param from number
+function __QuestData:SetNpcLsFrom(from) end
+function __QuestData:SetTimeNow() end
+
+---@class QuestState
+local __QuestState = {}
+---@param classId number
+---@param flagType? number
+---@param isTalkEnabled? boolean
+---@param isPushEnabled? boolean
+---@param isEmoteEnabled? boolean
+---@param isSpawned? boolean
+function __QuestState:AddENpc(classId, flagType, isTalkEnabled, isPushEnabled, isEmoteEnabled, isSpawned) end
+function __QuestState:DeleteState() end
+---@param classId number
+---@return QuestENpc
+function __QuestState:GetENpc(classId) end
+---@param classId number
+---@return boolean
+function __QuestState:HasENpc(classId) end
+function __QuestState:UpdateState() end
+
+---@class QuestENpc
 ---@field actorClassId number
 ---@field isEmoteEnabled boolean
 ---@field isPushEnabled boolean
 ---@field isSpawned boolean
 ---@field isTalkEnabled boolean
 ---@field questFlagType number
-local __ENpcQuestInstance = {}
+local __QuestENpc = {}
+---@param flagType number
+---@param isTalkEnabled boolean
+---@param isPushEnabled boolean
+---@param isEmoteEnabled boolean
+---@param isSpawned boolean
+---@return boolean
+function __QuestENpc:IsChanged(flagType, isTalkEnabled, isPushEnabled, isEmoteEnabled, isSpawned) end
+---@param flagType number
+---@param isTalkEnabled boolean
+---@param isPushEnabled boolean
+---@param isEmoteEnabled boolean
+---@param isSpawned boolean
+function __QuestENpc:Update(flagType, isTalkEnabled, isPushEnabled, isEmoteEnabled, isSpawned) end
 
----@class QuestData
----@field counter1 number
----@field counter2 number
----@field counter3 number
----@field counter4 number
----@field flags number
-local __QuestData = {}
+---@enum QuestFlag
+__QuestFlag = {}
+
+---@class QuestStateManager
+local __QuestStateManager = {}
+---@param questInstance Quest
+function __QuestStateManager:ForceAddActiveQuest(questInstance) end
+---@param questId number
+---@param flag boolean
+function __QuestStateManager:ForceQuestCompleteFlag(questId, flag) end
+function __QuestStateManager:ForceQuestStateUpdate() end
+---@param id number
+---@return Quest
+function __QuestStateManager:GetActiveQuest(id) end
+---@param from number
+---@param to number
+---@return number[]
+function __QuestStateManager:GetCompletionSliceBytes(from, to) end
+---@param npc Npc
+---@param isPrivateArea boolean
+---@return Quest[]
+function __QuestStateManager:GetQuestsForNpc(npc, isPrivateArea) end
+---@param journalQuests Quest[]
+---@param completedQuests boolean[]
+function __QuestStateManager:Init(journalQuests, completedQuests) end
+---@param questId number
+---@return boolean
+function __QuestStateManager:IsQuestComplete(questId) end
+---@param tick any
+function __QuestStateManager:Update(tick) end
+---@param level number
+function __QuestStateManager:UpdateLevel(level) end
+function __QuestStateManager:UpdateQuestAbandoned() end
+---@param quest Quest
+function __QuestStateManager:UpdateQuestCompleted(quest) end
 
 ---@class StaticActors
 local __StaticActors = {}
@@ -1570,6 +1753,7 @@ local __CommandProcessor = {}
 ---@field DATABASE_WORLDID number
 ---@field OPTIONS_BINDIP string
 ---@field OPTIONS_PORT string
+---@field OPTIONS_SCRIPTPATH string
 ---@field OPTIONS_TIMESTAMP boolean
 local __ConfigConstants = {}
 ---@param launchArgs string[]
@@ -1577,8 +1761,325 @@ function __ConfigConstants.ApplyLaunchArgs(launchArgs) end
 ---@return boolean
 function __ConfigConstants.Load() end
 
+---@class AccessoryItem : EquipmentItem
+---@field power number
+---@field size number
+local __AccessoryItem = {}
+
+---@class ArmorItem : EquipmentItem
+---@field criticalDefense number
+---@field damageDefenseType1 number
+---@field damageDefenseType2 number
+---@field damageDefenseType3 number
+---@field damageDefenseType4 number
+---@field damageDefenseValue1 number
+---@field damageDefenseValue2 number
+---@field damageDefenseValue3 number
+---@field damageDefenseValue4 number
+---@field defense number
+---@field evasion number
+---@field magicDefense number
+---@field magicResistance number
+local __ArmorItem = {}
+
+---@class EquipmentItem : ItemData
+---@field AdditionalEffect number
+---@field equipPoint number
+---@field equipTribe number
+---@field graphicsColorId number
+---@field graphicsEquipmentId number
+---@field graphicsVariantId number
+---@field graphicsWeaponId number
+---@field materialBindPermission boolean
+---@field materializeTable number
+---@field paramBonusType1 number
+---@field paramBonusType10 number
+---@field paramBonusType2 number
+---@field paramBonusType3 number
+---@field paramBonusType4 number
+---@field paramBonusType5 number
+---@field paramBonusType6 number
+---@field paramBonusType7 number
+---@field paramBonusType8 number
+---@field paramBonusType9 number
+---@field paramBonusValue1 number
+---@field paramBonusValue10 number
+---@field paramBonusValue2 number
+---@field paramBonusValue3 number
+---@field paramBonusValue4 number
+---@field paramBonusValue5 number
+---@field paramBonusValue6 number
+---@field paramBonusValue7 number
+---@field paramBonusValue8 number
+---@field paramBonusValue9 number
+local __EquipmentItem = {}
+
+---@class GuildleveData
+---@field aetheryte number
+---@field aimNum number[]
+---@field borderId number
+---@field classType number
+---@field factionCreditRequired number
+---@field favorCount number
+---@field id number
+---@field itemTarget number[]
+---@field level number
+---@field location number
+---@field mobTarget number[]
+---@field objective number
+---@field plateId number
+---@field skill number
+---@field timeLimit number
+local __GuildleveData = {}
+
+---@class InventoryItem
+---@field DEALINGMODE_NONE number
+---@field DEALINGMODE_PRICED number
+---@field DEALINGMODE_REFERENCED number
+---@field MODE_SEEK_ITEM number
+---@field MODE_SEEK_MELD number
+---@field MODE_SEEK_REPAIR number
+---@field MODE_SELL_FSTACK number
+---@field MODE_SELL_PSTACK number
+---@field MODE_SELL_SINGLE number
+---@field TAG_ATTACHED number
+---@field TAG_DEALING number
+---@field TAG_EXCLUSIVE number
+---@field itemData ItemData
+---@field itemId number
+---@field itemPackage number
+---@field linkSlot number
+---@field modifiers ItemModifier
+---@field owner Character
+---@field quality number
+---@field quantity number
+---@field slot number
+---@field uniqueId number
+local __InventoryItem = {}
+---@param quantityDelta number
+function __InventoryItem:ChangeQuantity(quantityDelta) end
+function __InventoryItem:ClearOwner() end
+---@return number
+function __InventoryItem:GetBazaarMode() end
+---@return ItemData
+function __InventoryItem:GetItemData() end
+---@return InventoryItem
+function __InventoryItem:GetOfferedTo() end
+---@return number
+function __InventoryItem:GetTradeQuantity() end
+---@return boolean
+function __InventoryItem:IsSelling() end
+---@param cmd any
+function __InventoryItem:SaveDealingInfo(cmd) end
+---@param mode number
+---@param seeked InventoryItem
+function __InventoryItem:SetAsOfferTo(mode, seeked) end
+function __InventoryItem:SetNormal() end
+---@param owner Character
+---@param itemPackage number
+---@param slot number
+function __InventoryItem:SetOwner(owner, itemPackage, slot) end
+---@param quantity number
+function __InventoryItem:SetQuantity(quantity) end
+---@param mode number
+---@param price number
+function __InventoryItem:SetSelling(mode, price) end
+---@param quantity number
+function __InventoryItem:SetTradeQuantity(quantity) end
+---@return number[]
+function __InventoryItem:ToPacketBytes() end
+---@param delta number
+function __InventoryItem:UpdateOfferedSlot(delta) end
+
+---@class ItemModifier
+---@field durability number
+---@field mainQuality number
+---@field materiaGrade number[]
+---@field materiaId number
+---@field materiaLife number
+---@field materiaType number[]
+---@field param1 number
+---@field param2 number
+---@field param3 number
+---@field polish number
+---@field spiritbind number
+---@field subQuality number[]
+---@field use number
+local __ItemModifier = {}
+---@param binWriter any
+function __ItemModifier:WriteBytes(binWriter) end
+
+---@class ItemData
+---@field catalogID number
+---@field category string
+---@field compatibility number
+---@field durability number
+---@field effectDuration number
+---@field effectMagnitude number
+---@field effectRate number
+---@field icon number
+---@field isExclusive boolean
+---@field isRare boolean
+---@field isUseable number
+---@field kind number
+---@field level number
+---@field levelType number
+---@field mainSkill number
+---@field maxStack number
+---@field name string
+---@field rarity number
+---@field recastGroup number
+---@field recastTime number
+---@field repairItem number
+---@field repairItemNum number
+---@field repairLevel number
+---@field repairLicense number
+---@field repairSkill number
+---@field sellPrice number
+---@field shieldBlocking number
+---@field subSkill number
+local __ItemData = {}
+---@param value1 number
+---@param value2 number
+---@return number
+function __ItemData:GetItemHQValue(value1, value2) end
+---@return number
+function __ItemData:GetShieldGuardTime() end
+---@overload fun(catalogID: number): boolean
+---@return boolean
+function __ItemData:IsAccessory() end
+---@return boolean
+function __ItemData:IsAlchemistWeapon() end
+---@return boolean
+function __ItemData:IsAmmoWeapon() end
+---@return boolean
+function __ItemData:IsAmulet() end
+---@return boolean
+function __ItemData:IsArchanistWeapon() end
+---@overload fun(catalogID: number): boolean
+---@return boolean
+function __ItemData:IsArmor() end
+---@return boolean
+function __ItemData:IsArmorerWeapon() end
+---@return boolean
+function __ItemData:IsArrowWeapon() end
+---@return boolean
+function __ItemData:IsAttackWeapon() end
+---@return boolean
+function __ItemData:IsAxeWeapon() end
+---@return boolean
+function __ItemData:IsBattleWeapon() end
+---@return boolean
+function __ItemData:IsBlackSmithWeapon() end
+---@return boolean
+function __ItemData:IsBotanistWeapon() end
+---@return boolean
+function __ItemData:IsBowWeapon() end
+---@return boolean
+function __ItemData:IsBulletWeapon() end
+---@return boolean
+function __ItemData:IsCarpenterWeapon() end
+---@return boolean
+function __ItemData:IsConjurerWeapon() end
+---@return boolean
+function __ItemData:IsCraftWeapon() end
+---@return boolean
+function __ItemData:IsCulinarianWeapon() end
+---@return boolean
+function __ItemData:IsDrink() end
+---@return boolean
+function __ItemData:IsEnchantMateria() end
+---@return boolean
+function __ItemData:IsEquipment() end
+---@return boolean
+function __ItemData:IsEventItem() end
+---@return boolean
+function __ItemData:IsFishingBaitWeapon() end
+---@return boolean
+function __ItemData:IsFishingLureWeapon() end
+---@return boolean
+function __ItemData:IsFishingWeapon() end
+---@return boolean
+function __ItemData:IsFood() end
+---@return boolean
+function __ItemData:IsGoldSmithWeapon() end
+---@return boolean
+function __ItemData:IsGunWeapon() end
+---@return boolean
+function __ItemData:IsHarvestWeapon() end
+---@return boolean
+function __ItemData:IsHostilityItem() end
+---@return boolean
+function __ItemData:IsImportant() end
+---@return boolean
+function __ItemData:IsLanceWeapon() end
+---@return boolean
+function __ItemData:IsLongRangeWeapon() end
+---@return boolean
+function __ItemData:IsLostAfterUsed() end
+---@return boolean
+function __ItemData:IsMaceWeapon() end
+---@return boolean
+function __ItemData:IsMagicWeapon() end
+---@return boolean
+function __ItemData:IsManualGuardShieldWeapon() end
+---@return boolean
+function __ItemData:IsMaterial() end
+---@return boolean
+function __ItemData:IsMinerWeapon() end
+---@return boolean
+function __ItemData:IsMoney() end
+---@return boolean
+function __ItemData:IsMysticWeapon() end
+---@return boolean
+function __ItemData:IsNailWeapon() end
+---@return boolean
+function __ItemData:IsPotion() end
+---@return boolean
+function __ItemData:IsRapierWeapon() end
+---@return boolean
+function __ItemData:IsShepherdWeapon() end
+---@return boolean
+function __ItemData:IsShieldWeapon() end
+---@return boolean
+function __ItemData:IsShotWeapon() end
+---@return boolean
+function __ItemData:IsSwordWeapon() end
+---@return boolean
+function __ItemData:IsTannerWeapon() end
+---@return boolean
+function __ItemData:IsThaumaturgeWeapon() end
+---@return boolean
+function __ItemData:IsThrowWeapon() end
+---@return boolean
+function __ItemData:IsUsable() end
+---@return boolean
+function __ItemData:IsUseForBattle() end
+---@return boolean
+function __ItemData:IsUseFree() end
+---@overload fun(catalogID: number): boolean
+---@return boolean
+function __ItemData:IsWeapon() end
+---@return boolean
+function __ItemData:IsWeaverWeapon() end
+
+---@class QuestGameData
+---@field ClassName string
+---@field Id number
+---@field MinGCRank number
+---@field MinLevel number
+---@field Name string
+---@field PrerequisiteQuest number
+local __QuestGameData = {}
+
 ---@class Recipe
 ---@field allowedCrafters number[]
+---@field crystalId1 number
+---@field crystalId2 number
+---@field crystalQuantity1 number
+---@field crystalQuantity2 number
+---@field id number
+---@field materials number[]
 ---@field resultItemID number
 ---@field resultQuantity number
 ---@field tier number
@@ -1604,6 +2105,166 @@ function __RecipeResolver:GetRecipeFromMats(mat1, mat2, mat3, mat4, mat5, mat6, 
 ---@return RecipeResolver
 function __RecipeResolver.Init() end
 
+---@class RecruitmentDetails
+---@field classjobId number[]
+---@field comment string
+---@field discipleId number[]
+---@field locationId number
+---@field maxLvl number[]
+---@field minLvl number[]
+---@field num number[]
+---@field purposeId number
+---@field recruiterName string
+---@field subTaskId number
+---@field timeSinceStart number
+local __RecruitmentDetails = {}
+
+---@class SeamlessBoundry
+---@field merge_x1 number
+---@field merge_x2 number
+---@field merge_y1 number
+---@field merge_y2 number
+---@field regionId number
+---@field zone1_x1 number
+---@field zone1_x2 number
+---@field zone1_y1 number
+---@field zone1_y2 number
+---@field zone2_x1 number
+---@field zone2_x2 number
+---@field zone2_y1 number
+---@field zone2_y2 number
+---@field zoneId1 number
+---@field zoneId2 number
+local __SeamlessBoundry = {}
+
+---@class SearchEntry
+---@field classes number[]
+---@field currentClass number
+---@field grandCompany number
+---@field jobs number[]
+---@field langauges number
+---@field location number
+---@field name string
+---@field preferredClass number
+---@field status number
+local __SearchEntry = {}
+---@param writer any
+function __SearchEntry:WriteSearchEntry(writer) end
+
+---@class Session
+---@field actorInstanceList Actor[]
+---@field errorMessage string
+---@field id number
+---@field isUpdatesLocked boolean
+---@field languageCode number
+local __Session = {}
+---@return boolean
+function __Session:CheckIfDCing() end
+function __Session:ClearInstance() end
+---@return Player
+function __Session:GetActor() end
+---@param f boolean
+function __Session:LockUpdates(f) end
+function __Session:Ping() end
+---@overload fun(self: Session, packets: any[]): nil
+---@param subPacket any
+function __Session:QueuePacket(subPacket) end
+---@param list Actor[]
+---@param force? boolean
+function __Session:UpdateInstance(list, force) end
+---@param x number
+---@param y number
+---@param z number
+---@param rot number
+---@param moveState number
+function __Session:UpdatePlayerActorPosition(x, y, z, rot, moveState) end
+---@param questInstance QuestENpc
+---@param clearInstance? boolean
+function __Session:UpdateQuestNpcInInstance(questInstance, clearInstance) end
+
+---@class WeaponItem : EquipmentItem
+---@field ammoVirtualDamagePower number
+---@field attack number
+---@field craftMagicProcessing number
+---@field craftProcessControl number
+---@field craftProcessing number
+---@field critical number
+---@field damageAttributeType1 number
+---@field damageAttributeType2 number
+---@field damageAttributeType3 number
+---@field damageAttributeValue1 number
+---@field damageAttributeValue2 number
+---@field damageAttributeValue3 number
+---@field damageInterval number
+---@field damagePower number
+---@field dps number
+---@field frequency number
+---@field graphicsOffhandEquipmentId number
+---@field graphicsOffhandVariantId number
+---@field graphicsOffhandWeaponId number
+---@field harvestLimit number
+---@field harvestPotency number
+---@field harvestRate number
+---@field magicAttack number
+---@field magicCritical number
+---@field magicRate number
+---@field parry number
+---@field rate number
+local __WeaponItem = {}
+
+---@class ZoneConnection
+---@field buffer number[]
+---@field lastPartialSize number
+---@field socket any
+local __ZoneConnection = {}
+function __ZoneConnection:Disconnect() end
+function __ZoneConnection:FlushQueuedSendPackets() end
+---@return string
+function __ZoneConnection:GetAddress() end
+---@return boolean
+function __ZoneConnection:IsConnected() end
+---@param subpacket any
+function __ZoneConnection:QueuePacket(subpacket) end
+---@param sessionId number
+---@param destinationZoneId number
+---@param spawnType number
+---@param spawnX number
+---@param spawnY number
+---@param spawnZ number
+---@param spawnRotation number
+function __ZoneConnection:RequestZoneChange(sessionId, destinationZoneId, spawnType, spawnX, spawnY, spawnZ, spawnRotation) end
+
+---@class PlayerWork
+---@field birthdayDay number
+---@field birthdayMonth number
+---@field castCommandClient number
+---@field castEndClient number
+---@field comboCostBonusRate number
+---@field comboNextCommandId number[]
+---@field guardian number
+---@field initialTown number
+---@field isContentsCommand boolean
+---@field isRemainBonusPoint boolean
+---@field npcLinkshellChatCalling boolean[]
+---@field npcLinkshellChatExtra boolean[]
+---@field questGuildleve number[]
+---@field questGuildleveComplete boolean[]
+---@field questScenario number[]
+---@field questScenarioComplete boolean[]
+---@field restBonusExpRate number
+---@field tribe number
+---@field variableCommandConfirmRaise number
+---@field variableCommandConfirmRaisePlace number
+---@field variableCommandConfirmRaiseSender string
+---@field variableCommandConfirmRaiseSenderByID number
+---@field variableCommandConfirmRaiseSenderSex number
+---@field variableCommandConfirmWarp number
+---@field variableCommandConfirmWarpPlace number
+---@field variableCommandConfirmWarpSender string
+---@field variableCommandConfirmWarpSenderByID number
+---@field variableCommandConfirmWarpSenderSex number
+local __PlayerWork = {}
+
 ---@class Database
 local __Database = {}
 ---@param owner Character
@@ -1616,9 +2277,6 @@ function __Database.AddItem(owner, addedItem, itemPackage, slot) end
 function __Database.ChangePlayerChocoboAppearance(player, appearanceId) end
 ---@param item InventoryItem
 function __Database.ClearDealingInfo(item) end
----@param player Player
----@param questId number
-function __Database.CompleteQuest(player, questId) end
 ---@overload fun(itemId: number, quantity: number, quality: number, modifiers?: ItemModifier): InventoryItem
 ---@param item InventoryItem
 ---@param quantity number
@@ -1629,6 +2287,11 @@ function __Database.CreateItem(item, quantity) end
 ---@param lsCrest number
 ---@return boolean
 function __Database.CreateLinkshell(player, lsName, lsCrest) end
+---@param player Player
+---@param nickname string
+---@param skin number
+---@param personality number
+function __Database.CreateOrUpdateSNpc(player, nickname, skin, personality) end
 ---@param player Player
 ---@param classId number
 ---@param hotbarSlot number
@@ -1666,6 +2329,8 @@ function __Database.GetItemPackage(owner, slotOffset, type) end
 ---@param player Player
 ---@return any
 function __Database.GetLatestAchievements(player) end
+---@return table<number, QuestGameData>
+function __Database.GetQuestGamedata() end
 ---@param recipeList table<number, Recipe>
 ---@param matToRecipe table<string, Recipe[]>
 ---@return boolean
@@ -1673,10 +2338,6 @@ function __Database.GetRecipeGamedata(recipeList, matToRecipe) end
 ---@param sessionId string
 ---@return number
 function __Database.GetUserIdFromSession(sessionId) end
----@param player Player
----@param questId number
----@return boolean
-function __Database.IsQuestCompleted(player, questId) end
 ---@param player Player
 ---@param appearanceId number
 ---@param name string
@@ -1716,6 +2377,8 @@ function __Database.RemoveItem(owner, serverItemId) end
 ---@param questId number
 function __Database.RemoveQuest(player, questId) end
 ---@param player Player
+function __Database.SaveCompletedQuests(player) end
+---@param player Player
 ---@param glId number
 ---@param slot number
 function __Database.SaveGuildleve(player, glId, slot) end
@@ -1736,10 +2399,10 @@ function __Database.SavePlayerPlayTime(player) end
 function __Database.SavePlayerPosition(player) end
 ---@param player Player
 function __Database.SavePlayerStatusEffects(player) end
----@overload fun(player: Player, quest: Quest, slot: number): nil
 ---@param player Player
 ---@param quest Quest
-function __Database.SaveQuest(player, quest) end
+---@param slot number
+function __Database.SaveQuest(player, quest, slot) end
 ---@param gmTicket GMSupportTicketPacket
 ---@param playerName string
 ---@return boolean
@@ -1765,6 +2428,9 @@ function __Database.UnequipAbility(player, hotbarSlot) end
 function __Database.UnequipItem(player, equipSlot) end
 ---@param updated InventoryItem[]
 function __Database.UpdateItemPositions(updated) end
+---@param player Player
+---@param quest Quest
+function __Database.UpdateQuest(player, quest) end
 ---@param playerName string
 function __Database.closeTicket(playerName) end
 ---@param slot number
@@ -1858,6 +2524,20 @@ function __Server.GetGuildleveGamedata(id) end
 ---@param id number
 ---@return ItemData
 function __Server.GetItemGamedata(id) end
+---@param id number
+---@return QuestGameData
+function __Server.GetQuestGamedata(id) end
+---@return QuestGameData[]
+function __Server.GetQuestGamedataAllGCRanked() end
+---@return QuestGameData[]
+function __Server.GetQuestGamedataAllPrerequisite() end
+---@param lvl number
+---@param all? boolean
+---@return QuestGameData[]
+function __Server.GetQuestGamedataByMaxLvl(lvl, all) end
+---@param questId number
+---@return QuestGameData[]
+function __Server.GetQuestGamedataByPrerequisite(questId) end
 ---@return Server
 function __Server.GetServer() end
 ---@overload fun(self: Server, id: number): Session
@@ -1876,6 +2556,8 @@ function __Server.GetWorldConnection() end
 function __Server.GetWorldManager() end
 ---@param id number
 function __Server:RemoveSession(id) end
+---@return RecipeResolver
+function __Server.ResolveRecipe() end
 ---@return boolean
 function __Server:StartServer() end
 
@@ -1960,17 +2642,26 @@ function __WorldManager:DeleteContentGroup(groupId) end
 function __WorldManager:DeleteRelationGroup(groupid) end
 ---@param groupid number
 function __WorldManager:DeleteTradeGroup(groupid) end
----@overload fun(self: WorldManager, player: Player, spawnX: number, spawnY: number, spawnZ: number, spawnRotation: number, spawnType?: number): nil
 ---@param player Player
----@param zoneEntrance number
-function __WorldManager:DoPlayerMoveInZone(player, zoneEntrance) end
+---@param spawnX number
+---@param spawnY number
+---@param spawnZ number
+---@param spawnRotation number
+---@param spawnType? number
+function __WorldManager:DoPlayerMoveInZone(player, spawnX, spawnY, spawnZ, spawnRotation, spawnType) end
 ---@param player Player
 ---@param destinationZoneId number
 function __WorldManager:DoSeamlessZoneChange(player, destinationZoneId) end
----@overload fun(self: WorldManager, player: Player, destinationZoneId: number, destinationPrivateArea: string, destinationPrivateAreaType: number, spawnType: number, spawnX: number, spawnY: number, spawnZ: number, spawnRotation: number): nil
 ---@param player Player
----@param zoneEntrance number
-function __WorldManager:DoZoneChange(player, zoneEntrance) end
+---@param destinationZoneId number
+---@param destinationPrivateArea string
+---@param destinationPrivateAreaType number
+---@param spawnType number
+---@param spawnX number
+---@param spawnY number
+---@param spawnZ number
+---@param spawnRotation number
+function __WorldManager:DoZoneChange(player, destinationZoneId, destinationPrivateArea, destinationPrivateAreaType, spawnType, spawnX, spawnY, spawnZ, spawnRotation) end
 ---@param player Player
 ---@param contentArea PrivateAreaContent
 ---@param spawnX number
@@ -1997,6 +2688,11 @@ function __WorldManager:GetActorInWorldByUniqueId(uid) end
 ---@param classId number
 ---@return number[]
 function __WorldManager:GetAllBattleTraitIdsForClass(classId) end
+---@param zoneId number
+---@param privateAreaName? string
+---@param privateAreaType? number
+---@return Area
+function __WorldManager:GetArea(zoneId, privateAreaName, privateAreaType) end
 ---@param id number
 ---@return BattleCommand
 function __WorldManager:GetBattleCommand(id) end
@@ -2013,11 +2709,6 @@ function __WorldManager:GetDebugActor() end
 ---@param name string
 ---@return Player
 function __WorldManager:GetPCInWorld(name) end
----@param zoneId number
----@param privateArea string
----@param privateAreaType number
----@return PrivateArea
-function __WorldManager:GetPrivateArea(zoneId, privateArea, privateAreaType) end
 ---@param actorId number
 ---@return RelationGroup
 function __WorldManager:GetRelationGroup(actorId) end
@@ -2027,12 +2718,6 @@ function __WorldManager:GetStatusEffect(id) end
 ---@param actorId number
 ---@return TradeGroup
 function __WorldManager:GetTradeGroup(actorId) end
----@param zoneId number
----@return Zone
-function __WorldManager:GetZone(zoneId) end
----@param entranceId number
----@return ZoneEntrance
-function __WorldManager:GetZoneEntrance(entranceId) end
 ---@param player Player
 ---@param groupType number
 ---@param result number
@@ -2045,10 +2730,9 @@ function __WorldManager:LoadBattleCommands() end
 function __WorldManager:LoadBattleNpcModifiers(tableName, primaryKey, list) end
 function __WorldManager:LoadBattleNpcs() end
 function __WorldManager:LoadBattleTraits() end
+function __WorldManager:LoadENPCs() end
 function __WorldManager:LoadSeamlessBoundryList() end
-function __WorldManager:LoadSpawnLocations() end
 function __WorldManager:LoadStatusEffects() end
-function __WorldManager:LoadZoneEntranceList() end
 function __WorldManager:LoadZoneList() end
 ---@param player Player
 ---@param mergedZoneId number
@@ -2111,6 +2795,24 @@ function __WorldManager:SpawnBattleNpcById(id, area) end
 function __WorldManager:StartZoneThread() end
 ---@param player Player
 function __WorldManager:TradeTEST(player) end
+---@param player Player
+---@param target Character
+function __WorldManager:WarpToCharaPosition(player, target) end
+---@param player Player
+---@param x number
+---@param y number
+---@param z number
+---@param rotation number
+---@param debugInstant? boolean
+function __WorldManager:WarpToPosition(player, x, y, z, rotation, debugInstant) end
+---@overload fun(self: WorldManager, player: Player, name: string, type: number, x: number, y: number, z: number, rotation: number): nil
+---@param player Player
+---@param name string
+---@param type number
+function __WorldManager:WarpToPrivateArea(player, name, type) end
+---@overload fun(self: WorldManager, player: Player, x: number, y: number, z: number, rotation: number): nil
+---@param player Player
+function __WorldManager:WarpToPublicArea(player) end
 ---@param state any
 function __WorldManager:ZoneThreadLoop(state) end
 
@@ -2148,8 +2850,9 @@ local __EmoteEventCondition = {}
 local __NoticeEventCondition = {}
 
 ---@class PushBoxEventCondition
----@field bgObj number
 ---@field conditionName string
+---@field instance number
+---@field isEnabled boolean
 ---@field layout number
 ---@field outwards boolean
 ---@field reactName string
@@ -2158,6 +2861,7 @@ local __PushBoxEventCondition = {}
 
 ---@class PushCircleEventCondition
 ---@field conditionName string
+---@field isEnabled boolean
 ---@field outwards boolean
 ---@field radius number
 ---@field silent boolean
@@ -2165,6 +2869,7 @@ local __PushCircleEventCondition = {}
 
 ---@class PushFanEventCondition
 ---@field conditionName string
+---@field isEnabled boolean
 ---@field outwards boolean
 ---@field radius number
 ---@field silent boolean
@@ -2180,6 +2885,8 @@ local __TalkEventCondition = {}
 local __PrivateArea = {}
 ---@param spawn SpawnLocation
 function __PrivateArea:AddSpawnLocation(spawn) end
+---@return boolean
+function __PrivateArea:CanExitPrivateArea() end
 ---@return any
 function __PrivateArea:CreateScriptBindPacket() end
 ---@return Zone
@@ -2188,6 +2895,8 @@ function __PrivateArea:GetParentZone() end
 function __PrivateArea:GetPrivateAreaName() end
 ---@return number
 function __PrivateArea:GetPrivateAreaType() end
+---@return boolean
+function __PrivateArea:IsPublic() end
 function __PrivateArea:SpawnAllActors() end
 
 ---@class PrivateAreaContent : PrivateArea
@@ -2201,12 +2910,13 @@ function __PrivateAreaContent.CreateContentArea(scriptPath) end
 function __PrivateAreaContent:GetContentDirector() end
 
 ---@class SpawnLocation
----@field animId number
 ---@field classId number
+---@field mapObjInstanceId number
+---@field mapObjLayoutId number
+---@field motionPack number
 ---@field privAreaLevel number
 ---@field privAreaName string
 ---@field rot number
----@field state number
 ---@field uniqueId string
 ---@field x number
 ---@field y number
@@ -2240,10 +2950,10 @@ function __Zone:DeleteContentArea(area) end
 ---@param id number
 ---@return Actor
 function __Zone:FindActorInZone(id) end
----@param type string
----@param number number
+---@param name string
+---@param type number
 ---@return PrivateArea
-function __Zone:GetPrivateArea(type, number) end
+function __Zone:GetPrivateArea(name, type) end
 ---@param doPrivAreas boolean
 function __Zone:SpawnAllActors(doPrivAreas) end
 ---@param tick any
@@ -3367,6 +4077,9 @@ function __ItemPackage:GetItemByCatelogId(catelogId) end
 ---@param uniqueItemId number
 ---@return InventoryItem
 function __ItemPackage:GetItemByUniqueId(uniqueItemId) end
+---@param itemId number
+---@return number
+function __ItemPackage:GetItemQuantity(itemId) end
 ---@return number
 function __ItemPackage:GetNextEmptySlot() end
 ---@return InventoryItem[]
@@ -3723,468 +4436,6 @@ local __PartyWork = {}
 ---@field _globalTemp GroupGlobalTemp
 local __RelationWork = {}
 
----@class AccessoryItem : EquipmentItem
----@field power number
----@field size number
-local __AccessoryItem = {}
-
----@class ArmorItem : EquipmentItem
----@field criticalDefense number
----@field damageDefenseType1 number
----@field damageDefenseType2 number
----@field damageDefenseType3 number
----@field damageDefenseType4 number
----@field damageDefenseValue1 number
----@field damageDefenseValue2 number
----@field damageDefenseValue3 number
----@field damageDefenseValue4 number
----@field defense number
----@field evasion number
----@field magicDefense number
----@field magicResistance number
-local __ArmorItem = {}
-
----@class EquipmentItem : ItemData
----@field AdditionalEffect number
----@field equipPoint number
----@field equipTribe number
----@field graphicsColorId number
----@field graphicsEquipmentId number
----@field graphicsVariantId number
----@field graphicsWeaponId number
----@field materialBindPermission boolean
----@field materializeTable number
----@field paramBonusType1 number
----@field paramBonusType10 number
----@field paramBonusType2 number
----@field paramBonusType3 number
----@field paramBonusType4 number
----@field paramBonusType5 number
----@field paramBonusType6 number
----@field paramBonusType7 number
----@field paramBonusType8 number
----@field paramBonusType9 number
----@field paramBonusValue1 number
----@field paramBonusValue10 number
----@field paramBonusValue2 number
----@field paramBonusValue3 number
----@field paramBonusValue4 number
----@field paramBonusValue5 number
----@field paramBonusValue6 number
----@field paramBonusValue7 number
----@field paramBonusValue8 number
----@field paramBonusValue9 number
-local __EquipmentItem = {}
-
----@class GuildleveData
----@field aetheryte number
----@field aimNum number[]
----@field borderId number
----@field classType number
----@field factionCreditRequired number
----@field favorCount number
----@field id number
----@field itemTarget number[]
----@field level number
----@field location number
----@field mobTarget number[]
----@field objective number
----@field plateId number
----@field skill number
----@field timeLimit number
-local __GuildleveData = {}
-
----@class InventoryItem
----@field DEALINGMODE_NONE number
----@field DEALINGMODE_PRICED number
----@field DEALINGMODE_REFERENCED number
----@field MODE_SEEK_ITEM number
----@field MODE_SEEK_MELD number
----@field MODE_SEEK_REPAIR number
----@field MODE_SELL_FSTACK number
----@field MODE_SELL_PSTACK number
----@field MODE_SELL_SINGLE number
----@field TAG_ATTACHED number
----@field TAG_DEALING number
----@field TAG_EXCLUSIVE number
----@field itemData ItemData
----@field itemId number
----@field itemPackage number
----@field linkSlot number
----@field modifiers ItemModifier
----@field owner Character
----@field quality number
----@field quantity number
----@field slot number
----@field uniqueId number
-local __InventoryItem = {}
----@param quantityDelta number
-function __InventoryItem:ChangeQuantity(quantityDelta) end
-function __InventoryItem:ClearOwner() end
----@return number
-function __InventoryItem:GetBazaarMode() end
----@return ItemData
-function __InventoryItem:GetItemData() end
----@return InventoryItem
-function __InventoryItem:GetOfferedTo() end
----@return number
-function __InventoryItem:GetTradeQuantity() end
----@return boolean
-function __InventoryItem:IsSelling() end
----@param cmd any
-function __InventoryItem:SaveDealingInfo(cmd) end
----@param mode number
----@param seeked InventoryItem
-function __InventoryItem:SetAsOfferTo(mode, seeked) end
-function __InventoryItem:SetNormal() end
----@param owner Character
----@param itemPackage number
----@param slot number
-function __InventoryItem:SetOwner(owner, itemPackage, slot) end
----@param quantity number
-function __InventoryItem:SetQuantity(quantity) end
----@param mode number
----@param price number
-function __InventoryItem:SetSelling(mode, price) end
----@param quantity number
-function __InventoryItem:SetTradeQuantity(quantity) end
----@return number[]
-function __InventoryItem:ToPacketBytes() end
----@param delta number
-function __InventoryItem:UpdateOfferedSlot(delta) end
-
----@class ItemModifier
----@field durability number
----@field mainQuality number
----@field materiaGrade number[]
----@field materiaId number
----@field materiaLife number
----@field materiaType number[]
----@field param1 number
----@field param2 number
----@field param3 number
----@field polish number
----@field spiritbind number
----@field subQuality number[]
----@field use number
-local __ItemModifier = {}
----@param binWriter any
-function __ItemModifier:WriteBytes(binWriter) end
-
----@class ItemData
----@field catalogID number
----@field category string
----@field compatibility number
----@field durability number
----@field effectDuration number
----@field effectMagnitude number
----@field effectRate number
----@field icon number
----@field isExclusive boolean
----@field isRare boolean
----@field isUseable number
----@field kind number
----@field level number
----@field levelType number
----@field mainSkill number
----@field maxStack number
----@field name string
----@field rarity number
----@field recastGroup number
----@field recastTime number
----@field repairItem number
----@field repairItemNum number
----@field repairLevel number
----@field repairLicense number
----@field repairSkill number
----@field sellPrice number
----@field shieldBlocking number
----@field subSkill number
-local __ItemData = {}
----@param value1 number
----@param value2 number
----@return number
-function __ItemData:GetItemHQValue(value1, value2) end
----@return number
-function __ItemData:GetShieldGuardTime() end
----@overload fun(catalogID: number): boolean
----@return boolean
-function __ItemData:IsAccessory() end
----@return boolean
-function __ItemData:IsAlchemistWeapon() end
----@return boolean
-function __ItemData:IsAmmoWeapon() end
----@return boolean
-function __ItemData:IsAmulet() end
----@return boolean
-function __ItemData:IsArchanistWeapon() end
----@overload fun(catalogID: number): boolean
----@return boolean
-function __ItemData:IsArmor() end
----@return boolean
-function __ItemData:IsArmorerWeapon() end
----@return boolean
-function __ItemData:IsArrowWeapon() end
----@return boolean
-function __ItemData:IsAttackWeapon() end
----@return boolean
-function __ItemData:IsAxeWeapon() end
----@return boolean
-function __ItemData:IsBattleWeapon() end
----@return boolean
-function __ItemData:IsBlackSmithWeapon() end
----@return boolean
-function __ItemData:IsBotanistWeapon() end
----@return boolean
-function __ItemData:IsBowWeapon() end
----@return boolean
-function __ItemData:IsBulletWeapon() end
----@return boolean
-function __ItemData:IsCarpenterWeapon() end
----@return boolean
-function __ItemData:IsConjurerWeapon() end
----@return boolean
-function __ItemData:IsCraftWeapon() end
----@return boolean
-function __ItemData:IsCulinarianWeapon() end
----@return boolean
-function __ItemData:IsDrink() end
----@return boolean
-function __ItemData:IsEnchantMateria() end
----@return boolean
-function __ItemData:IsEquipment() end
----@return boolean
-function __ItemData:IsEventItem() end
----@return boolean
-function __ItemData:IsFishingBaitWeapon() end
----@return boolean
-function __ItemData:IsFishingLureWeapon() end
----@return boolean
-function __ItemData:IsFishingWeapon() end
----@return boolean
-function __ItemData:IsFood() end
----@return boolean
-function __ItemData:IsGoldSmithWeapon() end
----@return boolean
-function __ItemData:IsGunWeapon() end
----@return boolean
-function __ItemData:IsHarvestWeapon() end
----@return boolean
-function __ItemData:IsHostilityItem() end
----@return boolean
-function __ItemData:IsImportant() end
----@return boolean
-function __ItemData:IsLanceWeapon() end
----@return boolean
-function __ItemData:IsLongRangeWeapon() end
----@return boolean
-function __ItemData:IsLostAfterUsed() end
----@return boolean
-function __ItemData:IsMaceWeapon() end
----@return boolean
-function __ItemData:IsMagicWeapon() end
----@return boolean
-function __ItemData:IsManualGuardShieldWeapon() end
----@return boolean
-function __ItemData:IsMaterial() end
----@return boolean
-function __ItemData:IsMinerWeapon() end
----@return boolean
-function __ItemData:IsMoney() end
----@return boolean
-function __ItemData:IsMysticWeapon() end
----@return boolean
-function __ItemData:IsNailWeapon() end
----@return boolean
-function __ItemData:IsPotion() end
----@return boolean
-function __ItemData:IsRapierWeapon() end
----@return boolean
-function __ItemData:IsShepherdWeapon() end
----@return boolean
-function __ItemData:IsShieldWeapon() end
----@return boolean
-function __ItemData:IsShotWeapon() end
----@return boolean
-function __ItemData:IsSwordWeapon() end
----@return boolean
-function __ItemData:IsTannerWeapon() end
----@return boolean
-function __ItemData:IsThaumaturgeWeapon() end
----@return boolean
-function __ItemData:IsThrowWeapon() end
----@return boolean
-function __ItemData:IsUsable() end
----@return boolean
-function __ItemData:IsUseForBattle() end
----@return boolean
-function __ItemData:IsUseFree() end
----@overload fun(catalogID: number): boolean
----@return boolean
-function __ItemData:IsWeapon() end
----@return boolean
-function __ItemData:IsWeaverWeapon() end
-
----@class RecruitmentDetails
----@field classjobId number[]
----@field comment string
----@field discipleId number[]
----@field locationId number
----@field maxLvl number[]
----@field minLvl number[]
----@field num number[]
----@field purposeId number
----@field recruiterName string
----@field subTaskId number
----@field timeSinceStart number
-local __RecruitmentDetails = {}
-
----@class SeamlessBoundry
----@field merge_x1 number
----@field merge_x2 number
----@field merge_y1 number
----@field merge_y2 number
----@field regionId number
----@field zone1_x1 number
----@field zone1_x2 number
----@field zone1_y1 number
----@field zone1_y2 number
----@field zone2_x1 number
----@field zone2_x2 number
----@field zone2_y1 number
----@field zone2_y2 number
----@field zoneId1 number
----@field zoneId2 number
-local __SeamlessBoundry = {}
-
----@class SearchEntry
----@field classes number[]
----@field currentClass number
----@field grandCompany number
----@field jobs number[]
----@field langauges number
----@field location number
----@field name string
----@field preferredClass number
----@field status number
-local __SearchEntry = {}
----@param writer any
-function __SearchEntry:WriteSearchEntry(writer) end
-
----@class Session
----@field actorInstanceList Actor[]
----@field errorMessage string
----@field id number
----@field isUpdatesLocked boolean
----@field languageCode number
-local __Session = {}
----@return boolean
-function __Session:CheckIfDCing() end
-function __Session:ClearInstance() end
----@return Player
-function __Session:GetActor() end
----@param f boolean
-function __Session:LockUpdates(f) end
-function __Session:Ping() end
----@overload fun(self: Session, packets: any[]): nil
----@param subPacket any
-function __Session:QueuePacket(subPacket) end
----@param list Actor[]
----@param force? boolean
-function __Session:UpdateInstance(list, force) end
----@param x number
----@param y number
----@param z number
----@param rot number
----@param moveState number
-function __Session:UpdatePlayerActorPosition(x, y, z, rot, moveState) end
----@param questInstance ENpcQuestInstance
----@param clearInstance? boolean
-function __Session:UpdateQuestNpcInInstance(questInstance, clearInstance) end
-
----@class WeaponItem : EquipmentItem
----@field ammoVirtualDamagePower number
----@field attack number
----@field craftMagicProcessing number
----@field craftProcessControl number
----@field craftProcessing number
----@field critical number
----@field damageAttributeType1 number
----@field damageAttributeType2 number
----@field damageAttributeType3 number
----@field damageAttributeValue1 number
----@field damageAttributeValue2 number
----@field damageAttributeValue3 number
----@field damageInterval number
----@field damagePower number
----@field dps number
----@field frequency number
----@field graphicsOffhandEquipmentId number
----@field graphicsOffhandVariantId number
----@field graphicsOffhandWeaponId number
----@field harvestLimit number
----@field harvestPotency number
----@field harvestRate number
----@field magicAttack number
----@field magicCritical number
----@field magicRate number
----@field parry number
----@field rate number
-local __WeaponItem = {}
-
----@class ZoneConnection
----@field buffer number[]
----@field lastPartialSize number
----@field socket any
-local __ZoneConnection = {}
-function __ZoneConnection:Disconnect() end
-function __ZoneConnection:FlushQueuedSendPackets() end
----@return string
-function __ZoneConnection:GetAddress() end
----@return boolean
-function __ZoneConnection:IsConnected() end
----@param subpacket any
-function __ZoneConnection:QueuePacket(subpacket) end
----@param sessionId number
----@param destinationZoneId number
----@param spawnType number
----@param spawnX number
----@param spawnY number
----@param spawnZ number
----@param spawnRotation number
-function __ZoneConnection:RequestZoneChange(sessionId, destinationZoneId, spawnType, spawnX, spawnY, spawnZ, spawnRotation) end
-
----@class PlayerWork
----@field birthdayDay number
----@field birthdayMonth number
----@field castCommandClient number
----@field castEndClient number
----@field comboCostBonusRate number
----@field comboNextCommandId number[]
----@field guardian number
----@field initialTown number
----@field isContentsCommand boolean
----@field isRemainBonusPoint boolean
----@field npcLinkshellChatCalling boolean[]
----@field npcLinkshellChatExtra boolean[]
----@field questGuildleve number[]
----@field questGuildleveComplete boolean[]
----@field questScenario number[]
----@field questScenarioComplete boolean[]
----@field restBonusExpRate number
----@field tribe number
----@field variableCommandConfirmRaise number
----@field variableCommandConfirmRaisePlace number
----@field variableCommandConfirmRaiseSender string
----@field variableCommandConfirmRaiseSenderByID number
----@field variableCommandConfirmRaiseSenderSex number
----@field variableCommandConfirmWarp number
----@field variableCommandConfirmWarpPlace number
----@field variableCommandConfirmWarpSender string
----@field variableCommandConfirmWarpSenderByID number
----@field variableCommandConfirmWarpSenderSex number
-local __PlayerWork = {}
-
 ---@class LuaEngine
 ---@field FILEPATH_COMMANDS string
 ---@field FILEPATH_CONTENT string
@@ -4509,14 +4760,6 @@ local __LangaugeCodePacket = {}
 ---@field otherVal number
 local __LockTargetPacket = {}
 
----@class ParameterDataRequestPacket
----@field OPCODE number
----@field PACKET_SIZE number
----@field actorID number
----@field invalidPacket boolean
----@field paramName string
-local __ParameterDataRequestPacket = {}
-
 ---@class PingPacket
 ---@field time number
 local __PingPacket = {}
@@ -4550,6 +4793,17 @@ local __UpdateItemPackagePacket = {}
 ---@field y number
 ---@field z number
 local __UpdatePlayerPositionPacket = {}
+
+---@class WorkSyncRequestPacket
+---@field OPCODE number
+---@field PACKET_SIZE number
+---@field actorID number
+---@field from number
+---@field invalidPacket boolean
+---@field propertyName string
+---@field requestingBitfield boolean
+---@field to number
+local __WorkSyncRequestPacket = {}
 
 ---@class ZoneInCompletePacket
 ---@field invalidPacket boolean
@@ -4733,10 +4987,10 @@ function __SetDalamudPacket.BuildPacket(playerActorId, dalamudLevel) end
 ---@field PACKET_SIZE number
 local __SetMapPacket = {}
 ---@param playerActorID number
----@param mapID number
----@param regionID number
+---@param regionId number
+---@param placeId number
 ---@return any
-function __SetMapPacket.BuildPacket(playerActorID, mapID, regionID) end
+function __SetMapPacket.BuildPacket(playerActorID, regionId, placeId) end
 
 ---@class SetMusicPacket
 ---@field EFFECT_CROSSFADE number
@@ -4928,10 +5182,10 @@ function __SetActorAppearancePacket:BuildPacket(sourceActorId) end
 ---@field PACKET_SIZE number
 local __SetActorBGPropertiesPacket = {}
 ---@param sourceActorId number
----@param val1 number
----@param val2 number
+---@param layoutId number
+---@param instanceId number
 ---@return any
-function __SetActorBGPropertiesPacket.BuildPacket(sourceActorId, val1, val2) end
+function __SetActorBGPropertiesPacket.BuildPacket(sourceActorId, layoutId, instanceId) end
 
 ---@class SetActorIconPacket
 ---@field DISCONNECTING number
@@ -4961,8 +5215,9 @@ local __SetActorNamePacket = {}
 ---@param sourceActorId number
 ---@param displayNameID number
 ---@param customName string
+---@param isSexMale? boolean
 ---@return any
-function __SetActorNamePacket.BuildPacket(sourceActorId, displayNameID, customName) end
+function __SetActorNamePacket.BuildPacket(sourceActorId, displayNameID, customName, isSexMale) end
 
 ---@class SetActorPositionPacket
 ---@field OPCODE number
@@ -4991,6 +5246,10 @@ function __SetActorPositionPacket.BuildPacket(sourceActorId, actorId, x, y, z, r
 ---@field OPCODE number
 ---@field PACKET_SIZE number
 local __SetActorPropetyPacket = {}
+---@param id number
+---@param data number[]
+---@return boolean
+function __SetActorPropetyPacket:AddBitfield(id, data) end
 ---@overload fun(self: SetActorPropetyPacket, id: number, buffer: number[], index: number, length: number, page: number): boolean
 ---@param id number
 ---@param buffer number[]
@@ -5991,15 +6250,15 @@ function __SetCurrentMountGoobbuePacket.BuildPacket(sourceActorId, appearanceId)
 ---@field OTHER_UGHAMARO number
 ---@field OTHER_Z number
 ---@field PACKET_SIZE number
----@field cutsceneFlags boolean[]
 local __SetCutsceneBookPacket = {}
 ---@param sourceActorId number
 ---@param sNpcName string
----@param sNpcActorIdOffset number
 ---@param sNpcSkin number
 ---@param sNpcPersonality number
+---@param sNpcCoordinate number
+---@param completedQuests boolean[]
 ---@return any
-function __SetCutsceneBookPacket:BuildPacket(sourceActorId, sNpcName, sNpcActorIdOffset, sNpcSkin, sNpcPersonality) end
+function __SetCutsceneBookPacket:BuildPacket(sourceActorId, sNpcName, sNpcSkin, sNpcPersonality, sNpcCoordinate, completedQuests) end
 
 ---@class SetHasChocoboPacket
 ---@field OPCODE number

@@ -19,6 +19,6 @@ function onBlock(effect, attacker, defender, skill, action, actionContainer)
         local mpToReturn = math.ceil(0.10 * action.amount);
         defender:AddMP(math.ceil(mpToReturn));
         --33009: You recover x MP from Outmaneuver
-        actionContainer:AddMPAction(defender.actorId, 33009, mpToReturn);
+        actionContainer:AddMPAction(defender.Id, 33009, mpToReturn);
     end
 end;

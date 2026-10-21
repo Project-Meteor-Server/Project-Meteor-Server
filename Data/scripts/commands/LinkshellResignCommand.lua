@@ -4,7 +4,7 @@ LinkshellLeaveCommand Script
 
 --]]
 
-function onEventStarted(player, actor, triggerName, linkshellName)
+function onEventStarted(player, actor, eventType, eventName, linkshellName)
 
 	GetWorldManager():RequestWorldLinkshellLeave(player, linkshellName);	
 	player:EndEvent();

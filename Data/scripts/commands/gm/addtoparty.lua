@@ -15,7 +15,7 @@ function onTrigger(player, argc)
     if player then
         if player.target then
             print("hi")
-            local id = player.target.actorId
+            local id = player.target.Id
             print("hi")
             player.currentParty:AddMember(id);
             player.target.currentParty = player.currentParty;

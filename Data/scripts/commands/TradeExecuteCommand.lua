@@ -24,7 +24,7 @@ reedit: Target has canceled their accept.
 
 require ("global")
 
-function onEventStarted(player, actor, triggerName)	
+function onEventStarted(player, actor, eventType, eventName)	
 	
 	callClientFunction(player, "delegateCommand", GetStaticActor("TradeExecuteCommand"), "processTradeCommandOpenTray");
 	

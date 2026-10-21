@@ -107,7 +107,7 @@ function doLevequestInit(player, aetheryte)
 			
 				player:SendGameMessage(worldMaster, 50036, 0x20, glId, player);
 				player:PlayAnimation(getGLStartAnimationFromSheet(guildleveData.borderId, guildleveData.plateId, true));				
-				director = player:GetZone():CreateGuildleveDirector(glId, difficulty, player);
+				director = player.CurrentArea:CreateGuildleveDirector(glId, difficulty, player);
 				player:AddDirector(director);
 				director:StartDirector(true, glId)
 			

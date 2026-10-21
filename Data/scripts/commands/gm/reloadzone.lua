@@ -18,11 +18,11 @@ function onTrigger(player, argc, zone)
     
     if player then
         local messageID = MESSAGE_TYPE_SYSTEM_ERROR;
-        zone = zone or player:GetZoneID();
+        zone = zone or player.CurrentArea.ZoneId;
         player:SendMessage(messageID, "[reloadzones] ", string.format("Reloading zone: %u", zone));
     --[[ todo: get this working legit
-        player:GetZone():Clear();
-        player:GetZone():AddActorToZone(player);
+        player.CurrentArea:Clear();
+        player.CurrentArea:AddActorToZone(player);
         player:SendInstanceUpdate();
         ]]
     end;

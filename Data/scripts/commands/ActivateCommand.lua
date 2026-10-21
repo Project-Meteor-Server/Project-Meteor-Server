@@ -8,7 +8,7 @@ Switches between active and passive mode states
 
 --]]
 
-function onEventStarted(player, command, triggerName)
+function onEventStarted(player, command, eventType, eventName)
     
 	if (player.currentMainState == 0x0000) then
 		player:Engage(0, 0x0002);

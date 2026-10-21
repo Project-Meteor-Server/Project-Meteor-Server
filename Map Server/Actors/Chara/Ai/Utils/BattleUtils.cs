@@ -513,7 +513,7 @@ namespace Meteor.Map.actors.chara.ai.utils
             if (skill != null && skill.numHits > 1)
             {
                 if (action.hitNum == 1)
-                    actionContainer?.AddAction(new CommandResult(attacker.actorId, 30441, 0));
+                    actionContainer?.AddAction(new CommandResult(attacker.Id, 30441, 0));
 
                 textIds = MultiHitTypeTextIds;
             }
@@ -717,7 +717,7 @@ namespace Meteor.Map.actors.chara.ai.utils
                     {
                         //If we need an extra action to show the status text
                         if (isAdditional)
-                            results.AddAction(target.actorId, effect.GetStatusGainTextId(), skill.statusId | (uint) HitEffect.StatusEffectType);
+                            results.AddAction(target.Id, effect.GetStatusGainTextId(), skill.statusId | (uint) HitEffect.StatusEffectType);
                     }
                     else
                         action.worldMasterTextId = 32002;//Is this right?
@@ -729,7 +729,7 @@ namespace Meteor.Map.actors.chara.ai.utils
                     {
                         //If we need an extra action to show the status text
                         if (isAdditional)
-                            results.AddAction(target.actorId, 30328, skill.statusId | (uint) HitEffect.StatusEffectType);
+                            results.AddAction(target.Id, 30328, skill.statusId | (uint) HitEffect.StatusEffectType);
                     }
                     else
                         action.worldMasterTextId = 32002;//Is this right?
@@ -905,7 +905,7 @@ namespace Meteor.Map.actors.chara.ai.utils
                 {
                     expChainNumber = effect.GetTier();
                     timeLimit = (uint)(GetChainTimeLimit(expChainNumber));
-                    actionContainer?.AddEXPAction(new CommandResult(attacker.actorId, 33919, 0, expChainNumber, (byte)timeLimit));
+                    actionContainer?.AddEXPAction(new CommandResult(attacker.Id, 33919, 0, expChainNumber, (byte)timeLimit));
                 }
 
                 totalBonus += GetChainBonus(expChainNumber);

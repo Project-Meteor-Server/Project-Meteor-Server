@@ -35,11 +35,11 @@ namespace Meteor.Map.actors.chara.npc
         private Player ownerPlayer;
 
         public Retainer(uint retainerId, ActorClass actorClass, Player player, float posX, float posY, float posZ, float rot)
-            : base(0, actorClass, "myretainer", player.GetZone(), posX, posY, posZ, rot, 0, 0, null)
+            : base(0, actorClass, "myretainer", player.CurrentArea, posX, posY, posZ, rot, 0, 0, null)
         {
             this.retainerId = retainerId;
             this.ownerPlayer = player;
-            this.actorName = String.Format("_rtnre{0:x7}", actorId);
+            this.Name = String.Format("_rtnre{0:x7}", Id);
 
             itemPackages[ItemPackage.NORMAL] = new ItemPackage(this, MAXSIZE_INVENTORY_NORMAL, ItemPackage.NORMAL);
             itemPackages[ItemPackage.CURRENCY_CRYSTALS] = new ItemPackage(this, MAXSIZE_INVENTORY_CURRANCY, ItemPackage.CURRENCY_CRYSTALS);

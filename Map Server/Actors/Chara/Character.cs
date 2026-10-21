@@ -24,7 +24,7 @@ using Meteor.Common;
 using Meteor.Map.actors.chara.player;
 using Meteor.Map.actors.group;
 using Meteor.Map.Actors.Chara;
-using Meteor.Map.dataobjects;
+using Meteor.Map.DataObjects;
 using Meteor.Map.packets.send.actor;
 using Meteor.Map.packets.send.actor.inventory;
 using Meteor.Map.utils;
@@ -181,27 +181,27 @@ namespace Meteor.Map.Actors
         public SubPacket CreateAppearancePacket()
         {
             SetActorAppearancePacket setappearance = new SetActorAppearancePacket(modelId, appearanceIds);
-            return setappearance.BuildPacket(actorId);
+            return setappearance.BuildPacket(Id);
         }
 
         public SubPacket CreateInitStatusPacket()
         {
-            return (SetActorStatusAllPacket.BuildPacket(actorId, charaWork.status));
+            return (SetActorStatusAllPacket.BuildPacket(Id, charaWork.status));
         }
 
         public SubPacket CreateSetActorIconPacket()
         {
-            return SetActorIconPacket.BuildPacket(actorId, currentActorIcon);
+            return SetActorIconPacket.BuildPacket(Id, currentActorIcon);
         }
 
         public SubPacket CreateSubStatePacket()
         {
-            return SetActorSubStatePacket.BuildPacket(actorId, currentSubState);
+            return SetActorSubStatePacket.BuildPacket(Id, currentSubState);
         }
 
         public void SetQuestGraphic(Player player, int graphicNum)
         {
-            player.QueuePacket(SetActorQuestGraphicPacket.BuildPacket(actorId, graphicNum));
+            player.QueuePacket(SetActorQuestGraphicPacket.BuildPacket(Id, graphicNum));
         }
 
         public void SetCurrentContentGroup(ContentGroup group)
@@ -215,7 +215,7 @@ namespace Meteor.Map.Actors
 
             ActorPropertyPacketUtil propPacketUtil = new ActorPropertyPacketUtil("charaWork/currentContentGroup", this);
             propPacketUtil.AddProperty("charaWork.currentContentGroup");
-            zone.BroadcastPacketsAroundActor(this, propPacketUtil.Done());
+            CurrentArea.BroadcastPacketsAroundActor(this, propPacketUtil.Done());
         }
 
         //This logic isn't correct, order of GetStatusEffects() is not necessarily the same as the actual effects in game. Also sending every time at once isn't needed
@@ -240,20 +240,20 @@ namespace Meteor.Map.Actors
             if (onlySelf)
             {
                 if (this is Player)
-                    ((Player)this).QueuePacket(PlayAnimationOnActorPacket.BuildPacket(actorId, animId));
+                    ((Player)this).QueuePacket(PlayAnimationOnActorPacket.BuildPacket(Id, animId));
             }
             else
-                zone.BroadcastPacketAroundActor(this, PlayAnimationOnActorPacket.BuildPacket(actorId, animId));
+                CurrentArea.BroadcastPacketAroundActor(this, PlayAnimationOnActorPacket.BuildPacket(Id, animId));
         }
         
         public void DoBattleAction(ushort commandId, uint animationId)
         {
-            zone.BroadcastPacketAroundActor(this, CommandResultX00Packet.BuildPacket(actorId, animationId, commandId));
+            CurrentArea.BroadcastPacketAroundActor(this, CommandResultX00Packet.BuildPacket(Id, animationId, commandId));
         }
 
         public void DoBattleAction(ushort commandId, uint animationId, CommandResult result)
         {
-            zone.BroadcastPacketAroundActor(this, CommandResultX01Packet.BuildPacket(actorId, animationId, commandId, result));
+            CurrentArea.BroadcastPacketAroundActor(this, CommandResultX01Packet.BuildPacket(Id, animationId, commandId, result));
         }
 
         public void DoBattleAction(ushort commandId, uint animationId, CommandResult[] results)
@@ -263,12 +263,12 @@ namespace Meteor.Map.Actors
             while (true)
             {
                 if (results.Length - currentIndex >= 10)
-                    zone.BroadcastPacketAroundActor(this, CommandResultX18Packet.BuildPacket(actorId, animationId, commandId, results, ref currentIndex));
+                    CurrentArea.BroadcastPacketAroundActor(this, CommandResultX18Packet.BuildPacket(Id, animationId, commandId, results, ref currentIndex));
                 else if (results.Length - currentIndex > 1)
-                    zone.BroadcastPacketAroundActor(this, CommandResultX10Packet.BuildPacket(actorId, animationId, commandId, results, ref currentIndex));
+                    CurrentArea.BroadcastPacketAroundActor(this, CommandResultX10Packet.BuildPacket(Id, animationId, commandId, results, ref currentIndex));
                 else if (results.Length - currentIndex == 1)
                 {
-                    zone.BroadcastPacketAroundActor(this, CommandResultX01Packet.BuildPacket(actorId, animationId, commandId, results[currentIndex]));
+                    CurrentArea.BroadcastPacketAroundActor(this, CommandResultX01Packet.BuildPacket(Id, animationId, commandId, results[currentIndex]));
                     currentIndex++;
                 }
                 else
@@ -283,12 +283,12 @@ namespace Meteor.Map.Actors
             while (true)
             {
                 if (results.Count - currentIndex >= 10)
-                    zone.BroadcastPacketAroundActor(this, CommandResultX18Packet.BuildPacket(actorId, animationId, commandId, results, ref currentIndex));
+                    CurrentArea.BroadcastPacketAroundActor(this, CommandResultX18Packet.BuildPacket(Id, animationId, commandId, results, ref currentIndex));
                 else if (results.Count - currentIndex > 1)
-                    zone.BroadcastPacketAroundActor(this, CommandResultX10Packet.BuildPacket(actorId, animationId, commandId, results, ref currentIndex));
+                    CurrentArea.BroadcastPacketAroundActor(this, CommandResultX10Packet.BuildPacket(Id, animationId, commandId, results, ref currentIndex));
                 else if (results.Count - currentIndex == 1)
                 {
-                    zone.BroadcastPacketAroundActor(this, CommandResultX01Packet.BuildPacket(actorId, animationId, commandId, results[currentIndex]));
+                    CurrentArea.BroadcastPacketAroundActor(this, CommandResultX01Packet.BuildPacket(Id, animationId, commandId, results[currentIndex]));
                     currentIndex++;
                 }
                 else
@@ -405,14 +405,14 @@ namespace Meteor.Map.Actors
 
                 if ((updateFlags & ActorUpdateFlags.Appearance) != 0)
                 {
-                    packets.Add(new SetActorAppearancePacket(modelId, appearanceIds).BuildPacket(actorId));
+                    packets.Add(new SetActorAppearancePacket(modelId, appearanceIds).BuildPacket(Id));
                 }
 
                 if ((updateFlags & ActorUpdateFlags.State) != 0)
                 {
-                    packets.Add(SetActorStatePacket.BuildPacket(actorId, currentMainState, 0x0));
-                    packets.Add(CommandResultX00Packet.BuildPacket(actorId, 0x72000062, 0));
-                    packets.Add(CommandResultX01Packet.BuildPacket(actorId, 0x7C000062, 21001, new CommandResult(actorId, 0, 1)));
+                    packets.Add(SetActorStatePacket.BuildPacket(Id, currentMainState, 0x0));
+                    packets.Add(CommandResultX00Packet.BuildPacket(Id, 0x72000062, 0));
+                    packets.Add(CommandResultX01Packet.BuildPacket(Id, 0x7C000062, 21001, new CommandResult(Id, 0, 1)));
 
                     updateFlags &= ~ActorUpdateFlags.State;
                     //DoBattleAction(21001, 0x7C000062, new BattleAction(this.actorId, 0, 1, 0, 0, 1)); //Attack Mode
@@ -420,7 +420,7 @@ namespace Meteor.Map.Actors
 
                 if ((updateFlags & ActorUpdateFlags.SubState) != 0)
                 {
-                    packets.Add(SetActorSubStatePacket.BuildPacket(actorId, currentSubState));
+                    packets.Add(SetActorSubStatePacket.BuildPacket(Id, currentSubState));
                     //packets.Add(CommandResultX00Packet.BuildPacket(actorId, 0x72000062, 0));
                     //packets.Add(CommandResultX01Packet.BuildPacket(actorId, 0x7C000062, 21001, new CommandResult(actorId, 0, 1)));
 
@@ -504,7 +504,7 @@ namespace Meteor.Map.Actors
                 }
                 //if (targid != 0)
                 {
-                    aiContainer.Engage(zone.FindActorInArea<Character>(targid));
+                    aiContainer.Engage(CurrentArea.FindActorInArea<Character>(targid));
                 }
             }
 
@@ -535,19 +535,19 @@ namespace Meteor.Map.Actors
         public virtual void Cast(uint spellId, uint targetId = 0)
         {
             if (aiContainer.CanChangeState())
-                aiContainer.Cast(zone.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), spellId);
+                aiContainer.Cast(CurrentArea.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), spellId);
         }
 
         public virtual void Ability(uint abilityId, uint targetId = 0)
         {
             if (aiContainer.CanChangeState())
-                aiContainer.Ability(zone.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), abilityId);
+                aiContainer.Ability(CurrentArea.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), abilityId);
         }
 
         public virtual void WeaponSkill(uint skillId, uint targetId = 0)
         {
             if (aiContainer.CanChangeState())
-                aiContainer.WeaponSkill(zone.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), skillId);
+                aiContainer.WeaponSkill(CurrentArea.FindActorInArea<Character>(targetId == 0 ? currentTarget : targetId), skillId);
         }
 
         public virtual void Spawn(DateTime tick)
@@ -806,7 +806,7 @@ namespace Meteor.Map.Actors
 
             foreach (CommandResult action in actions)
             {
-                if (zone.FindActorInArea<Character>(action.targetId) is Character)
+                if (CurrentArea.FindActorInArea<Character>(action.targetId) is Character)
                 {
                     //BattleUtils.HandleHitType(this, chara, action);
                     //BattleUtils.DoAction(this, chara, action, DamageTakenType.Magic);
@@ -822,7 +822,7 @@ namespace Meteor.Map.Actors
             foreach (CommandResult action in actions)
             {
                 //Should we just store the character insteado f having to find it again?
-                if (zone.FindActorInArea<Character>(action.targetId) is Character)
+                if (CurrentArea.FindActorInArea<Character>(action.targetId) is Character)
                 {
                     //BattleUtils.DoAction(this, chara, action, DamageTakenType.Weaponskill);
                 }
@@ -835,7 +835,7 @@ namespace Meteor.Map.Actors
         {
             foreach (var action in actions)
             {
-                if (zone.FindActorInArea<Character>(action.targetId) is Character)
+                if (CurrentArea.FindActorInArea<Character>(action.targetId) is Character)
                 {
                     //BattleUtils.DoAction(this, chara, action, DamageTakenType.Ability);
                 }
@@ -1126,7 +1126,7 @@ namespace Meteor.Map.Actors
                     ushort totalDamage = 0;
                     for (int hitNum = 1; hitNum <= command.numHits; hitNum++)
                     {
-                        var action = new CommandResult(chara.actorId, command, (byte)GetHitDirection(chara), (byte) hitNum);
+                        var action = new CommandResult(chara.Id, command, (byte)GetHitDirection(chara), (byte) hitNum);
                         
                         //uncached script
                         lua.LuaEngine.CallLuaBattleCommandFunction(this, command, folder, "onSkillFinish", this, chara, command, action, actions);
@@ -1145,7 +1145,7 @@ namespace Meteor.Map.Actors
                         //30442: [hitCount]fold Attack! [chara] takes a total of totalDamage points of damage.
                         //30450: All attacks miss!
                         ushort textId = (ushort) (hitTarget ? 30442 : 30450);
-                        actions.AddAction(new CommandResult(chara.actorId, textId, 0, totalDamage, (byte)hitCount));
+                        actions.AddAction(new CommandResult(chara.Id, textId, 0, totalDamage, (byte)hitCount));
                     }
                 }
 
@@ -1153,7 +1153,7 @@ namespace Meteor.Map.Actors
             }
             else
             {
-                actions.AddAction(new CommandResult(actorId, 30202, 0));
+                actions.AddAction(new CommandResult(Id, 30202, 0));
             }
 
             DelMP(command.CalculateMpCost(this));
@@ -1188,9 +1188,9 @@ namespace Meteor.Map.Actors
             if (!itemPackages.ContainsKey((ushort)id))
                 return;
 
-            player.QueuePacket(InventoryBeginChangePacket.BuildPacket(actorId, true));
+            player.QueuePacket(InventoryBeginChangePacket.BuildPacket(Id, true));
             itemPackages[(ushort)id].SendFullPackage(player);
-            player.QueuePacket(InventoryEndChangePacket.BuildPacket(actorId));
+            player.QueuePacket(InventoryEndChangePacket.BuildPacket(Id));
         }
 
         public void AddItem(uint catalogID)
@@ -1297,7 +1297,7 @@ namespace Meteor.Map.Actors
 
         public InventoryItem GetItem(LuaUtils.ItemRefParam reference)
         {
-            if (reference.actorId != actorId)
+            if (reference.actorId != Id)
                 return null;
             if (itemPackages.ContainsKey(reference.itemPackage))
             {

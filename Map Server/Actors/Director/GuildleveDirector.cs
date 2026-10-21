@@ -22,7 +22,7 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 using Meteor.Common;
 using Meteor.Map.actors.director.Work;
 using Meteor.Map.Actors;
-using Meteor.Map.dataobjects;
+using Meteor.Map.DataObjects;
 using Meteor.Map.utils;
 using System;
 using System.Collections.Generic;
@@ -137,7 +137,7 @@ namespace Meteor.Map.actors.director
             
             if (wasCompleted)
             {
-                Npc aetheryteNode = zone.SpawnActor(1200040, String.Format("{0}:warpExit", guildleveOwner.actorName), guildleveOwner.positionX, guildleveOwner.positionY, guildleveOwner.positionZ);
+                Npc aetheryteNode = CurrentArea.SpawnActor(1200040, String.Format("{0}:warpExit", guildleveOwner.Name), guildleveOwner.positionX, guildleveOwner.positionY, guildleveOwner.positionZ);
                 AddMember(aetheryteNode);
 
                 foreach (Actor a in GetPlayerMembers())
@@ -168,7 +168,7 @@ namespace Meteor.Map.actors.director
             foreach (Actor p in GetPlayerMembers())
             {
                 Player player = (Player)p;
-                player.ChangeMusic(player.GetZone().bgmDay);
+                player.ChangeMusic(player.CurrentArea.bgmDay);
             }
         }
 

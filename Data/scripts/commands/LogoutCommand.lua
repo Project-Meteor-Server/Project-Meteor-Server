@@ -12,7 +12,7 @@ eventLogoutFade()
 
 require ("global")
 
-function onEventStarted(player, command, triggerName)
+function onEventStarted(player, command, eventType, eventName)
 
 	choice = callClientFunction(player, "delegateCommand", command, "eventConfirm");	
 

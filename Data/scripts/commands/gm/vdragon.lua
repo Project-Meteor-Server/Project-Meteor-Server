@@ -16,7 +16,7 @@ function onTrigger(player, argc)
 
     if player and player.currentTarget then
         local actor = GetWorldManager():GetActorInWorld(player.currentTarget) or nil;
-        actor.Ability(23459, actor.actorId);
+        actor.Ability(23459, actor.Id);
 
     else
         print(sender.."unable to add experience, ensure player name is valid.");

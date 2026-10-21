@@ -44,6 +44,10 @@ namespace Meteor.Map.packets.send.actor
 
         string currentTarget;
 
+        bool isBitfield = false;
+        ushort from;
+        ushort to;
+
         private MemoryStream mem;
         private BinaryWriter binWriter;
 
@@ -53,6 +57,16 @@ namespace Meteor.Map.packets.send.actor
             binWriter = new BinaryWriter(mem);
             binWriter.Seek(1, SeekOrigin.Begin);
             currentTarget = startingTarget;
+        }
+        public SetActorPropetyPacket(ushort from, ushort to, string startingTarget)
+        {
+            mem = new MemoryStream(data);
+            binWriter = new BinaryWriter(mem);
+            binWriter.Seek(1, SeekOrigin.Begin);
+            currentTarget = startingTarget;
+            this.from = from;
+            this.to = to;
+            isBitfield = true;
         }
 
         public void CloseStreams()
@@ -96,6 +110,19 @@ namespace Meteor.Map.packets.send.actor
             binWriter.Write((UInt32)id);
             binWriter.Write((UInt32)value);
             runningByteTotal+=9;
+
+            return true;
+        }
+
+        public bool AddBitfield(uint id, byte[] data)
+        {
+            if (runningByteTotal + 5 + data.Length + 1 + (1 + 5 + Encoding.ASCII.GetByteCount(currentTarget)) > MAXBYTES)
+                return false;
+
+            binWriter.Write((byte) (data.Length));
+            binWriter.Write((UInt32)id);
+            binWriter.Write(data);
+            runningByteTotal += (ushort)(5 + data.Length);
 
             return true;
         }
@@ -208,10 +235,22 @@ namespace Meteor.Map.packets.send.actor
         public void SetTarget(string target)
         {
             currentTarget = target;
+            isBitfield = false;
         }
 
         public void AddTarget()
         {
+            if (isBitfield)
+            {
+                binWriter.Write((byte)(isMore ? 0x60 + currentTarget.Length + 5 : 0x82 + currentTarget.Length + 5));
+                binWriter.Write((byte)9);
+                binWriter.Write(from);
+                binWriter.Write(to);
+                binWriter.Write(Encoding.ASCII.GetBytes(currentTarget));
+                runningByteTotal += (ushort)(6 + Encoding.ASCII.GetByteCount(currentTarget));
+                return;
+            }
+
             if (isArrayMode)
                 binWriter.Write((byte)(0xA4 + currentTarget.Length));
             else
@@ -235,8 +274,7 @@ namespace Meteor.Map.packets.send.actor
             
             CloseStreams();
 
-            SubPacket packet = new SubPacket(OPCODE, sourceActorId, data);
-            return packet;
+            return new SubPacket(OPCODE, sourceActorId, data);
         }       
     
     }

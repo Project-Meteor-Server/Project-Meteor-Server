@@ -12,7 +12,7 @@ Warp player or <targetname> to a location from a list, or enter a zoneID with co
 ]],
 }
 
-function onTrigger(player, argc, p1, p2, p3, p4, privateArea, name, lastName)
+function onTrigger(player, argc, p1, p2, p3, p4, privateArea, privateAreaType, name, lastName)
 
     if name then
         if lastName then
@@ -32,14 +32,15 @@ function onTrigger(player, argc, p1, p2, p3, p4, privateArea, name, lastName)
     
     -- we're getting a list/array from c# so 0 index
     local pos = player:GetPos();
-    local player_x = pos[0];
-    local player_y = pos[1];
-    local player_z = pos[2];
-    local player_rot = pos[3];
-    local player_zone = pos[4];
+    local player_x = pos[1];
+    local player_y = pos[2];
+    local player_z = pos[3];
+    local player_rot = pos[4];
+    local player_zone = pos[5];
     
     local worldManager = GetWorldManager();
-    
+    privateAreaType = privateAreaType or 0;
+	
     if argc >= 3 then
         
         if argc == 3 then
@@ -55,11 +56,33 @@ function onTrigger(player, argc, p1, p2, p3, p4, privateArea, name, lastName)
             local x = tonumber(applyPositionOffset(p2, player_x)) or player_x;
             local y = tonumber(applyPositionOffset(p3, player_y)) or player_y;
             local z = tonumber(applyPositionOffset(p4, player_z)) or player_z;
-            if privateArea == "" then privateArea = nil end;
+            if privateArea == nil then privateArea = nil end;
+            if privateAreaType == nila then privateAreaType = 0 end;
             player:SendMessage(messageID, sender, string.format("setting coordinates X:%d Y:%d Z:%d to new zone (%d) private area:%s", x, y, z, zone, privateArea or "unspecified"));
-            worldManager:DoZoneChange(player, zone, privateArea, 0, 0x02, x, y, z, 0.00);
+            worldManager:DoZoneChange(player, zone, privateArea, tonumber(privateAreaType), 0x02, x, y, z, 0.00);
         end
   
+    elseif (argc == 1) then -- Switch city zone
+            
+        local commands = { ["SWITCH"] = 1, ["S"] = 1, ["FLIP"] = 1, ["F"] = 1, ["TOWN"] = 1};
+    
+        if (commands[string.upper(p1)]) then
+            local zones = {
+                        [133] = {133, 230},
+                        [155] = {155, 206},
+                        [175] = {175, 209},
+                        [206] = {206, 155},
+                        [209] = {209, 175},
+                        [230] = {230, 133}
+                        }
+                 
+            if (player_zone == zones[player_zone][1]) then 
+                worldManager:DoZoneChange(player, zones[player_zone][2], "", 0, 0x16, player_x, player_y, player_z, player_rot);
+                player:SendMessage(messageID, sender, string.format("setting coordinates X:%d Y:%d Z:%d to new zone (%d) private area:%s", player_x, player_y, player_z, zones[player_zone][2], privateArea or "unspecified"));
+            end
+        else
+            player:SendMessage(messageID, sender, "Unknown parameters! Usage: "..properties.description);
+        end
     else
         player:SendMessage(messageID, sender, "Unknown parameters! Usage: "..properties.description);
     end;

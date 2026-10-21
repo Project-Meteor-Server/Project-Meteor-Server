@@ -10,7 +10,7 @@ All bazaar args have a Reward (The item the person who fufills the request gets)
 
 --TODO REFACTOR
 
-function onEventStarted(player, actor, triggerName, rewardItem, seekItemOrCost, seekAmount, arg1, bazaarActorId, rewardAmount, rewardItemId, nameIndex, arg2, type9ItemIds)
+function onEventStarted(player, actor, eventType, eventName, rewardItem, seekItemOrCost, seekAmount, arg1, bazaarActorId, rewardAmount, rewardItemId, nameIndex, arg2, type9ItemIds)
 
 	local originalReward = nil;
 	local originalSeek = nil;
@@ -18,7 +18,7 @@ function onEventStarted(player, actor, triggerName, rewardItem, seekItemOrCost, 
 	
 	--Get the bazaar actor
 	if (bazaarActorId ~= nil) then
-		bazaarActor = player:GetZone():FindActorInArea(bazaarActorId);		
+		bazaarActor = player.CurrentArea:FindActorInArea(bazaarActorId);		
 	end
 	
 	--Abort if no actor

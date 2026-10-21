@@ -27,7 +27,7 @@ function onCrit(effect, attacker, defender, skill, action, actionContainer)
     healAmount = math.Clamp(healAmount, 0, attacker:GetMaxHP() - attacker:GetHP());
     attacker:AddHP(healAmount);
     --33012: You recover [healAmount] HP.
-    actionContainer:AddHPAbsorbAction(defender.actorId, 33008, healAmount);
+    actionContainer:AddHPAbsorbAction(defender.Id, 33008, healAmount);
 end;
 
 --"Effect fades over time"

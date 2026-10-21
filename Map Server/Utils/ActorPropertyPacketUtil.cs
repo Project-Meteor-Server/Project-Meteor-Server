@@ -47,7 +47,7 @@ namespace Meteor.Map.utils
             {
                 currentActorPropertyPacket.SetIsMore(true);
                 currentActorPropertyPacket.AddTarget();
-                subPackets.Add(currentActorPropertyPacket.BuildPacket(forActor.actorId));
+                subPackets.Add(currentActorPropertyPacket.BuildPacket(forActor.Id));
                 currentActorPropertyPacket = new SetActorPropetyPacket(currentTarget);
                 currentActorPropertyPacket.AddProperty(forActor, property);
             }
@@ -64,7 +64,7 @@ namespace Meteor.Map.utils
         {
             currentActorPropertyPacket.AddTarget();
             currentActorPropertyPacket.SetIsMore(false);
-            subPackets.Add(currentActorPropertyPacket.BuildPacket(forActor.actorId));
+            subPackets.Add(currentActorPropertyPacket.BuildPacket(forActor.Id));
             return subPackets;
         }
 

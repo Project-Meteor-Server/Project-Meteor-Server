@@ -396,11 +396,11 @@ namespace Meteor.Map
 
         private static void AddToList(object o, List<LuaParam> luaParams)
         {
-            if (o is int)
+            if (o is int || o is short)
             {
                 luaParams.Add(new LuaParam(0x0, (int)o));
             }
-            else if (o is uint)
+            else if (o is uint || o is ushort)
             {
                 luaParams.Add(new LuaParam(0x1, (uint)o));
             }                
@@ -426,7 +426,7 @@ namespace Meteor.Map
             }
             else if (o is Actor)
             {
-                luaParams.Add(new LuaParam(0x6, ((Actor)o).actorId));
+                luaParams.Add(new LuaParam(0x6, ((Actor)o).Id));
             }
             else if (o is ItemRefParam)
             {
