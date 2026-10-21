@@ -92,6 +92,6 @@ function doQuestEvent(player, npc, quest, eventType, eventName)
 	elseif (eventType == 3) then
 		quest:OnEmote(player, npc, eventName);
 	elseif (eventType == 5) then
-		quest:OnNotice(player, npc, eventName);
+		quest:OnNotice(player, eventName);
 	end
 end

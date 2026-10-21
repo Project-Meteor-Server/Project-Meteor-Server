@@ -149,6 +149,11 @@ namespace Meteor.Map.Actors
         //Quest Actors (MUST MATCH playerWork.questScenario/questGuildleve)
         public Quest[] questScenario = new Quest[16];
         public uint[] questGuildleve = new uint[8];
+
+        // The craft menu's Recent and Awarded recipe lists, newest first. The menu shows 8.
+        private const int MAX_RECIPE_LIST = 8;
+        private readonly List<Recipe> recentRecipes = new List<Recipe>();
+        private readonly List<Recipe> awardedRecipes = new List<Recipe>();
         public QuestStateManager questStateManager;
 
         //Aetheryte
@@ -947,6 +952,12 @@ namespace Meteor.Map.Actors
             QueuePacket(SetMusicPacket.BuildPacket(Id, musicId, musicTrackMode));
         }
 
+        // Back to the zone's own track, after crafting and the like change it.
+        public void ResetMusic()
+        {
+            ChangeMusic(CurrentArea.bgmDay);
+        }
+
         
 
 
@@ -1427,6 +1438,36 @@ namespace Meteor.Map.Actors
         public uint GetHomePoint()
         {
             return homepoint;
+        }
+
+        public List<Recipe> GetRecentRecipes()
+        {
+            return recentRecipes;
+        }
+
+        public List<Recipe> GetAwardedRecipes()
+        {
+            return awardedRecipes;
+        }
+
+        public void AddRecentRecipe(Recipe recipe)
+        {
+            AddToRecipeList(recentRecipes, recipe);
+        }
+
+        public void AddAwardedRecipe(Recipe recipe)
+        {
+            AddToRecipeList(awardedRecipes, recipe);
+        }
+
+        private static void AddToRecipeList(List<Recipe> list, Recipe recipe)
+        {
+            if (recipe == null)
+                return;
+            list.Remove(recipe);
+            list.Insert(0, recipe);
+            if (list.Count > MAX_RECIPE_LIST)
+                list.RemoveAt(MAX_RECIPE_LIST);
         }
 
         public byte GetHomePointInn()

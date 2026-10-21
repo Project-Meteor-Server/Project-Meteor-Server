@@ -36,7 +36,7 @@ function onEventStarted(player, npc, triggerName)
 		-- Give items based on dream
 		local dreamCode = player:GetLoginDreamCode();		
 		if (dreamCode >= 21 and dreamCode <= 33) then
-			local innCode = player:GetInnCode();
+			local innCode = player:GetHomePointInn();
 			local itemCode = DREAM_ITEM[dreamCode - 20];
 			
 			-- Get biscuit for inn

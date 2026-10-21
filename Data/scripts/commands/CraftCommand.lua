@@ -156,6 +156,26 @@ local skillAnim = {
 
 local craftStartWidgetOpen = false;
 
+-- Recipe lists and a recipe's materials are C# objects (indexed from 0). The client calls below
+-- take plain values, so copy what they need into Lua tables.
+local function recipesToItemIds(recipes)
+    local ids = {};
+    if (recipes ~= nil) then
+        for i = 0, math.min(recipes.Count, 8) - 1 do
+            ids[#ids + 1] = recipes[i].resultItemID;
+        end
+    end
+    return ids;
+end
+
+local function recipeToMatIds(recipe)
+    local ids = {};
+    for i = 0, 7 do
+        ids[i + 1] = recipe.materials[i];
+    end
+    return ids;
+end
+
 function onEventStarted(player, commandactor, eventType, eventName, arg1, arg2, arg3, arg4, checkedActorId)
     local MENU_CANCEL, MENU_MAINHAND, MENU_OFFHAND, MENU_REQUEST = 0, 1, 2, 3;
     local MENU_RECENT, MENU_AWARDED, MENU_RECENT_DETAILED, MENU_AWARDED_DETAILED = 7, 8, 9, 10;
@@ -190,13 +210,13 @@ function onEventStarted(player, commandactor, eventType, eventName, arg1, arg2, 
 		local prepedMaterials = {0,0,0,0,0,0,0,0};		
 		-- Quest requested mode materials
 		if (isRequestedItemsMode == true) then
-			prepedMaterials = recipeResolver.RecipeToMatIdTable(currentCraftQuestGuildleve.getRecipe());
+			-- Only local leves come with their materials, and those aren't offered yet (see getCraftQuest).
 		-- Recent Recipes/Awarded recipes materials
 		elseif ((operationMode == MENU_RECENT or operationMode == MENU_AWARDED) and recipeMode != 0) then
 			if (operationMode == MENU_RECENT) then
-				prepedMaterials = recipeResolver.RecipeToMatIdTable(recentRecipes[recipeMode]);
+				prepedMaterials = recipeToMatIds(recentRecipes[recipeMode-1]);
 			else 			
-				prepedMaterials = recipeResolver.RecipeToMatIdTable(awardedRecipes[recipeMode]);
+				prepedMaterials = recipeToMatIds(awardedRecipes[recipeMode-1]);
 			end
         end		
 		
@@ -242,7 +262,7 @@ function onEventStarted(player, commandactor, eventType, eventName, arg1, arg2, 
 				
 				-- Choosing a recipe from the given materials
 				local recipes = recipeResolver:GetRecipeFromMats(unpack(materials));				
-				local itemIds = recipeResolver.RecipesToItemIdTable(recipes);
+				local itemIds = recipesToItemIds(recipes);
 				
 				-- No recipes found
 				if (#itemIds == 0) then
@@ -297,11 +317,7 @@ function onEventStarted(player, commandactor, eventType, eventName, arg1, arg2, 
                 local quest = getCraftQuest(player, craftJudge, commandactor);
 				if (quest ~= nil) then
 					isRequestedItemsMode = true;
-					if (quest.isCraftPassiveGuildleve()) then
-						currentCraftQuestGuildleve = quest;
-					else
-						currentCraftQuest = quest;
-					end
+					currentCraftQuest = quest;
 				end
             elseif isRequestedItemsMode == true then -- "Normal Synthesis" button hit   
                 isRequestedItemsMode = false;
@@ -310,20 +326,20 @@ function onEventStarted(player, commandactor, eventType, eventName, arg1, arg2, 
             end        
         elseif operationMode == MENU_RECENT then -- "Recipes" button hit
             if isRecipeRecentSent == false then
-				recentRecipes = player.GetRecentRecipes();
-				local itemIds = recipeResolver.RecipesToItemIdTable(recentRecipes);
+				recentRecipes = player:GetRecentRecipes();
+				local itemIds = recipesToItemIds(recentRecipes);
                 callClientFunction(player, "delegateCommand", craftJudge, "selectRcp", commandactor, unpack(itemIds)); -- Load up recipe list
                 isRecipeRecentSent = true;
             end
         elseif operationMode == MENU_AWARDED then -- "Awarded Recipes" tab hit  
             if isRecipeAwardSent == false then
-				awardedRecipes = player.GetAwardedRecipes();
-				local itemIds = recipeResolver.RecipesToItemIdTable(awardedRecipes);
+				awardedRecipes = player:GetAwardedRecipes();
+				local itemIds = recipesToItemIds(awardedRecipes);
                 callClientFunction(player, "delegateCommand", craftJudge, "selectRcp", commandactor, unpack(itemIds)); -- Load up Award list
                 isRecipeAwardSent = true;
             end
         elseif ((operationMode == MENU_RECENT_DETAILED or operationMode == MENU_AWARDED_DETAILED) and recipeMode > 0) then -- Pop-up for an item's stats/craft mats on a recent recipe			
-			local chosenRecipe = operationMode == MENU_RECENT_DETAILED and recentRecipes[recipeMode-1] or recentRecipes[awardedMode-1];
+			local chosenRecipe = operationMode == MENU_RECENT_DETAILED and recentRecipes[recipeMode-1] or awardedRecipes[recipeMode-1];
 			local recipeConfirmed = callClientFunction(player, "delegateCommand", craftJudge, "confirmRcp", commandactor, 
 				chosenRecipe.resultItemID, 
 				chosenRecipe.resultQuantity, 
@@ -339,7 +355,7 @@ function onEventStarted(player, commandactor, eventType, eventName, arg1, arg2, 
 				closeCraftStartWidget(player, craftJudge, commandactor);
 				isRecipeRecentSent = false;
 				isRecipeAwardSent = false;
-				currentlyCrafting = startCrafting(player, commandactor, craftJudge, operationMode, chosenRecipe, isRequestedItemsMode, 80, 100, 50);
+				currentlyCrafting = startCrafting(player, commandactor, craftJudge, operationMode, chosenRecipe, currentCraftQuestGuildleve, 80, 100, 50);
 			end
         else
             break;
@@ -370,40 +386,11 @@ function getCraftQuest(player, craftJudge, commandactor);
 					player:SendGameMessage(craftJudge, 21, 0x20);
 					return quest;
 				end
-			-- PassiveGL Quest Chosen
+			-- PassiveGL Quest Chosen. Local leve crafting needs the leve's materials, recipe and
+			-- crafted count on the server (client functions confirmLeve and askContinueLocalleve),
+			-- which don't exist yet.
 			elseif isLocalLeve(questId) then
-				local difficulty = 0;
-				local hasMaterials = 1;
-				
-				local quest = player:getQuestGuildleve(questId);
-				
-				if (quest ~= nil) then
-					-- Did they pickup the materials?
-					if (quest:hasMaterials() == false) then
-						player:SendGameMessage(GetWorldMaster(), 40210, 0x20); -- You have not obtained the proper materials from the client.						
-					-- Did they use em all up?
-					elseif (quest:getRemainingMaterials() == 0) then
-						player:SendGameMessage(GetWorldMaster(), 40211, 0x20); -- You have used up all of the provided materials.			
-					-- Confirm dialog
-					else
-						local confirm = callClientFunction(player, "delegateCommand", craftJudge, "confirmLeve", commandactor, 
-							quest:GetQuestId(),
-							quest:getCurrentDifficulty() + 1, -- Lua, 1-indexed
-							0, 
-							quest:getCurrentCrafted(),
-							quest:getRemainingMaterials(),
-							quest:hasMaterials() and 1 or 0, -- Fucked up way of doing terneries on Lua 
-							0
-						);
-
-						-- Quest confirmed
-						if (confirm == true) then
-							return quest;
-						end	
-					end
-				else
-					return nil; -- Shouldn't happen unless db fucked with
-				end
+				player:SendGameMessage(GetWorldMaster(), 40209, 0x20); -- You cannot undertake that endeavor.
 			-- Scenario Quest Chosen
 			else
 				-- TEMP for now. Cannot find source for what happens if you confirm a non-craft quest.
@@ -467,41 +454,13 @@ function startCrafting(player, commandactor, craftJudge, hand, recipe, quest, st
         if (progress >= 100) then            
             callClientFunction(player, "delegateCommand", craftJudge, "closeCraftProgressWidget", commandactor);
             
-			-- Handle local levequest craft success
-            if quest then	
-				quest:craftSuccess();
-				
-				if (quest:getCurrentCrafted() >= quest:getObjectiveQuantity()) then
-					attentionMessage(player, 40121, quest:GetQuestId(), quest:getCurrentCrafted(), quest:getObjectiveQuantity()); -- "All items for <QuestId> complete!"
-				else
-					attentionMessage(player, 40119, quest:GetQuestId(), quest:getCurrentCrafted(), quest:getObjectiveQuantity()); -- "<QuestId> Successfull. (<crafted> of <attempts>)"
-				end
-			
-				-- Continue local levequest  (should this be in here??)
-				if (quest:getRemainingMaterials() ~= 0) then
-					continueLeve = callClientFunction(player, "delegateCommand", craftJudge, "askContinueLocalleve", commandactor,
-						quest:GetQuestId(),
-						quest:getRecipe().resultItemID, 
-						quest:getCurrentCrafted(),
-						quest:getObjectiveQuantity(), 
-						quest:getRemainingMaterials()
-					);
-
-					if (continueLeve == 1) then
-						progress = 0;
-						callClientFunction(player, "delegateCommand", craftJudge, "openCraftProgressWidget", commandactor, startDur, startQly, startHQ);
-					else
-						break;
-					end
-				else
-					break;
-				end				
-			-- Normal synth craft success
-            else                
-				player:SendGameMessage(GetWorldMaster(), 40111, 0x20, player, recipe.resultItemID, 1, recipe.resultQuantity);  -- "You create <#3 quantity> <#1 item> <#2 quality>."				
-				player:GetItemPackage(location):AddItem(recipe.resultItemID, recipe.resultQuantity, 1);
-				break;
-            end
+			-- Normal synth craft success. Local leve crafts (quest) aren't offered yet; see getCraftQuest.
+			-- "You create <#3 quantity> <#1 item> <#2 quality>." Retail order is item, quality, quantity,
+			-- crafter [RCAP].
+			player:SendGameMessage(GetWorldMaster(), 40111, 0x20, recipe.resultItemID, 1, recipe.resultQuantity, player);
+			player:GetItemPackage(INVENTORY_NORMAL):AddItem(recipe.resultItemID, recipe.resultQuantity, 1);
+			player:AddRecentRecipe(recipe);
+			break;
         end		
         
         choice = callClientFunction(player, "delegateCommand", craftJudge, "craftCommandUI", commandactor, 29, 2, 29530,29531,29532,29533,29534);

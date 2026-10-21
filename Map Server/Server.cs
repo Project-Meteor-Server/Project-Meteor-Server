@@ -50,6 +50,7 @@ namespace Meteor.Map
         private static WorldManager WorldManager;
         private static Dictionary<uint, ItemData> GamedataItems;
         private static Dictionary<uint, GuildleveData> GamedataGuildleves;
+        private static RecipeResolver GamedataRecipeResolver;
         private static Dictionary<uint, QuestGameData> GamedataQuests;
         private static StaticActors StaticActors;
 
@@ -71,6 +72,8 @@ namespace Meteor.Map
             Program.Log.Info("Loaded {0} guildleves.", GamedataGuildleves.Count);
             GamedataQuests = Database.GetQuestGamedata();
             Program.Log.Info("Loaded {0} quests.", GamedataQuests.Count);
+            GamedataRecipeResolver = RecipeResolver.Init();
+            Program.Log.Info("Loaded {0} crafting recipes.", GamedataRecipeResolver.GetNumRecipes());
 
             WorldManager = new WorldManager(this);
             WorldManager.LoadZoneList();
@@ -368,5 +371,10 @@ namespace Meteor.Map
         //{
         // return GamedataQuests.Values.Where(quest => all ? quest.MinLevel == lvl : quest.MinLevel <= lvl).ToArray();
         //}
+
+        public static RecipeResolver ResolveRecipe()
+        {
+            return GamedataRecipeResolver;
+        }
     }
 }

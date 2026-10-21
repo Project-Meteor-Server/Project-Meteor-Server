@@ -810,6 +810,17 @@ namespace Meteor.Map.actors.chara.player
             return quantityCount <= 0 || (quantityCount > 0 && !IsFull());
         }
 
+        public int GetItemQuantity(uint itemId)
+        {
+            int count = 0;
+            for (int i = 0; i < endOfListIndex; i++)
+            {
+                if (list[i].itemId == itemId)
+                    count += list[i].quantity;
+            }
+            return count;
+        }
+
         public bool HasItem(uint itemId)
         {
             return HasItem(itemId, 1);

@@ -75,6 +75,7 @@ namespace Meteor.Map.lua
             ["GetItemGamedata"] = (Func<uint, ItemData>)Server.GetItemGamedata,
             ["GetGuildleveGamedata"] = (Func<uint, GuildleveData>)Server.GetGuildleveGamedata,
             ["GetLuaInstance"] = (Func<LuaEngine>)LuaEngine.GetInstance,
+            ["GetRecipeResolver"] = (Func<RecipeResolver>)Server.ResolveRecipe,
         };
 
         private LuaEngine()

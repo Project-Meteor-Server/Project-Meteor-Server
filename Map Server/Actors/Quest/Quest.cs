@@ -178,6 +178,11 @@ namespace Meteor.Map.Actors.QuestNS
         #endregion
 
         #region Script Callbacks
+        public void OnCommand(Player caller, Npc npc, string triggerName)
+        {
+            LuaEngine.GetInstance().CallLuaFunction(caller, this, "onCommand", true, npc, triggerName);
+        }
+
         public void OnTalk(Player caller, Npc npc)
         {
             LuaEngine.GetInstance().CallLuaFunction(caller, this, "onTalk", true, npc);

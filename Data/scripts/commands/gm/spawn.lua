@@ -30,7 +30,7 @@ function onTrigger(player, argc, actorClassId, width, height)
         for i = 0, w do
             for j = 0, h do
 				actor = player.CurrentArea:SpawnActor(actorClassId, "test", x + (i - (w / 2) * 3), y, z + (j - (h / 2) * 3), rot);
-				actor.SetAppearance(1001149)
+				actor:ChangeNpcAppearance(1001149)
 			end
 		end
 	end

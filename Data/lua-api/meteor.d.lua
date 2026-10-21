@@ -13,6 +13,9 @@ function GetItemGamedata(arg1) end
 ---@return LuaEngine
 function GetLuaInstance() end
 
+---@return RecipeResolver
+function GetRecipeResolver() end
+
 ---@param arg1 string
 ---@return Actor
 function GetStaticActor(arg1) end
@@ -1093,6 +1096,8 @@ function __Player:Ability(abilityId, targetId) end
 function __Player:AcceptQuest(instance, isSilent) end
 ---@param accepted boolean
 function __Player:AcceptTrade(accepted) end
+---@param recipe Recipe
+function __Player:AddAwardedRecipe(recipe) end
 ---@param director Director
 ---@param spawnImmediatly? boolean
 function __Player:AddDirector(director, spawnImmediatly) end
@@ -1109,6 +1114,8 @@ function __Player:AddNpcLs(npcLsId) end
 ---@param id number
 ---@param isSilent? boolean
 function __Player:AddQuest(id, isSilent) end
+---@param recipe Recipe
+function __Player:AddRecentRecipe(recipe) end
 ---@param slot number
 ---@param chosenItem ItemRefParam
 ---@param tradeQuantity number
@@ -1194,6 +1201,8 @@ function __Player:ForceQuestStateUpdate() end
 ---@param actorId number
 ---@return Actor
 function __Player:GetActorInInstance(actorId) end
+---@return Recipe[]
+function __Player:GetAwardedRecipes() end
 ---@return number
 function __Player:GetCurrentClassOrJob() end
 ---@return number
@@ -1246,6 +1255,8 @@ function __Player:GetQuestSlot(quest) end
 ---@param npc Npc
 ---@return Quest[]
 function __Player:GetQuestsForNpc(npc) end
+---@return Recipe[]
+function __Player:GetRecentRecipes() end
 ---@return number
 function __Player:GetSNpcCoordinate() end
 ---@return string
@@ -1393,6 +1404,7 @@ function __Player:RemoveTradeItem(slot) end
 ---@param oldQuestInstance Quest
 ---@param questName string
 function __Player:ReplaceQuest(oldQuestInstance, questName) end
+function __Player:ResetMusic() end
 ---@param functionName string
 ---@param ... any
 function __Player:RunEventFunction(functionName, ...) end
@@ -1553,6 +1565,10 @@ function __Quest:IsQuestENPCByScript(caller, npc) end
 function __Quest:NewNpcLsMsg(from) end
 function __Quest:OnAbandon() end
 function __Quest:OnAccept() end
+---@param caller Player
+---@param npc Npc
+---@param triggerName string
+function __Quest:OnCommand(caller, npc, triggerName) end
 function __Quest:OnComplete() end
 ---@param caller Player
 ---@param npc Npc
@@ -2058,6 +2074,12 @@ local __QuestGameData = {}
 
 ---@class Recipe
 ---@field allowedCrafters number[]
+---@field crystalId1 number
+---@field crystalId2 number
+---@field crystalQuantity1 number
+---@field crystalQuantity2 number
+---@field id number
+---@field materials number[]
 ---@field resultItemID number
 ---@field resultQuantity number
 ---@field tier number
@@ -2534,6 +2556,8 @@ function __Server.GetWorldConnection() end
 function __Server.GetWorldManager() end
 ---@param id number
 function __Server:RemoveSession(id) end
+---@return RecipeResolver
+function __Server.ResolveRecipe() end
 ---@return boolean
 function __Server:StartServer() end
 
@@ -4053,6 +4077,9 @@ function __ItemPackage:GetItemByCatelogId(catelogId) end
 ---@param uniqueItemId number
 ---@return InventoryItem
 function __ItemPackage:GetItemByUniqueId(uniqueItemId) end
+---@param itemId number
+---@return number
+function __ItemPackage:GetItemQuantity(itemId) end
 ---@return number
 function __ItemPackage:GetNextEmptySlot() end
 ---@return InventoryItem[]

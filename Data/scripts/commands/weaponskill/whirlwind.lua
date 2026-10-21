@@ -25,7 +25,7 @@ function onCombo(caster, target, skill)
         end
 
         caster:SubtractMod(modifiersGlobal.Attack, apPerHit * berserk:GetExtra());
-        caster.Add(modifiersGlobal.Defense, defPerHit * berserk:GetExtra());
+        caster:AddMod(modifiersGlobal.Defense, defPerHit * berserk:GetExtra());
 
         berserk:SetExtra(0);
         skill.basePotency = skill.basePotency * 1.5;

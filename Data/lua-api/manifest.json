@@ -26,6 +26,11 @@
       "params": []
     },
     {
+      "name": "GetRecipeResolver",
+      "returns": "RecipeResolver",
+      "params": []
+    },
+    {
       "name": "GetStaticActor",
       "returns": "Actor",
       "params": [
@@ -4989,6 +4994,16 @@
           ]
         },
         {
+          "name": "AddAwardedRecipe",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "recipe",
+              "type": "Recipe"
+            }
+          ]
+        },
+        {
           "name": "AddDirector",
           "returns": "nil",
           "params": [
@@ -5069,6 +5084,16 @@
               "name": "isSilent",
               "type": "boolean",
               "optional": true
+            }
+          ]
+        },
+        {
+          "name": "AddRecentRecipe",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "recipe",
+              "type": "Recipe"
             }
           ]
         },
@@ -5483,6 +5508,11 @@
           ]
         },
         {
+          "name": "GetAwardedRecipes",
+          "returns": "Recipe[]",
+          "params": []
+        },
+        {
           "name": "GetCurrentClassOrJob",
           "returns": "number",
           "params": []
@@ -5651,6 +5681,11 @@
               "type": "Npc"
             }
           ]
+        },
+        {
+          "name": "GetRecentRecipes",
+          "returns": "Recipe[]",
+          "params": []
         },
         {
           "name": "GetSNpcCoordinate",
@@ -6304,6 +6339,11 @@
               "type": "string"
             }
           ]
+        },
+        {
+          "name": "ResetMusic",
+          "returns": "nil",
+          "params": []
         },
         {
           "name": "RunEventFunction",
@@ -7043,6 +7083,24 @@
           "name": "OnAccept",
           "returns": "nil",
           "params": []
+        },
+        {
+          "name": "OnCommand",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "caller",
+              "type": "Player"
+            },
+            {
+              "name": "npc",
+              "type": "Npc"
+            },
+            {
+              "name": "triggerName",
+              "type": "string"
+            }
+          ]
         },
         {
           "name": "OnComplete",
@@ -8919,6 +8977,30 @@
       "members": [
         {
           "name": "allowedCrafters",
+          "type": "number[]"
+        },
+        {
+          "name": "crystalId1",
+          "type": "number"
+        },
+        {
+          "name": "crystalId2",
+          "type": "number"
+        },
+        {
+          "name": "crystalQuantity1",
+          "type": "number"
+        },
+        {
+          "name": "crystalQuantity2",
+          "type": "number"
+        },
+        {
+          "name": "id",
+          "type": "number"
+        },
+        {
+          "name": "materials",
           "type": "number[]"
         },
         {
@@ -10945,6 +11027,12 @@
               "type": "number"
             }
           ]
+        },
+        {
+          "name": "ResolveRecipe",
+          "static": true,
+          "returns": "RecipeResolver",
+          "params": []
         },
         {
           "name": "StartServer",
@@ -17924,6 +18012,16 @@
           "params": [
             {
               "name": "uniqueItemId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetItemQuantity",
+          "returns": "number",
+          "params": [
+            {
+              "name": "itemId",
               "type": "number"
             }
           ]

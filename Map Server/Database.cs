@@ -279,13 +279,14 @@ namespace Meteor.Map
                             mats[6] = reader.GetUInt32("material6");
                             mats[7] = reader.GetUInt32("material7");
 
-                            Array.Sort(mats);
+                            Recipe recipe = new Recipe(recipeID, craftedItem, craftedQuantity, mats, crystal0ID, crystal0Quantity, crystal1ID, crystal1Quantity, new byte[] { }, 1);
 
-                            Recipe recipe = new Recipe(craftedItem, craftedQuantity, new byte[] { }, 1);
-
-                            //Hash for the Mat -> Recipe Dictionary                            
+                            // Hash for the Mat -> Recipe Dictionary. Sorted so the order the player
+                            // places materials in doesn't matter; the recipe keeps its own order.
+                            uint[] sorted = (uint[])mats.Clone();
+                            Array.Sort(sorted);
                             byte[] result = new byte[8 * sizeof(int)];
-                            Buffer.BlockCopy(mats, 0, result, 0, result.Length);
+                            Buffer.BlockCopy(sorted, 0, result, 0, result.Length);
                             string hash;
                             using (MD5 md5 = MD5.Create())
                             {
@@ -296,8 +297,8 @@ namespace Meteor.Map
                                 matToRecipe.Add(hash, new List<Recipe>());
 
                             //Add to both Dictionaries
-                            recipeList.Add(recipeID, new Recipe(craftedItem, craftedQuantity, new byte[] { }, 1));
-                            matToRecipe[hash].Add(new Recipe(craftedItem, craftedQuantity, new byte[] { }, 1));
+                            recipeList.Add(recipeID, recipe);
+                            matToRecipe[hash].Add(recipe);
                         }
                     }
                 }
