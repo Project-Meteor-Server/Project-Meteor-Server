@@ -48,10 +48,10 @@ namespace Meteor.Map.lua
         public const string FILEPATH_NPCS = "./scripts/unique/{0}/{1}/{2}.lua";
         public const string FILEPATH_QUEST = "./scripts/quests/{0}/{1}.lua";
 
-        private static LuaEngine mThisEngine;
-        private Dictionary<LuaCoroutine, ulong> mSleepingOnTime = new Dictionary<LuaCoroutine, ulong>();
-        private Dictionary<string, List<LuaCoroutine>> mSleepingOnSignal = new Dictionary<string, List<LuaCoroutine>>();
-        private Dictionary<uint, LuaCoroutine> mSleepingOnPlayerEvent = new Dictionary<uint, LuaCoroutine>();
+        private static LuaEngine thisEngine;
+        private Dictionary<LuaCoroutine, ulong> sleepingOnTime = new Dictionary<LuaCoroutine, ulong>();
+        private Dictionary<string, List<LuaCoroutine>> sleepingOnSignal = new Dictionary<string, List<LuaCoroutine>>();
+        private Dictionary<uint, LuaCoroutine> sleepingOnPlayerEvent = new Dictionary<uint, LuaCoroutine>();
         // The three wait lists above are read by the timer thread and changed by the zone and network
         // threads, so they are only touched while holding this lock. Scripts are resumed after
         // letting go of it.
@@ -79,26 +79,26 @@ namespace Meteor.Map.lua
 
         public static LuaEngine GetInstance()
         {
-            if (mThisEngine == null)
-                mThisEngine = new LuaEngine();
+            if (thisEngine == null)
+                thisEngine = new LuaEngine();
 
-            return mThisEngine;
+            return thisEngine;
         }
 
         public void AddWaitCoroutine(LuaCoroutine coroutine, float seconds)
         {
             ulong time = Utils.MilisUnixTimeStampUTC() + (ulong)(seconds * 1000);
             lock (waitLock)
-                mSleepingOnTime.Add(coroutine, time);
+                sleepingOnTime.Add(coroutine, time);
         }
 
         public void AddWaitSignalCoroutine(LuaCoroutine coroutine, string signal)
         {
             lock (waitLock)
             {
-                if (!mSleepingOnSignal.ContainsKey(signal))
-                    mSleepingOnSignal.Add(signal, new List<LuaCoroutine>());
-                mSleepingOnSignal[signal].Add(coroutine);
+                if (!sleepingOnSignal.ContainsKey(signal))
+                    sleepingOnSignal.Add(signal, new List<LuaCoroutine>());
+                sleepingOnSignal[signal].Add(coroutine);
             }
         }
 
@@ -106,8 +106,8 @@ namespace Meteor.Map.lua
         {
             lock (waitLock)
             {
-                if (!mSleepingOnPlayerEvent.ContainsKey(player.actorId))
-                    mSleepingOnPlayerEvent.Add(player.actorId, coroutine);
+                if (!sleepingOnPlayerEvent.ContainsKey(player.actorId))
+                    sleepingOnPlayerEvent.Add(player.actorId, coroutine);
             }
         }
 
@@ -117,8 +117,8 @@ namespace Meteor.Map.lua
             lock (waitLock)
             {
                 LuaCoroutine coroutine;
-                if (mSleepingOnPlayerEvent.TryGetValue(player.actorId, out coroutine))
-                    mSleepingOnPlayerEvent.Remove(player.actorId);
+                if (sleepingOnPlayerEvent.TryGetValue(player.actorId, out coroutine))
+                    sleepingOnPlayerEvent.Remove(player.actorId);
                 return coroutine;
             }
         }
@@ -126,20 +126,20 @@ namespace Meteor.Map.lua
         public void PulseSleepingOnTime(object state)
         {
             ulong currentTime = Utils.MilisUnixTimeStampUTC();
-            List<LuaCoroutine> mToAwake = new List<LuaCoroutine>();
+            List<LuaCoroutine> toAwake = new List<LuaCoroutine>();
 
             lock (waitLock)
             {
-                foreach (KeyValuePair<LuaCoroutine, ulong> entry in mSleepingOnTime)
+                foreach (KeyValuePair<LuaCoroutine, ulong> entry in sleepingOnTime)
                 {
                     if (entry.Value <= currentTime)
-                        mToAwake.Add(entry.Key);
+                        toAwake.Add(entry.Key);
                 }
-                foreach (LuaCoroutine key in mToAwake)
-                    mSleepingOnTime.Remove(key);
+                foreach (LuaCoroutine key in toAwake)
+                    sleepingOnTime.Remove(key);
             }
 
-            foreach (LuaCoroutine key in mToAwake)
+            foreach (LuaCoroutine key in toAwake)
                 ResumeLogged(null, key);
 
             (ScriptEngine.Instance as XLuaEngine)?.Tick();
@@ -161,18 +161,18 @@ namespace Meteor.Map.lua
 
         public void OnSignal(string signal, params object[] args)
         {
-            List<LuaCoroutine> mToAwake = new List<LuaCoroutine>();
+            List<LuaCoroutine> toAwake = new List<LuaCoroutine>();
 
             lock (waitLock)
             {
-                if (mSleepingOnSignal.ContainsKey(signal))
+                if (sleepingOnSignal.ContainsKey(signal))
                 {
-                    mToAwake.AddRange(mSleepingOnSignal[signal]);
-                    mSleepingOnSignal.Remove(signal);
+                    toAwake.AddRange(sleepingOnSignal[signal]);
+                    sleepingOnSignal.Remove(signal);
                 }
             }
 
-            foreach (LuaCoroutine key in mToAwake)
+            foreach (LuaCoroutine key in toAwake)
                 ResumeLogged(null, key, args);
         }
 
