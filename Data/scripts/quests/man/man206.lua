@@ -113,8 +113,8 @@ function onStateChange(player, quest, sequence)
 		quest:SetENpc(BURLY_VOICED_BRUTE);
 	end
 	
-	-- These ENPCs appear through the whole quest
-	if (sequence >= SEQ_005) then
+	-- These ENPCs appear through the whole quest (SEQ_ACCEPT is above every sequence number).
+	if (sequence >= SEQ_005 and sequence ~= SEQ_ACCEPT) then
 		quest:SetENpc(SERANELIEN);
 		quest:SetENpc(SAHJA_ZHWAN);
 		quest:SetENpc(NENEKANI);

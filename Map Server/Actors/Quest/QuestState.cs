@@ -79,6 +79,16 @@ namespace Meteor.Map.Actors.QuestNS
                 CurrentENPCs.Add(classId, OldENPCs[classId]);
                 OldENPCs.Remove(classId);
             }
+            else if (CurrentENPCs.ContainsKey(classId))
+            {
+                // Set twice in one update, when a script's sequence checks overlap: the later call wins.
+                QuestENpc existing = CurrentENPCs[classId];
+                if (existing.IsChanged(flagType, isTalkEnabled, isPushEnabled, isEmoteEnabled, isSpawned))
+                {
+                    existing.Update(flagType, isTalkEnabled, isPushEnabled, isEmoteEnabled, isSpawned);
+                    instanceUpdated = existing;
+                }
+            }
             else
             {
                 instanceUpdated = new QuestENpc(classId, flagType, isSpawned, isTalkEnabled, isEmoteEnabled, isPushEnabled);
