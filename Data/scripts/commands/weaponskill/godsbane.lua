@@ -8,21 +8,21 @@ end;
 
 function onSkillStart(caster, target, skill)
     --Get Berserk statuseffect
-    local berserk = caster.statusEffects.GetStatusEffectById(223160);
+    local berserk = caster.statusEffects:GetStatusEffectById(223160);
 
     --if it isn't nil, remove the AP and Defense mods and reset extra to 0, increase accuracy
     if berserk != nil then
         local apPerHit = 20;
         local defPerHit = 20;
 
-        if berserk.GetTier() == 2 then
+        if berserk:GetTier() == 2 then
             apPerHit = 24;
         end
 
-        caster.SubtractMod(modifiersGlobal.Attack, apPerHit * berserk.GetExtra());
-        caster.Add(modifiersGlobal.Defense, defPerHit * berserk.GetExtra());
+        caster:SubtractMod(modifiersGlobal.Attack, apPerHit * berserk:GetExtra());
+        caster.Add(modifiersGlobal.Defense, defPerHit * berserk:GetExtra());
 
-        berserk.SetExtra(0);
+        berserk:SetExtra(0);
         skill.accuracyModifier = 50;
     end;
 
@@ -40,8 +40,8 @@ function onSkillFinish(caster, target, skill, action, actionContainer)
     action.amount = skill.basePotency;
 
     --DoAction handles rates, buffs, dealing damage
-    action.DoAction(caster, target, skill, actionContainer);
+    action:DoAction(caster, target, skill, actionContainer);
 
     --Try to apply status effect
-    action.TryStatus(caster, target, skill, actionContainer, true);
+    action:TryStatus(caster, target, skill, actionContainer, true);
 end;

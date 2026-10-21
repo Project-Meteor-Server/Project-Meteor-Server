@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Lists the server functions scripts can use (Data/lua-api) and checks the scripts against it.
+       From the repository root: dotnet run with the project Tools/LuaApi and the argument
+       manifest, lint or fix. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Meteor.Tools.LuaApi</RootNamespace>
+    <AssemblyName>LuaApi</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Map Server\Map Server.csproj" />
+  </ItemGroup>
+</Project>

@@ -7,7 +7,7 @@ end;
 
 function onAbilityStart(caster, target, ability)
     --27164: Enhanced Outmaneuver
-    if caster.HasTrait(27164) then
+    if caster:HasTrait(27164) then
         ability.statusTier = 2;
     end
     return 0;
@@ -15,5 +15,5 @@ end;
 
 function onSkillFinish(caster, target, skill, action, actionContainer)
     --DoAction handles rates, buffs, dealing damage
-    action.DoAction(caster, target, skill, actionContainer);
+    action:DoAction(caster, target, skill, actionContainer);
 end;

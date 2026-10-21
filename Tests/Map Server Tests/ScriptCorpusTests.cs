@@ -1,0 +1,77 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Meteor.Map.lua;
+using Xunit;
+
+namespace Meteor.Map.Tests
+{
+    /// <summary>Loads every game script and checks it loads without an error, and that every GM
+    /// command describes itself (permissions, parameters, description) in the expected form.</summary>
+    [Collection("engines")]
+    public sealed class ScriptCorpusTests
+    {
+        private readonly EngineFixture engines;
+
+        public ScriptCorpusTests(EngineFixture engines)
+        {
+            this.engines = engines;
+        }
+
+        // Scripts that ask the running server for something while they load, which these tests
+        // don't start. PopulaceCompanySupply looks up its quest actor (GetStaticActor).
+        private static readonly HashSet<string> NeedsRunningServer = new HashSet<string>
+        {
+            "./scripts/base/chara/npc/populace/PopulaceCompanySupply.lua",
+        };
+
+        public static IEnumerable<object[]> Scripts() =>
+            EngineFixture.GameScripts().Where(s => !NeedsRunningServer.Contains(s)).Select(s => new object[] { s });
+
+        [Theory]
+        [MemberData(nameof(Scripts))]
+        public void Loads(string path)
+        {
+            var script = engines.Engine.Load(path);
+            Assert.True(script.LoadError == null, script.LoadError);
+        }
+
+        /// <summary>The server looks quest scripts up as quests/man/man0l0.lua (all lowercase), so a
+        /// file named Man0l0.lua would be found on macOS and Windows but not on Linux.</summary>
+        [Fact]
+        public void QuestScriptNamesAreLowercase()
+        {
+            var wrong = EngineFixture.GameScripts().Where(s => s.StartsWith("./scripts/quests/", StringComparison.Ordinal) && s != s.ToLowerInvariant()).ToList();
+            Assert.True(wrong.Count == 0, "rename to lowercase: " + string.Join(", ", wrong));
+        }
+
+        public static IEnumerable<object[]> GmCommands() =>
+            EngineFixture.GameScripts().Where(s => s.StartsWith("./scripts/commands/gm/", StringComparison.Ordinal)).Select(s => new object[] { s });
+
+        [Theory]
+        [MemberData(nameof(GmCommands))]
+        public void GmCommandDescribesItself(string path)
+        {
+            var script = engines.Engine.Load(path);
+            Assert.True(script.HasFunction("onTrigger"), "no onTrigger function");
+
+            var properties = Assert.IsType<LuaTableValue>(script.GetGlobal("properties"));
+            foreach (var pair in properties.Pairs)
+            {
+                switch (pair.Key as string)
+                {
+                    case "permissions":
+                        Assert.IsType<double>(pair.Value);
+                        break;
+                    case "parameters":
+                        // One letter per argument: s (text), i (whole number), d or f (number).
+                        Assert.Matches("^[sidf]*$", Assert.IsType<string>(pair.Value));
+                        break;
+                    case "description":
+                        Assert.IsType<string>(pair.Value);
+                        break;
+                }
+            }
+        }
+    }
+}

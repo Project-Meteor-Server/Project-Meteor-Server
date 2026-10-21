@@ -17,10 +17,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common Class Lib\Common Class Lib.csproj" />
+    <ProjectReference Include="..\ThirdParty\XLua\XLua.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MoonSharp" Version="2.0.0" />
     <PackageReference Include="MySql.Data" Version="$(MySqlDataVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="NLog" Version="6.2.1" />
@@ -38,4 +38,18 @@
     <None Include="..\Data\scripts\**\*" Link="scripts\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\Data\staticactors.bin" Link="staticactors.bin" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\Data\staticactors.bin')" />
   </ItemGroup>
+
+  <!-- Copies the Lua library (libxlua.dylib, libxlua.so or xlua.dll, built from ThirdParty/XLuaNative) next to
+       the server. It picks the one for the platform being published to, or else this machine's. -->
+  <PropertyGroup>
+    <XluaRid>$(RuntimeIdentifier)</XluaRid>
+    <XluaRid Condition="'$(XluaRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</XluaRid>
+    <XluaNativeDir>..\ThirdParty\XLuaNative\runtimes\$(XluaRid)\native\</XluaNativeDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(XluaNativeDir)*xlua.*" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="WarnMissingXlua" BeforeTargets="Build" Condition="!Exists('$(XluaNativeDir)')">
+    <Warning Text="No native xlua library for $(XluaRid) in ThirdParty/XLuaNative/runtimes; build it with cmake (see ThirdParty/XLuaNative/README.md)." />
+  </Target>
 </Project>

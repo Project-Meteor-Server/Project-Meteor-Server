@@ -1,4 +1,4 @@
-require("global.lua")
+require("global")
 
 function onStart(player, quest)	
 	quest:StartSequence(SEQ_000);
@@ -12,7 +12,7 @@ function onSequence(player, quest, seqNum)
 end
 
 function onTalk(player, quest, npc)
-	local sequence = quest:getSequence();
+	local sequence = quest:GetSequence();
 	local classId = npc:GetActorClassId();
 	
 	

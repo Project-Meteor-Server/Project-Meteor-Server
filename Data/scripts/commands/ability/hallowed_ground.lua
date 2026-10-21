@@ -7,7 +7,7 @@ end;
 
 function onAbilityStart(caster, target, ability)
     --27245: Swift Chameleon
-    if caster.HasTrait(27245) then
+    if caster:HasTrait(27245) then
         ability.recastTimeMs = ability.recastTimeMs - 60000;
     end
     return 0;
@@ -24,5 +24,5 @@ function onSkillFinish(caster, target, skill, action, actionContainer)
 
     
     --DoAction handles rates, buffs, dealing damage
-    action.DoAction(caster, target, skill, actionContainer);
+    action:DoAction(caster, target, skill, actionContainer);
 end;

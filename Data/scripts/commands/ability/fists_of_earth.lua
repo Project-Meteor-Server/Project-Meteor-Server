@@ -7,7 +7,7 @@ end;
 
 function onAbilityStart(caster, target, ability)
     --27124: Enhanced Fists of Earth
-    if caster.HasTrait(27125) then
+    if caster:HasTrait(27125) then
         ability.statusTier = 2;
     end
     return 0;
@@ -15,5 +15,5 @@ end;
 
 function onSkillFinish(caster, target, skill, action, actionContainer)
     --DoAction handles rates, buffs, dealing damage
-    action.DoAction(caster, target, skill, actionContainer);
+    action:DoAction(caster, target, skill, actionContainer);
 end;

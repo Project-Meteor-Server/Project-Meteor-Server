@@ -81,7 +81,7 @@ function onEventStarted(player, actor, eventType, eventName, isTeleport)
 						GetWorldManager():DoZoneChange(player, destination[1], nil, 0, 2, randoPos.x, destination[3], randoPos.y, rotation);
 					end
 				end
-				player:endEvent();
+				player:EndEvent();
 				return;
 			end
 			
@@ -95,7 +95,7 @@ function onEventStarted(player, actor, eventType, eventName, isTeleport)
 
 			--bandaid fix for returning while dead, missing things like weakness and the heal number
 			if (player:GetHP() == 0) then
-				player:SetHP(player.GetMaxHP());
+				player:SetHP(player:GetMaxHP());
 				player:ChangeState(0);
 				player:PlayAnimation(0x01000066);
 			end
@@ -122,5 +122,5 @@ function onEventStarted(player, actor, eventType, eventName, isTeleport)
 		end
 	end	
 
-	player:endEvent();
+	player:EndEvent();
 end
