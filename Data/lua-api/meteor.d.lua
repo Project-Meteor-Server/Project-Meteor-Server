@@ -13,6 +13,10 @@ function GetItemGamedata(arg1) end
 ---@return LuaEngine
 function GetLuaInstance() end
 
+---@param arg1 number
+---@return MateriaData
+function GetMateriaGamedata(arg1) end
+
 ---@return RecipeResolver
 function GetRecipeResolver() end
 

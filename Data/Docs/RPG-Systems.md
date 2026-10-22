@@ -92,6 +92,7 @@ Source ids in the tables ([`[PN119-B]`](#pn119-b), [`[T-36412]`](#t-36412), …)
 | Broken gear gives nothing | [`[PN119-I]`](#pn119-i): at 0% Condition the item "will become damaged and offer no benefits" | Official | — |
 | Gear above your level counts for less | [`[CL-ITEMLVL]`](#cl-itemlvl) | Game files (second-hand) | That it applies to every stat |
 | Gear counts by how well it suits the class (100%, 60% for a "Favors" item worn by another class, 0% cannot equip) | [`[CL-COMPAT]`](#cl-compat) | Game files | That it scales every stat; the client's adjust term isn't traced |
+| Melded materia add their bonus by grade once you reach the materia's item level | [`[SH-MATERIA]`](#sh-materia) | Community data, not yet checked against the client | That a materia follows its piece's penalties |
 
 ## Levels and EXP
 
@@ -225,6 +226,13 @@ Lv26 603 also shows in `party_battle_leve` f927, `war_quest_update2` f640 and
   `Data/sql/gamedata_compatibility.sql` (Shaelou, 2021); its 119 item rows (1001+) match the sheet.
 - <a id="cl-exp"></a>**CL-EXP**: client Lua `charabaseclass_battle`, EXP table near line 1892, via ffxivDecomp
   (mislabelled `getMagicAttack` there). Levels 1–49 sum to 1,781,150.
+
+### Community data
+
+- <a id="sh-materia"></a>**SH-MATERIA**: `Data/sql/gamedata_items_materia.sql`, from Shaelou's
+  `feature_attribute_point_allotment` branch (Bitbucket, 2021). Catalog ids, icons and names match
+  the item sheet for all 65 types; the bonus values still need a check against the client's
+  materia sheet.
 
 ### Our code
 

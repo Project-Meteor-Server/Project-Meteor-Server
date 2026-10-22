@@ -311,10 +311,42 @@ function stats.gearTotals(chara)
                         end
                     end
                 end)
+                pcall(function() stats.addMateria(chara, item, f, t.mods) end)
             end
         end
     end
     return t
+end
+
+-- Melded materia: up to 5 per piece, each a type and grade 0-15 (InventoryItem.ItemModifier).
+-- Bonus values per grade are gamedata_items_materia. A materia counts once the player reaches its
+-- item level (tier I 1, II 31, III/IV 41 in the item sheet). Scaling it with the host piece
+-- (broken, over-level, compatibility) is DESIGN.
+stats.MATERIA_SLOTS = 5
+function stats.materiaItemId(materiaType, grade)
+    return 10100001 + 4 * (materiaType - 1) + math.floor(grade / 4)
+end
+function stats.addMateria(chara, item, f, mods)
+    local m = item.modifiers
+    if m == nil then return end
+    for slot = 0, stats.MATERIA_SLOTS - 1 do
+        local ty = m:GetMateriaType(slot)
+        local md = ty > 0 and GetMateriaGamedata(ty) or nil
+        if md ~= nil then
+            local grade = m:GetMateriaGrade(slot)
+            local itemData = GetItemGamedata(stats.materiaItemId(ty, grade))
+            if itemData == nil or chara:GetLevel() >= itemData.level then
+                for b = 1, 2 do
+                    local bonusType = b == 1 and md.bonus1Type or md.bonus2Type
+                    local v = md:GetBonusValue(b, grade)
+                    if bonusType >= 15001 and bonusType <= 15105 and v ~= 0 then
+                        local id = bonusType - 15001
+                        mods[id] = (mods[id] or 0) + f * v
+                    end
+                end
+            end
+        end
+    end
 end
 
 -- Equipment slots (Player.SLOT_*): main hand 0, throwing weapon 4.

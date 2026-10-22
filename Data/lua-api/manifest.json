@@ -26,6 +26,16 @@
       "params": []
     },
     {
+      "name": "GetMateriaGamedata",
+      "returns": "MateriaData",
+      "params": [
+        {
+          "name": "arg1",
+          "type": "number"
+        }
+      ]
+    },
+    {
       "name": "GetRecipeResolver",
       "returns": "RecipeResolver",
       "params": []

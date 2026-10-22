@@ -50,6 +50,7 @@ namespace Meteor.Map
         private static WorldManager WorldManager;
         private static Dictionary<uint, ItemData> GamedataItems;
         private static Dictionary<int, sbyte[]> GamedataItemCompatibility;
+        private static Dictionary<int, MateriaData> GamedataMateria;
         private static Dictionary<uint, GuildleveData> GamedataGuildleves;
         private static RecipeResolver GamedataRecipeResolver;
         private static Dictionary<uint, QuestGameData> GamedataQuests;
@@ -71,6 +72,8 @@ namespace Meteor.Map
             Program.Log.Info("Loaded {0} items.", GamedataItems.Count);
             GamedataItemCompatibility = Database.GetItemCompatibilityGamedata();
             Program.Log.Info("Loaded {0} item compatibility keys.", GamedataItemCompatibility.Count);
+            GamedataMateria = Database.GetMateriaGamedata();
+            Program.Log.Info("Loaded {0} materia types.", GamedataMateria.Count);
             GamedataGuildleves = Database.GetGuildleveGamedata();
             Program.Log.Info("Loaded {0} guildleves.", GamedataGuildleves.Count);
             GamedataQuests = Database.GetQuestGamedata();
@@ -336,6 +339,13 @@ namespace Meteor.Map
             if (GamedataItemCompatibility == null || !GamedataItemCompatibility.TryGetValue(key, out sbyte[] values))
                 return -1;
             return classId >= 0 && classId < values.Length ? values[classId] : 0;
+        }
+
+        public static MateriaData GetMateriaGamedata(int type)
+        {
+            if (GamedataMateria != null && GamedataMateria.TryGetValue(type, out MateriaData materia))
+                return materia;
+            return null;
         }
 
         public static GuildleveData GetGuildleveGamedata(uint id)

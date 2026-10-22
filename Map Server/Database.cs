@@ -217,6 +217,37 @@ namespace Meteor.Map
             return compatibility;
         }
 
+        /// <summary>gamedata_items_materia (Data/sql/gamedata_items_materia.sql), by materia type; empty if the table is missing.</summary>
+        public static Dictionary<int, MateriaData> GetMateriaGamedata()
+        {
+            var materia = new Dictionary<int, MateriaData>();
+            using (var conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
+            {
+                try
+                {
+                    conn.Open();
+                    using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM gamedata_items_materia", conn))
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var data = new MateriaData(reader);
+                            materia[data.id] = data;
+                        }
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Program.Log.Error("Materia not loaded, melded materia give no bonus (apply Data/sql/gamedata_items_materia.sql): {0}", e.Message);
+                }
+                finally
+                {
+                    conn.Dispose();
+                }
+            }
+            return materia;
+        }
+
         public static Dictionary<uint, GuildleveData> GetGuildleveGamedata()
         {
             using (var conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
