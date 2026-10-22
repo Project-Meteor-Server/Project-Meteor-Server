@@ -2,22 +2,43 @@
 
 Where the numbers for race, stats, attribute points, levels and EXP come from.
 
+## Citing a source
+
+Every row names its exact source, so anyone can retrace it. "Wherever possible" means: if we
+have the exact source, it goes in. If we don't, the row says so.
+
+| Kind | Cite |
+|---|---|
+| Forum post | Link to the post itself (`showpost.php?p=…` or `?p=…#post…`), plus author and date. A thread link alone is not enough. |
+| Wiki or fan site | Link to the exact page, plus the section or table. |
+| Video | Link with a timestamp (`&t=2m36s`), plus what is on screen. |
+| Packet capture | File name, frame number, actor id, and the value seen. Say if the capture is public or private. |
+| Game files | File, table or function, and the address or script line. |
+| Our code | File path and the constant or function. |
+
+**Capture frames.** `fN` is the 0-based index of the server-to-client game bundle in the
+capture's zone stream. It is the same as `frame_index` in the XIVLegacy studies. It is not the
+pcap frame number. Public captures are in
+[XIVLegacy xivl-captures](https://github.com/XIVLegacy/xivl-captures), folder `pcap-1.23b`.
+The private ones (marked *private*) are retail captures held by the project and not published.
+
 **Trust**, best to worst:
-- **Capture**: recorded from the real 1.23b server.
+- **Capture**: recorded from the real server.
 - **Game files**: read from the 1.23b client.
 - **Official**: Square Enix patch notes or developer posts.
 - **Player test**: a player's own measurement.
 - **Fan wiki**: community pages, often unsourced.
 - **Our guess**: nothing settles it, so we chose.
 
-Forum threads are at `forum.square-enix.com/ffxiv/threads/<number>`. Public captures are in [XIVLegacy xivl-captures](https://github.com/XIVLegacy/xivl-captures) (`pcap-1.23b`).
+Source ids in the tables (`[PN119-B]`, `[T-36412]`, …) are listed in full under
+[Sources](#sources).
 
 ## Race
 
 | What | Source | Trust | Our part |
 |---|---|---|---|
-| Clan attributes and resistances (table below) | `ffxivgame.exe`, the character creation table | Game files | Which row is which tribe id |
-| Race only changes starting values | Patch 1.19 notes (thread 24910) | Official | That growth is the same for everyone |
+| Clan attributes and resistances (table below) | `[CL-TRIBE]` | Game files | Which row is which tribe id |
+| Race only changes starting values | `[PN119-B]`: "Race-based differences will be limited to the starting attributes." | Official | That growth is the same for everyone |
 | Attributes get (clan value − 15) at every level; resistances are the clan value | — | — | Our guess |
 
 | Tribe id | Clan | STR | VIT | DEX | INT | MND | PIE | Fire | Ice | Wind | Earth | Lightning | Water |
@@ -37,63 +58,179 @@ Forum threads are at `forum.square-enix.com/ffxiv/threads/<number>`. Public capt
 
 | What | Source | Trust | Our part |
 |---|---|---|---|
-| Lv8–9 Pugilist STR 35–37 | Japanese forum, 2012-02-23 | Player test | — |
-| Lv50 attributes around 230–255 | Threads 36412, 50479; BlueGartr 107403 | Player test | Some "naked" values are assumed |
-| HP and MP at Lv26, 27, 31 and 50 | Captures `login`, `party_battle_leve`, `gridania_to_coerthas`, `war_quest_update2` | Capture | — |
-| Lv50 caster MP ~2885 | Japanese forum thread 32893 | Player test | — |
-| Which two attributes each class favours | Patch 1.20 notes (thread 32606) | Official | How strongly; Thaumaturge gets INT as its top attribute |
+| Lv8 Pugilist STR 35, attack 74; Lv9 STR 37, attack 77 (no gear) | `[T-37927]` | Player test | — |
+| Lv50 Pugilist STR 246 / INT 263 and STR 267 / INT 242 | `[BG-171]` | Player test | That these are near-naked values |
+| Lv50 Lancer STR 255 / PIE 244, attack 532 (no armour) | `[T-36412]` | Player test | — |
+| Lv50 Paladin MND 232 | Thread 50479 (Paladin stat caps). **Exact post not recorded.** | Player test | — |
+| HP and MP at Lv26, 27, 31 and 50 | `[CAP-HPMP]` | Capture | — |
+| Lv50 Conjurer MP 971 → 2885 after patch 1.20 | `[T-32893]` | Player test | That other Lv50 casters are close |
+| Which two attributes each class favours | `[PN120-B]`, ≪Parameters and Their Effects≫ ("Damage dealt by … arms") | Official | How strongly; Thaumaturge gets INT as its top attribute |
 | Growth between those points, class HP/MP factors | — | — | Our guess |
 
 ## Stats from attributes
 
 | What | Source | Trust |
 |---|---|---|
-| 1 VIT = 1 HP, 1 PIE = 1 MP | Threads 28942, 26648 | Player test |
-| 4 INT, MND or PIE = 1 point of a magic stat | Threads 28942, 26648 | Player test |
-| 3 STR = 2 attack | kanican.livejournal.com/55915 | Player test |
-| 4 VIT = 1 enhancing magic | Thread 41900 | Fan wiki (another post says 5) |
+| 1 VIT = 1 HP, 1 PIE = 1 MP | `[T-28942]` (status-menu readings, patch 1.19); `[DEV-26648]` names the stats each attribute drives | Player test |
+| 4 INT, MND or PIE = 1 point of a magic stat | `[T-28942]` | Player test |
+| 3 STR = 2 attack | `[KAN-III]` (cites earlier 1.18 and 1.20 tests) | Player test |
+| 4 VIT = 1 enhancing magic | `[T-41900]` | Fan guide. `[T-39570]` says every 5th VIT instead |
 
 ## Attribute points
 
 | What | Source | Trust | Our part |
 |---|---|---|---|
-| 5 at level 10, then 1 more per level | Patch 1.20 notes (thread 32606) | Official | — |
-| At most 3 + (level − 10) / 2 in one attribute | Same | Official | — |
-| Per class; jobs use their class's points | Same; patch 1.21 notes (thread 39024) | Official | — |
-| Unspent until the player allots them | How the retail screen works | Game files | — |
+| 5 at level 10, then 1 more per level | `[PN120-B]` [dev1228] | Official | — |
+| At most 3 + (level − 10) / 2 in one attribute | `[PN120-B]` [dev1228], level / allotment cap table | Official | — |
+| Per class; jobs use their class's points | `[PN120-B]` [dev1228] "handled by class"; `[PN121-B]` [dev1033] "carried over to the associated job" | Official | — |
+| Unspent until the player allots them | `[CL-BONUS]` | Game files | — |
 
 ## Gear
 
 | What | Source | Trust | Our part |
 |---|---|---|---|
-| Broken gear gives nothing | Patch 1.19 notes (thread 24910) | Official | — |
-| Gear above your level counts for less | Client script, via [ffxivDecomp](https://github.com/Yokimitsuro/ffxivDecomp) | Game files (second-hand) | That it applies to every stat |
+| Broken gear gives nothing | `[PN119-I]`: at 0% Condition the item "will become damaged and offer no benefits" | Official | — |
+| Gear above your level counts for less | `[CL-ITEMLVL]` | Game files (second-hand) | That it applies to every stat |
 
 ## Levels and EXP
 
 | What | Source | Trust | Our part |
 |---|---|---|---|
-| EXP to next level | Client's own table | Game files | — |
-| Base EXP per kill by level | Original server code only | None | Lv23–26 may be 10 too low |
-| Bonus or penalty for level difference | Original server code only | None | — |
-| Cap on the bonus (1.5× to 3×) | Patch 1.19 notes say there is one; worked out from a fan table | Fan wiki | The values |
-| Party share (0.75, 0.67, 0.58) | Fan table (eLeMeN) | Fan wiki | 5+ members: 0.5 |
-| Only members within 10 levels share | 2nWIKI | Fan wiki | 50 yalm range |
-| Link and chain bonuses, chain timer | Patch 1.19 notes (thread 24910) | Official | — |
-| Food +3% | Patch 1.21 notes; fan table for the 3% | Official + Fan wiki | — |
-| Rested +50%, not used up at level 50 | Patch 1.21 notes (thread 39024) | Official | Pool size and fill time |
-| Inn "Resting" status | Captures `return_to_inn`, `move_out_of_room` | Capture | — |
+| EXP to next level | `[CL-EXP]` | Game files | — |
+| Base EXP per kill by level | `[CODE-EXP]` `BASEEXP` only | None | Lv23–26 may be 10 too low |
+| Bonus or penalty for level difference | `[CODE-EXP]` `GetBaseEXP` only | None | — |
+| Cap on the bonus (1.5× to 3×) | `[PN119-B]` §2 says a cap exists; values worked out from `[EL-EXP]` | Fan wiki | The values |
+| Party share (0.75, 0.67, 0.58) | `[EL-EXP]` (party / solo ratios) | Fan wiki | 5+ members: 0.5 |
+| Only members within 10 levels share | `[2N-800]` | Fan wiki | 50 yalm range |
+| Link and chain bonuses, chain timer | `[PN119-B]` §5 Link Bonus, §6 EXP Chain (table) | Official | — |
+| Food +3% | `[PN121-I]` [dev1242] "All food items provide experience point bonuses"; 3% from `[EL-FOOD]` | Official + Fan wiki | — |
+| Rested +50%, not used up at level 50 | `[PN121-E]` [dev1301] | Official | Pool size and fill time |
+| Inn "Resting" status 223263 | `[CAP-REST]` | Capture | — |
 
 ## Monsters
 
 | What | Source | Trust | Our part |
 |---|---|---|---|
-| HP at a few levels | Public and private captures | Capture | — |
-| The rest of the HP curve, family multipliers, MP | Another server's database, citing captures we can't open | Second-hand | Levels 41–67 |
+| HP anchors from Lv1 to Lv88 (table below) | Public and private captures | Capture | — |
+| Curve between anchors | Geometric fit through the anchors | — | Our guess |
+| Family multipliers for families with no capture, MP | Another server's database: migrations `20260918_000044` and `20260717_000006`, which cite captures we can't open | Second-hand | — |
 | Attributes | — | — | Our guess |
+
+HP anchors for `stats.MOB_HP_BASE` (anchor = value seen ÷ family multiplier):
+
+| Anchor | Capture | Frame | Mob, multiplier | HP seen |
+|---|---|---|---|---|
+| Lv1 67 | `gridania_to_coerthas` | f474 | lesser petitghost, 1.0 | 67 |
+| | `attack_rat` (*private*, 1.23b) | f25 | bug, 1.0 | 67 |
+| Lv5 102 | `gridania_to_coerthas` | f356 | chigoe, 1.0 | 102 |
+| Lv10 175 | `gridania_to_coerthas` | f898 | monkey, 1.0 | 175 |
+| Lv16 317 | `gridania_to_coerthas` | f1099 | firefly, 0.85 | 269 |
+| | `teleport_to_camp_tranquil` | f62 | funguar, 1.2 | 380 |
+| Lv26 603 | `combat_autoattack` | f123 | slug, 1.0 | 603 |
+| | `login` (*private*, 1.19a) | f23 | jellyfish, 1.0 | 603 |
+| Lv32 897 | `party_battle_leve` | f3458 | crab, 1.0 | 897 |
+| Lv41 1622 | `whole_login` (*private*, 1.20) | f26 | petitghost, 1.0 | 1621 |
+| | `teleport_to_camp_nine_ivies` | f86 | glirulus, 1.2 | 1946 |
+| Lv47 2356 | `whole_login` (*private*, 1.20) | f25 | gigantoad, 1.0 | 2356 |
+| Lv67 9101 | `teleport_to_camp_nine_ivies` | f87 | goblin, 0.92 | 8373 |
+| Lv76 10693 | `war_quest_update2` | f642 | bomb, 1.0 | 10693 |
+| Lv78 11703 | `war_quest_update2` | f641, f643 | bomb, cactus, 1.0 | 11703 |
+| Lv88 17918 | `war_quest_update2` | f645 | Amalj'aa pugilist, 1.2 | 21501 |
+
+Lv26 603 also shows in `party_battle_leve` f927, `war_quest_update2` f640 and
+`gridania_to_coerthas` f1331.
+
+## Sources
+
+### Captures
+
+- **CAP-HPMP**: player max HP / MP, all public.
+
+  | Who | Capture | Frame | Actor | hpMax / mpMax |
+  |---|---|---|---|---|
+  | Lv26 Marauder | `login` | f17 | 43723073 | 758 / 249 |
+  | Lv27 Gladiator | `party_battle_leve` | f3453 | 43722707 | 750 / 405 |
+  | Lv31 Gladiator | `gridania_to_coerthas` | f184 (also f854, f1328) | 43723073 | 1016 / 548 |
+  | Lv50 Pugilist (Monk) | `war_quest_update2` | f639 | 43722707 | 2634 / 1914 |
+
+  Actor 43722707 is a different character in each of the last two captures.
+- **CAP-REST**: inn "Resting" status, public. On the wire it is 23263.
+  - Gained: `return_to_inn` f35 (0x0177 slot 0 = 23263), f37 (0x0139 text 30330), f38 (0x0179).
+  - Lost: `move_out_of_room` f27 (0x0177 slot 0 = 0), f30 (0x0139 text 30331), f32 (0x0179).
+  - Already on when logging in inside the inn: `login` f9 (0x0179).
+
+### Official (forum.square-enix.com)
+
+- **PN119-B**: Patch 1.19 notes, Battle post, 2011-09-30.
+  <https://forum.square-enix.com/ffxiv/showpost.php?p=361386&postcount=2> (thread 24910).
+  [dev1072][dev1073] physical levels removed, race line; EXP §1 level-based, §2 level
+  difference and its cap, §3 party size, §5 Link Bonus, §6 EXP Chain table.
+- **PN119-I**: Patch 1.19 notes, Items post.
+  <https://forum.square-enix.com/ffxiv/showpost.php?p=361387&postcount=3>. Gear Condition at 0%.
+- **PN120-B**: Patch 1.20 notes, Battle post, 2011-12-12.
+  <https://forum.square-enix.com/ffxiv/showpost.php?p=476417&postcount=2> (thread 32606).
+  [dev1228] attribute points, the level / allotment cap table, ≪Parameters and Their Effects≫.
+- **PN121-E**: Patch 1.21 notes, Event post.
+  <https://forum.square-enix.com/ffxiv/showpost.php?p=580985&postcount=2> (thread 39024).
+  [dev1301] inn rooms and Rested Bonus.
+- **PN121-B**: Patch 1.21 notes, Battle post.
+  <https://forum.square-enix.com/ffxiv/showpost.php?p=580990&postcount=3>. [dev1033] job system.
+- **PN121-I**: Patch 1.21 notes, Items post.
+  <https://forum.square-enix.com/ffxiv/showpost.php?p=580991&postcount=4>. [dev1242] food revamp.
+- **DEV-26648**: Bayohne (Community Rep), 2011-10-22, "Stats And You!".
+  <https://forum.square-enix.com/ffxiv/threads/26648-Stats-And-You%21?p=408350#post408350>.
+
+### Player tests and guides
+
+- **T-28942**: Deus, 2011-10-26, "Effect of Core Stats on Skills Explained" (patch 1.19).
+  <https://forum.square-enix.com/ffxiv/threads/28942>, first post.
+- **T-37927**: DecorsWeissmel, 2012-02-23, 「ステータスについて」 (Japanese forum).
+  <https://forum.square-enix.com/ffxiv/threads/37927>. Post number not recorded.
+- **T-32893**: FineMotion, 2011-12-18, 「ステ振り指南 verパッチ1.20」 (Japanese forum).
+  <https://forum.square-enix.com/ffxiv/threads/32893>. Post number not recorded.
+- **T-36412**: Seiken, 2012-03-26 (1.21 retest), "STR/PIE/ATK Testing".
+  <https://forum.square-enix.com/ffxiv/threads/36412>. Post number not recorded.
+- **T-41900**: Sol_Aureus, "White Mage: A Guide", v1.22c, attribute conversions section.
+  <https://forum.square-enix.com/ffxiv/threads/41900>, first post.
+- **T-39570**: "Enhance Regen & Enhancement Magic Potency", 2012-03-13.
+  <https://forum.square-enix.com/ffxiv/threads/39570>.
+- **BG-171**: Almalexia, post #171, 2011-12-21, BlueGartr "Stats and how they work".
+  <https://www.bluegartr.com/threads/107403>.
+- **KAN-III**: Kaeko Leta, "Stat Testing Part III: Physical Damage Taken", 2012-02-21 (patch 1.20).
+  <https://kanican.livejournal.com/55915.html>.
+
+### Fan wikis
+
+- **2N-800**: 2nWIKI 旧データ/パーティ. <https://w.atwiki.jp/eorzea14/pages/800.html>.
+  EXP only for members within 10 levels.
+- **EL-EXP**: eLeMeN max base EXP per kill, by level and party size (stops at Lv40). The site
+  (`www5.plala.or.jp/SQR/ff14/`) is offline. Our copy: Research Notes `07_caps` §C4,
+  <https://claude.ai/artifact/MB9cZct47igKuVqH9Z1R5a#doc=07_caps>.
+- **EL-FOOD**: eLeMeN food data, transcribed by XIVLegacy (study `elemen-consumable-effects`).
+
+### Game files
+
+- **CL-TRIBE**: `ffxivgame.exe` 1.23b. A table of 15 tribes × 15 int32 at 0x12be318, read by
+  `BootupManager_getTribeStatus` (0x6a97f0) and shown on the character creation TribeStatus
+  panel by `TribeStatus_setTribe` (0x863280). Row `i` = tribe id `i + 1`.
+- **CL-BONUS**: client Lua bonus-point getters (`getBonusPointStockForPhysical`,
+  `getBonusPointAtPhysicalParameter`), via
+  [ffxivDecomp](https://github.com/Yokimitsuro/ffxivDecomp).
+- **CL-ITEMLVL**: client Lua `NormalItemBaseClass_common.calculateLevelAdjust`, via ffxivDecomp
+  `finding_normal_item_level_adjust.md` lines 48–87. That doc's worked example disagrees with
+  its own table.
+- **CL-EXP**: client Lua `charabaseclass_battle`, EXP table near line 1892, via ffxivDecomp
+  (mislabelled `getMagicAttack` there). Levels 1–49 sum to 1,781,150.
+
+### Our code
+
+- **CODE-EXP**: `Map Server/Actors/Chara/Ai/Utils/BattleUtils.cs`: `BASEEXP` and `GetBaseEXP`,
+  from the original Meteor code. No source is given for either.
 
 ## Open issues
 
 - Base EXP per kill and the level-difference rule have no source we can check. Replace them first.
 - Base EXP at levels 23–26 is probably 10 too low.
-- Two comments in `stats.lua` cite the wrong source, and `Player.CalcPotencial` should be named after the client's `getPotencial`.
+- Post numbers are missing for T-37927, T-32893, T-36412 and the Paladin MND 232 value.
+- Two comments in `stats.lua` cite the wrong source, and `Player.CalcPotencial` should be named
+  after the client's `getPotencial`.
