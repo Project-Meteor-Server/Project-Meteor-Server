@@ -8769,6 +8769,26 @@
       ],
       "methods": [
         {
+          "name": "GetMateriaGrade",
+          "returns": "number",
+          "params": [
+            {
+              "name": "slot",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetMateriaType",
+          "returns": "number",
+          "params": [
+            {
+              "name": "slot",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "WriteBytes",
           "returns": "nil",
           "params": [
@@ -8784,6 +8804,11 @@
       "name": "ItemData",
       "fullName": "Meteor.Map.DataObjects.ItemData",
       "members": [
+        {
+          "name": "COMPATIBILITY_CLASS_COUNT",
+          "type": "number",
+          "static": true
+        },
         {
           "name": "catalogID",
           "type": "number"
@@ -8898,6 +8923,16 @@
         }
       ],
       "methods": [
+        {
+          "name": "GetCompatibility",
+          "returns": "number",
+          "params": [
+            {
+              "name": "classId",
+              "type": "number"
+            }
+          ]
+        },
         {
           "name": "GetItemHQValue",
           "returns": "number",
@@ -9234,6 +9269,45 @@
           "name": "IsWeaverWeapon",
           "returns": "boolean",
           "params": []
+        }
+      ]
+    },
+    {
+      "name": "MateriaData",
+      "fullName": "Meteor.Map.DataObjects.MateriaData",
+      "members": [
+        {
+          "name": "GRADE_COUNT",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "bonus1Type",
+          "type": "number"
+        },
+        {
+          "name": "bonus2Type",
+          "type": "number"
+        },
+        {
+          "name": "id",
+          "type": "number"
+        }
+      ],
+      "methods": [
+        {
+          "name": "GetBonusValue",
+          "returns": "number",
+          "params": [
+            {
+              "name": "bonus",
+              "type": "number"
+            },
+            {
+              "name": "grade",
+              "type": "number"
+            }
+          ]
         }
       ]
     },
@@ -10314,6 +10388,12 @@
           "params": []
         },
         {
+          "name": "GetItemCompatibilityGamedata",
+          "static": true,
+          "returns": "table\u003Cnumber, number[]\u003E",
+          "params": []
+        },
+        {
           "name": "GetItemGamedata",
           "static": true,
           "returns": "table\u003Cnumber, ItemData\u003E",
@@ -10348,6 +10428,12 @@
               "type": "Player"
             }
           ]
+        },
+        {
+          "name": "GetMateriaGamedata",
+          "static": true,
+          "returns": "table\u003Cnumber, MateriaData\u003E",
+          "params": []
         },
         {
           "name": "GetQuestGamedata",
@@ -11250,12 +11336,38 @@
           ]
         },
         {
+          "name": "GetItemCompatibility",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "key",
+              "type": "number"
+            },
+            {
+              "name": "classId",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "GetItemGamedata",
           "static": true,
           "returns": "ItemData",
           "params": [
             {
               "name": "id",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetMateriaGamedata",
+          "static": true,
+          "returns": "MateriaData",
+          "params": [
+            {
+              "name": "type",
               "type": "number"
             }
           ]

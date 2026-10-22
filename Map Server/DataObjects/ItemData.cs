@@ -26,6 +26,9 @@ namespace Meteor.Map.DataObjects
 {
     class ItemData
     {
+        //The client compatibility sheet has one column per class id 1-44
+        public const int COMPATIBILITY_CLASS_COUNT = 45;
+
         //Basic
         public readonly uint catalogID;
         public readonly string name;
@@ -48,6 +51,16 @@ namespace Meteor.Map.DataObjects
         public readonly int levelType;
         public readonly int level;
         public readonly int compatibility;
+
+        /// <summary>
+        /// How well a class or job fits this item, 0-1 (the client's getItemCompatibilityData: sheet
+        /// value / 100). 1 when the compatibility table isn't loaded or has no row for the key.
+        /// </summary>
+        public double GetCompatibility(int classId)
+        {
+            int value = Server.GetItemCompatibility(compatibility, classId);
+            return value < 0 ? 1.0 : value / 100.0;
+        }
         public readonly float effectMagnitude;
         public readonly float effectRate;
         public readonly float shieldBlocking;

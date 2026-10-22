@@ -261,14 +261,24 @@ end
 
 -- How much of an equipped piece counts: 0 when its condition is 0% ("the item will become damaged
 -- and offer no benefits" [OFF 1.19 dev1016]; C# Player.IsEquippedGearBroken), else the
--- level penalty above.
+-- level penalty above times the class's compatibility with the item.
 function stats.itemFactor(chara, slot, d)
     local broken = false
     pcall(function() broken = chara:IsEquippedGearBroken(slot) end)
     if broken then return 0 end
     local lvl = 0
     pcall(function() lvl = d.level end)
-    return stats.levelAdjust(chara:GetLevel(), lvl)
+    return stats.levelAdjust(chara:GetLevel(), lvl) * stats.compatibility(chara, d)
+end
+
+-- The client's item compatibility for the current class or job: compatibility sheet value / 100
+-- (itemBaseClass_common getItemCompatibilityData) [CL]. 0 cannot equip, 1 full effect, 0.6 a
+-- "Favors" item worn by another class. Scaling every benefit by it is DESIGN: the client's
+-- getItemCompatibilityWithAdjust takes an adjust term we haven't traced.
+function stats.compatibility(chara, d)
+    local c = 1.0
+    pcall(function() c = d:GetCompatibility(chara:GetClass()) end)
+    return c
 end
 
 -- paramBonusType is a paramName id; 15001 + n lines up with modifier n.

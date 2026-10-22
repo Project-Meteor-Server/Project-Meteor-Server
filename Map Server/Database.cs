@@ -181,6 +181,42 @@ namespace Meteor.Map
             }
         }
 
+        /// <summary>
+        /// gamedata_compatibility (Data/sql/gamedata_compatibility.sql): compatibility key -> value per
+        /// class id (columns job1-job44; index = class id, 0 = cannot equip). Empty if the table is missing.
+        /// </summary>
+        public static Dictionary<int, sbyte[]> GetItemCompatibilityGamedata()
+        {
+            var compatibility = new Dictionary<int, sbyte[]>();
+            using (var conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
+            {
+                try
+                {
+                    conn.Open();
+                    using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM gamedata_compatibility", conn))
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var values = new sbyte[ItemData.COMPATIBILITY_CLASS_COUNT];
+                            for (int classId = 1; classId < values.Length; classId++)
+                                values[classId] = (sbyte)reader.GetInt16("job" + classId);
+                            compatibility[reader.GetInt32("id")] = values;
+                        }
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Program.Log.Error("Item compatibility not loaded, gear counts in full for every class (apply Data/sql/gamedata_compatibility.sql): {0}", e.Message);
+                }
+                finally
+                {
+                    conn.Dispose();
+                }
+            }
+            return compatibility;
+        }
+
         public static Dictionary<uint, GuildleveData> GetGuildleveGamedata()
         {
             using (var conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))

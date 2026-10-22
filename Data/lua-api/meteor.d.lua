@@ -1982,10 +1982,17 @@ function __InventoryItem:UpdateOfferedSlot(delta) end
 ---@field subQuality number[]
 ---@field use number
 local __ItemModifier = {}
+---@param slot number
+---@return number
+function __ItemModifier:GetMateriaGrade(slot) end
+---@param slot number
+---@return number
+function __ItemModifier:GetMateriaType(slot) end
 ---@param binWriter any
 function __ItemModifier:WriteBytes(binWriter) end
 
 ---@class ItemData
+---@field COMPATIBILITY_CLASS_COUNT number
 ---@field catalogID number
 ---@field category string
 ---@field compatibility number
@@ -2015,6 +2022,9 @@ function __ItemModifier:WriteBytes(binWriter) end
 ---@field shieldBlocking number
 ---@field subSkill number
 local __ItemData = {}
+---@param classId number
+---@return number
+function __ItemData:GetCompatibility(classId) end
 ---@param value1 number
 ---@param value2 number
 ---@return number
@@ -2138,6 +2148,17 @@ function __ItemData:IsUseFree() end
 function __ItemData:IsWeapon() end
 ---@return boolean
 function __ItemData:IsWeaverWeapon() end
+
+---@class MateriaData
+---@field GRADE_COUNT number
+---@field bonus1Type number
+---@field bonus2Type number
+---@field id number
+local __MateriaData = {}
+---@param bonus number
+---@param grade number
+---@return number
+function __MateriaData:GetBonusValue(bonus, grade) end
 
 ---@class QuestGameData
 ---@field ClassName string
@@ -2395,6 +2416,8 @@ function __Database.GetAchievementsPacket(player) end
 function __Database.GetEquipment(player, classId) end
 ---@return table<number, GuildleveData>
 function __Database.GetGuildleveGamedata() end
+---@return table<number, number[]>
+function __Database.GetItemCompatibilityGamedata() end
 ---@return table<number, ItemData>
 function __Database.GetItemGamedata() end
 ---@param owner Character
@@ -2405,6 +2428,8 @@ function __Database.GetItemPackage(owner, slotOffset, type) end
 ---@param player Player
 ---@return any
 function __Database.GetLatestAchievements(player) end
+---@return table<number, MateriaData>
+function __Database.GetMateriaGamedata() end
 ---@return table<number, QuestGameData>
 function __Database.GetQuestGamedata() end
 ---@param recipeList table<number, Recipe>
@@ -2610,9 +2635,16 @@ function __Server.GetGamedataItems() end
 ---@param id number
 ---@return GuildleveData
 function __Server.GetGuildleveGamedata(id) end
+---@param key number
+---@param classId number
+---@return number
+function __Server.GetItemCompatibility(key, classId) end
 ---@param id number
 ---@return ItemData
 function __Server.GetItemGamedata(id) end
+---@param type number
+---@return MateriaData
+function __Server.GetMateriaGamedata(type) end
 ---@param id number
 ---@return QuestGameData
 function __Server.GetQuestGamedata(id) end

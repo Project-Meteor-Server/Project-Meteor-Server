@@ -91,6 +91,7 @@ Source ids in the tables ([`[PN119-B]`](#pn119-b), [`[T-36412]`](#t-36412), …)
 |---|---|---|---|
 | Broken gear gives nothing | [`[PN119-I]`](#pn119-i): at 0% Condition the item "will become damaged and offer no benefits" | Official | — |
 | Gear above your level counts for less | [`[CL-ITEMLVL]`](#cl-itemlvl) | Game files (second-hand) | That it applies to every stat |
+| Gear counts by how well it suits the class (100%, 60% for a "Favors" item worn by another class, 0% cannot equip) | [`[CL-COMPAT]`](#cl-compat) | Game files | That it scales every stat; the client's adjust term isn't traced |
 
 ## Levels and EXP
 
@@ -219,6 +220,9 @@ Lv26 603 also shows in `party_battle_leve` f927, `war_quest_update2` f640 and
 - <a id="cl-itemlvl"></a>**CL-ITEMLVL**: client Lua `NormalItemBaseClass_common.calculateLevelAdjust`, via ffxivDecomp
   `finding_normal_item_level_adjust.md` lines 48–87. That doc's worked example disagrees with
   its own table.
+- <a id="cl-compat"></a>**CL-COMPAT**: the client `compatibility` sheet (219 rows, one column per class id),
+  read by client Lua `itemBaseClass_common.getItemCompatibilityData` as value / 100. Shipped as
+  `Data/sql/gamedata_compatibility.sql` (Shaelou, 2021); its 119 item rows (1001+) match the sheet.
 - <a id="cl-exp"></a>**CL-EXP**: client Lua `charabaseclass_battle`, EXP table near line 1892, via ffxivDecomp
   (mislabelled `getMagicAttack` there). Levels 1–49 sum to 1,781,150.
 
