@@ -841,7 +841,8 @@ namespace Meteor.Map
                     currentPrivateArea,
                     currentPrivateAreaType,
                     homepoint,
-                    homepointInn
+                    homepointInn,
+                    restBonusInnSince
                     FROM characters WHERE id = @charId";
 
                     cmd = new MySqlCommand(query, conn);
@@ -873,7 +874,9 @@ namespace Meteor.Map
                             player.playerWork.birthdayMonth = reader.GetByte(14);
                             player.playerWork.initialTown = reader.GetByte(15);
                             player.playerWork.tribe = reader.GetByte(16);
-                            player.playerWork.restBonusExpRate = reader.GetInt32(17);
+                            player.restBonusPool = reader.GetInt32(17);
+                            player.playerWork.restBonusExpRate = player.GetRestBonusExpRate();
+                            player.restInnLogoutTime = reader.GetUInt32("restBonusInnSince");
                             player.achievementPoints = reader.GetUInt32(18);
                             player.playTime = reader.GetUInt32(19);
                             player.homepoint = reader.GetUInt32("homepoint");
@@ -2816,6 +2819,103 @@ namespace Meteor.Map
                 finally
                 {
                     conn.Dispose();
+                }
+            }
+        }
+
+        // characters.restBonus: the rested EXP pool.
+        public static void SetRestBonus(Player player, int pool)
+        {
+            using (MySqlConnection conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
+            {
+                try
+                {
+                    conn.Open();
+                    MySqlCommand cmd = new MySqlCommand("UPDATE characters SET restBonus = @pool WHERE id = @charId", conn);
+                    cmd.Parameters.AddWithValue("@charId", player.Id);
+                    cmd.Parameters.AddWithValue("@pool", pool);
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    Program.Log.Error(e.ToString());
+                }
+            }
+        }
+
+        // characters.restBonusInnSince: when the player logged out in an inn room (0 if elsewhere), so
+        // the rested pool can fill for the time they were away.
+        public static void SetRestInnLogoutTime(Player player, uint unixTime)
+        {
+            using (MySqlConnection conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
+            {
+                try
+                {
+                    conn.Open();
+                    MySqlCommand cmd = new MySqlCommand("UPDATE characters SET restBonusInnSince = @t WHERE id = @charId", conn);
+                    cmd.Parameters.AddWithValue("@charId", player.Id);
+                    cmd.Parameters.AddWithValue("@t", unixTime);
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    Program.Log.Error(e.ToString());
+                }
+            }
+        }
+
+        // characters_bonus_points: each class's allotted attribute points (str, vit, dex, int, mnd, pie).
+        public static Dictionary<byte, int[]> LoadBonusAllotments(Player player)
+        {
+            var result = new Dictionary<byte, int[]>();
+            using (MySqlConnection conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
+            {
+                try
+                {
+                    conn.Open();
+                    MySqlCommand cmd = new MySqlCommand("SELECT classId, str, vit, dex, `int`, mnd, pie FROM characters_bonus_points WHERE characterId = @charId", conn);
+                    cmd.Parameters.AddWithValue("@charId", player.Id);
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            int[] points = new int[6];
+                            for (int i = 0; i < 6; i++)
+                                points[i] = reader.GetByte(i + 1);
+                            result[reader.GetByte(0)] = points;
+                        }
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Program.Log.Error("characters_bonus_points not loaded: {0}", e.Message);
+                }
+            }
+            return result;
+        }
+
+        public static void SaveBonusAllotment(Player player, byte classId, int[] points)
+        {
+            using (MySqlConnection conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
+            {
+                try
+                {
+                    conn.Open();
+                    MySqlCommand cmd = new MySqlCommand(@"REPLACE INTO characters_bonus_points (characterId, classId, str, vit, dex, `int`, mnd, pie)
+                        VALUES (@charId, @classId, @str, @vit, @dex, @int, @mnd, @pie)", conn);
+                    cmd.Parameters.AddWithValue("@charId", player.Id);
+                    cmd.Parameters.AddWithValue("@classId", classId);
+                    cmd.Parameters.AddWithValue("@str", points[0]);
+                    cmd.Parameters.AddWithValue("@vit", points[1]);
+                    cmd.Parameters.AddWithValue("@dex", points[2]);
+                    cmd.Parameters.AddWithValue("@int", points[3]);
+                    cmd.Parameters.AddWithValue("@mnd", points[4]);
+                    cmd.Parameters.AddWithValue("@pie", points[5]);
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    Program.Log.Error(e.ToString());
                 }
             }
         }

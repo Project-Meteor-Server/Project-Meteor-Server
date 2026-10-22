@@ -315,6 +315,7 @@ function __Area:UpdateActorPosition(actor) end
 ---@field spellList table<number, BattleCommand>
 ---@field spellListId number
 local __BattleNpc = {}
+function __BattleNpc:CalculateBaseStats() end
 ---@return boolean
 function __BattleNpc:CanAttack() end
 ---@param target Character
@@ -697,6 +698,9 @@ function __Character:GetActorStatusPackets() end
 function __Character:GetAttackDelayMs() end
 ---@return number
 function __Character:GetAttackRange() end
+---@param modifier number
+---@return number
+function __Character:GetBaseStat(modifier) end
 ---@return number
 function __Character:GetClass() end
 ---@return number
@@ -737,6 +741,10 @@ function __Character:GetSpeed() end
 ---@param statId number
 ---@return number
 function __Character:GetStat(statId) end
+---@param layer string
+---@param modifier number
+---@return number
+function __Character:GetStatLayer(layer, modifier) end
 ---@return number
 function __Character:GetTP() end
 ---@return number
@@ -869,11 +877,17 @@ function __Character:RemoveItem(item) end
 ---@param itemPackage number
 ---@param slot number
 function __Character:RemoveItemAtSlot(itemPackage, slot) end
+---@param layer string
+---@param values table<number, number>
+function __Character:ReplaceStatLayer(layer, values) end
 function __Character:ResetProcs() end
 function __Character:ResetTempVars() end
 ---@param player Player
 ---@param id number
 function __Character:SendItemPackage(player, id) end
+---@param modifier number
+---@param value number
+function __Character:SetBaseStat(modifier, value) end
 ---@param group ContentGroup
 function __Character:SetCurrentContentGroup(group) end
 ---@param hp number
@@ -896,6 +910,10 @@ function __Character:SetQuestGraphic(player, graphicNum) end
 ---@param statId number
 ---@param val number
 function __Character:SetStat(statId, val) end
+---@param layer string
+---@param modifier number
+---@param value number
+function __Character:SetStatLayer(layer, modifier, value) end
 ---@overload fun(self: Character, name: string, val: number): nil
 ---@param name string
 ---@param val number
@@ -1006,6 +1024,8 @@ local __Pet = {}
 ---@field NPCLS_ALERT number
 ---@field NPCLS_GONE number
 ---@field NPCLS_INACTIVE number
+---@field REST_POOL_CAP_LEVELS number
+---@field REST_POOL_FILL_HOURS number
 ---@field SLOT_BODY number
 ---@field SLOT_BOOTS number
 ---@field SLOT_EARS number
@@ -1077,6 +1097,8 @@ local __Pet = {}
 ---@field rentalExpireTime number
 ---@field rentalMinLeft number
 ---@field repairType number
+---@field restBonusPool number
+---@field restInnLogoutTime number
 ---@field sentRetainerSpawn boolean
 ---@field timers number[]
 ---@field SNpcCoordinate number
@@ -1096,6 +1118,9 @@ function __Player:Ability(abilityId, targetId) end
 function __Player:AcceptQuest(instance, isSilent) end
 ---@param accepted boolean
 function __Player:AcceptTrade(accepted) end
+---@param hours number
+function __Player:AccrueRestedHours(hours) end
+function __Player:AccrueRestedOffline() end
 ---@param recipe Recipe
 function __Player:AddAwardedRecipe(recipe) end
 ---@param director Director
@@ -1120,6 +1145,12 @@ function __Player:AddRecentRecipe(recipe) end
 ---@param chosenItem ItemRefParam
 ---@param tradeQuantity number
 function __Player:AddTradeItem(slot, chosenItem, tradeQuantity) end
+---@param level number
+---@return number
+function __Player.BonusPointCap(level) end
+---@param level number
+---@return number
+function __Player.BonusPointTotal(level) end
 ---@param countdownLength number
 ---@param syncTime number
 function __Player:BroadcastCountdown(countdownLength, syncTime) end
@@ -1132,6 +1163,9 @@ function __Player:BroadcastPackets(packets, sendToSelf) end
 ---@param worldMasterId number
 ---@param ... any
 function __Player:BroadcastWorldMessage(worldMasterId, ...) end
+---@param level number
+---@return number
+function __Player.CalcPotencial(level) end
 function __Player:CalculateBaseStats() end
 function __Player:CalculateTraitMods() end
 ---@param target Character
@@ -1158,6 +1192,8 @@ function __Player:CleanupAndSave() end
 function __Player:ClearTradeItems() end
 ---@param completed Quest
 function __Player:CompleteQuest(completed) end
+---@param expEarned number
+function __Player:ConsumeRestedBonus(expEarned) end
 ---@param classId number
 ---@return number
 function __Player.ConvertClassIdToJobId(classId) end
@@ -1203,6 +1239,10 @@ function __Player:ForceQuestStateUpdate() end
 function __Player:GetActorInInstance(actorId) end
 ---@return Recipe[]
 function __Player:GetAwardedRecipes() end
+---@param classId number
+---@param attribute number
+---@return number
+function __Player:GetBonusPoint(classId, attribute) end
 ---@return number
 function __Player:GetCurrentClassOrJob() end
 ---@return number
@@ -1258,6 +1298,10 @@ function __Player:GetQuestsForNpc(npc) end
 ---@return Recipe[]
 function __Player:GetRecentRecipes() end
 ---@return number
+function __Player:GetRestBonusExpRate() end
+---@return number
+function __Player:GetRestedBonusCap() end
+---@return number
 function __Player:GetSNpcCoordinate() end
 ---@return string
 function __Player:GetSNpcNickname() end
@@ -1289,6 +1333,9 @@ function __Player:HandleNpcLs(id) end
 ---@param aetheryteId number
 ---@return boolean
 function __Player:HasAetheryteNodeUnlocked(aetheryteId) end
+---@param classId number
+---@return boolean
+function __Player:HasBonusAllotment(classId) end
 ---@param id number
 ---@return boolean
 function __Player:HasGuildleve(id) end
@@ -1304,12 +1351,20 @@ function __Player:HasNpcLs(npcLsId) end
 ---@param questInstance Quest
 ---@return boolean
 function __Player:HasQuest(questInstance) end
+---@return boolean
+function __Player:HasRestedBonus() end
 ---@overload fun(self: Player, id: number): boolean
 ---@param trait BattleTrait
 ---@return boolean
 function __Player:HasTrait(trait) end
 ---@return boolean
 function __Player:IsChocoboRentalActive() end
+---@param slot number
+---@return boolean
+function __Player:IsEquippedGearBroken(slot) end
+---@param item InventoryItem
+---@return boolean
+function __Player.IsGearBroken(item) end
 ---@return boolean
 function __Player:IsInParty() end
 ---@return boolean
@@ -1322,6 +1377,9 @@ function __Player:IsPartyLeader() end
 ---@param id number
 ---@return boolean
 function __Player:IsQuestCompleted(id) end
+---@param index number
+---@return boolean
+function __Player.IsSyncedGeneralParameter(index) end
 ---@return boolean
 function __Player:IsTradeAccepted() end
 ---@return boolean
@@ -1450,6 +1508,20 @@ function __Player:SendStartCastbar(commandId, endTime) end
 ---@param world WorldManager
 ---@param spawnType number
 function __Player:SendZoneInPackets(world, spawnType) end
+---@param classId number
+---@param level number
+---@param str number
+---@param vit number
+---@param dex number
+---@param intel number
+---@param mnd number
+---@param pie number
+---@return boolean
+function __Player:SetBonusAllotment(classId, level, str, vit, dex, intel, mnd, pie) end
+---@param classId number
+---@param level number
+---@return CommandResult[]
+function __Player:SetClassLevel(classId, level) end
 ---@overload fun(self: Player, comboId1?: number, comboId2?: number): nil
 ---@param comboIds number[]
 function __Player:SetCombos(comboIds) end
@@ -1482,6 +1554,8 @@ function __Player:SetParty(group) end
 function __Player:SetQuestComplete(id, flag) end
 ---@param type number
 function __Player:SetRepairRequest(type) end
+---@param pool number
+function __Player:SetRestedBonusPool(pool) end
 ---@param nickname string
 ---@param actorClassId number
 ---@param classType number
@@ -1519,6 +1593,8 @@ function __Player:UpdateHotbar() end
 function __Player:UpdateHotbarCommands(slotsToUpdate) end
 ---@param slotsToUpdate number[]
 function __Player:UpdateRecastTimers(slotsToUpdate) end
+---@param send? boolean
+function __Player:UpdateRemainBonusPoint(send) end
 ---@param skillId number
 ---@param targetId? number
 function __Player:WeaponSkill(skillId, targetId) end
@@ -2342,6 +2418,9 @@ function __Database.GetUserIdFromSession(sessionId) end
 ---@param appearanceId number
 ---@param name string
 function __Database.IssuePlayerChocobo(player, appearanceId, name) end
+---@param player Player
+---@return table<number, number[]>
+function __Database.LoadBonusAllotments(player) end
 ---@param battleCommandDict table<number, BattleCommand>
 ---@param battleCommandIdByLevel table<any, number[]>
 function __Database.LoadGlobalBattleCommandList(battleCommandDict, battleCommandIdByLevel) end
@@ -2376,6 +2455,10 @@ function __Database.RemoveItem(owner, serverItemId) end
 ---@param player Player
 ---@param questId number
 function __Database.RemoveQuest(player, questId) end
+---@param player Player
+---@param classId number
+---@param points number[]
+function __Database.SaveBonusAllotment(player, classId, points) end
 ---@param player Player
 function __Database.SaveCompletedQuests(player) end
 ---@param player Player
@@ -2420,6 +2503,12 @@ function __Database.SetLevel(player, classId, level) end
 ---@param serverItemId number
 ---@param quantity number
 function __Database.SetQuantity(serverItemId, quantity) end
+---@param player Player
+---@param pool number
+function __Database.SetRestBonus(player, pool) end
+---@param player Player
+---@param unixTime number
+function __Database.SetRestInnLogoutTime(player, unixTime) end
 ---@param player Player
 ---@param hotbarSlot number
 function __Database.UnequipAbility(player, hotbarSlot) end
@@ -3784,17 +3873,22 @@ function __AttackUtils.CalculateDamage(attacker, defender) end
 ---@class BattleUtils
 ---@field BASEEXP number[]
 ---@field ClassExperienceTextIds table<number, number>
+---@field EXP_LEVEL_WINDOW number
+---@field EXP_RANGE number
+---@field FOOD_EXP_BONUS number
 ---@field HitTypeEffectsMagical table<HitType, HitEffect>
 ---@field HitTypeEffectsPhysical table<HitType, HitEffect>
 ---@field KnockbackEffects table<KnockbackType, HitEffect>
 ---@field MagicalHitTypeTextIds table<HitType, number>
 ---@field MultiHitTypeTextIds table<HitType, number>
 ---@field PhysicalHitTypeTextIds table<HitType, number>
+---@field RESTED_BONUS number
 local __BattleUtils = {}
 ---@param attacker Player
 ---@param defender BattleNpc
 ---@param actionContainer CommandResultContainer
-function __BattleUtils.AddBattleBonusEXP(attacker, defender, actionContainer) end
+---@param partySize? number
+function __BattleUtils.AddBattleBonusEXP(attacker, defender, actionContainer, partySize) end
 ---@param attacker Character
 ---@param defender Character
 ---@param skill BattleCommand
@@ -3871,8 +3965,9 @@ function __BattleUtils.FinishActionSpell(attacker, defender, skill, action, acti
 function __BattleUtils.FinishActionStatus(attacker, defender, skill, action, actionContainer) end
 ---@param player Player
 ---@param mob BattleNpc
+---@param partySize? number
 ---@return number
-function __BattleUtils.GetBaseEXP(player, mob) end
+function __BattleUtils.GetBaseEXP(player, mob, partySize) end
 ---@param attacker Character
 ---@param defender Character
 ---@param skill BattleCommand
@@ -3891,12 +3986,19 @@ function __BattleUtils.GetChainTimeLimit(tier) end
 ---@param action CommandResult
 ---@return number
 function __BattleUtils.GetCritRate(attacker, defender, skill, action) end
+---@param killer Player
+---@param mob BattleNpc
+---@return Player[]
+function __BattleUtils.GetExpEligibleMembers(killer, mob) end
 ---@param attacker Character
 ---@param defender Character
 ---@param skill BattleCommand
 ---@param action CommandResult
 ---@return number
 function __BattleUtils.GetHitRate(attacker, defender, skill, action) end
+---@param baseLevel number
+---@return number
+function __BattleUtils.GetLevelDifferenceCap(baseLevel) end
 ---@param linkCount number
 ---@return number
 function __BattleUtils.GetLinkBonus(linkCount) end
@@ -3906,6 +4008,9 @@ function __BattleUtils.GetLinkBonus(linkCount) end
 ---@param action CommandResult
 ---@return number
 function __BattleUtils.GetParryRate(attacker, defender, skill, action) end
+---@param memberCount number
+---@return number
+function __BattleUtils.GetPartyExpModifier(memberCount) end
 ---@param attacker Character
 ---@param defender Character
 ---@param skill BattleCommand
@@ -4437,6 +4542,7 @@ local __PartyWork = {}
 local __RelationWork = {}
 
 ---@class LuaEngine
+---@field FILEPATH_BATTLENPC_STATS string
 ---@field FILEPATH_COMMANDS string
 ---@field FILEPATH_CONTENT string
 ---@field FILEPATH_DIRECTORS string
@@ -4465,6 +4571,7 @@ function __LuaEngine.CallLuaBattleCommandFunction(actor, command, folder, functi
 ---@param actor Character
 ---@param functionName string
 ---@param ... any
+---@return boolean
 function __LuaEngine.CallLuaBattleFunction(actor, functionName, ...) end
 ---@param player Player
 ---@param target Actor
@@ -4479,6 +4586,17 @@ function __LuaEngine:CallLuaFunction(player, target, funcName, optional, ...) en
 ---@param ... any
 ---@return LuaParam[]
 function __LuaEngine:CallLuaFunctionForReturn(path, funcName, optional, ...) end
+---@param path string
+---@param functionName string
+---@param ... any
+---@return boolean
+function __LuaEngine.CallLuaScriptFileFunction(path, functionName, ...) end
+---@param path string
+---@param functionName string
+---@param defaultValue number
+---@param ... any
+---@return number
+function __LuaEngine.CallLuaScriptFileFunctionForInt(path, functionName, defaultValue, ...) end
 ---@param actor Character
 ---@param effect StatusEffect
 ---@param functionName string
@@ -5277,6 +5395,8 @@ function __SetActorPropetyPacket:AddTarget() end
 ---@return any
 function __SetActorPropetyPacket:BuildPacket(sourceActorId) end
 function __SetActorPropetyPacket:CloseStreams() end
+---@return number
+function __SetActorPropetyPacket:RemainingBytes() end
 ---@param flag boolean
 function __SetActorPropetyPacket:SetIsArrayMode(flag) end
 ---@param flag boolean

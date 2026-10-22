@@ -291,10 +291,21 @@ namespace Meteor.Map.Actors
 
             this.aiContainer = new AIContainer(this, new PlayerController(this), null, new TargetFind(this));
             allegiance = CharacterTargetingAllegiance.Player;
+            bonusAllotments = Database.LoadBonusAllotments(this);
             CalculateBaseStats();
+            AccrueRestedOffline();
+            UpdateRemainBonusPoint(false);   // sent with the login property dump
 
             questStateManager = new QuestStateManager(this);
             questStateManager.Init(questScenario, playerWork.questScenarioComplete);
+        }
+
+        // The generalParameter indices the client keeps in its battleParameter group: 3-18 (STR to
+        // defense) and 23-34 (magic, crafting and gathering stats). 0-2 (HP, MP, TP) travel separately
+        // and 19-22 (critical stats) the client works out itself.
+        public static bool IsSyncedGeneralParameter(int index)
+        {
+            return (index >= 3 && index <= 18) || (index >= 23 && index <= 34);
         }
 
         public List<SubPacket> Create0x132Packets()
@@ -464,7 +475,7 @@ namespace Meteor.Map.Actors
             //General Parameters
             for (int i = 3; i < charaWork.battleTemp.generalParameter.Length; i++)
             {
-                if (charaWork.battleTemp.generalParameter[i] != 0)
+                if (IsSyncedGeneralParameter(i) && charaWork.battleTemp.generalParameter[i] != 0)
                     propPacketUtil.AddProperty(String.Format("charaWork.battleTemp.generalParameter[{0}]", i));
             }
 
@@ -587,6 +598,8 @@ namespace Meteor.Map.Actors
             }
 
             propPacketUtil.AddProperty("playerWork.restBonusExpRate");
+            if (playerWork.isRemainBonusPoint)
+                propPacketUtil.AddProperty("playerWork.isRemainBonusPoint");
 
             //Profile
             propPacketUtil.AddProperty("playerWork.tribe");
@@ -803,6 +816,9 @@ namespace Meteor.Map.Actors
         public void CleanupAndSave()
         {
             playerSession.LockUpdates(true);
+
+            // Logging out in an inn room keeps the rested pool filling while away.
+            Database.SetRestInnLogoutTime(this, CurrentArea != null && CurrentArea.isInn ? Utils.UnixTimeStampUTC() : 0);
 
             //Remove actor from zone and main server list
             CurrentArea.RemoveActorFromZone(this);
@@ -1284,18 +1300,19 @@ namespace Meteor.Map.Actors
             //Set rested EXP
             charaWork.parameterSave.state_mainSkill[0] = classId;
             charaWork.parameterSave.state_mainSkillLevel = charaWork.battleSave.skillLevel[classId-1];
-            playerWork.restBonusExpRate = 0.0f;
+            playerWork.restBonusExpRate = GetRestBonusExpRate();
+
+            // A job only goes with its own class. Changing class another way (weapon swap, GM) used to
+            // leave the old job set.
+            if (currentJob != 0 && ConvertClassIdToJobId(classId) != currentJob)
+            {
+                currentJob = 0;
+                BroadcastPacket(SetCurrentJobPacket.BuildPacket(Id, 0), true);
+            }
             for(int i = charaWork.commandBorder; i < charaWork.command.Length; i++)
             {
                 charaWork.command[i] = 0;
                 charaWork.commandCategory[i] = 0;
-            }
-
-            //If new class, init abilties and level
-            if (charaWork.battleSave.skillLevel[classId - 1] <= 0)
-            {
-                UpdateClassLevel(classId, 1);
-                EquipAbilitiesAtLevel(classId, 1);
             }
 
             ActorPropertyPacketUtil propertyBuilder = new ActorPropertyPacketUtil("charaWork/stateForAll", this);
@@ -1325,7 +1342,10 @@ namespace Meteor.Map.Actors
                 BroadcastPacket(packet, true);
 
             Database.SavePlayerCurrentClass(this);
-            RecalculateStats();
+            CalculateBaseStats();
+
+            // Quest offers depend on the current class's level.
+            questStateManager.UpdateLevel(GetLevel());
         }
 
         public void UpdateClassLevel(byte classId, short level)
@@ -2428,6 +2448,7 @@ namespace Meteor.Map.Actors
         
         public override void Update(DateTime tick)
         {
+            UpdateInnResting(tick);
             
             // Chocobo Rental Expirey
             if (rentalExpireTime != 0)
@@ -2473,11 +2494,9 @@ namespace Meteor.Map.Actors
 
             if ((updateFlags & ActorUpdateFlags.HpTpMp) != 0)
             {
-                var propPacketUtil = new ActorPropertyPacketUtil("charaWork/stateAtQuicklyForAll", this);
-
-                // todo: should this be using job as index?
-                propPacketUtil.AddProperty("charaWork.parameterSave.hp[0]");
-                propPacketUtil.AddProperty("charaWork.parameterSave.hpMax[0]");
+                // HP, MP and TP go out from Character.PostUpdate (stateAtQuicklyForAll). Class and level
+                // belong to stateForAll, the group the client's target rank display listens to.
+                var propPacketUtil = new ActorPropertyPacketUtil("charaWork/stateForAll", this);
                 propPacketUtil.AddProperty("charaWork.parameterSave.state_mainSkill[0]");
                 propPacketUtil.AddProperty("charaWork.parameterSave.state_mainSkillLevel");
 
@@ -2491,7 +2510,7 @@ namespace Meteor.Map.Actors
 
                 for (uint i = 0; i < 35; i++)
                 {
-                    if (GetMod(i) != charaWork.battleTemp.generalParameter[i])
+                    if (IsSyncedGeneralParameter((int)i) && GetMod(i) != charaWork.battleTemp.generalParameter[i])
                     {
                         charaWork.battleTemp.generalParameter[i] = (short)GetMod(i);
                         propPacketUtil.AddProperty(String.Format("charaWork.battleTemp.generalParameter[{0}]", i));
@@ -2499,6 +2518,9 @@ namespace Meteor.Map.Actors
                 }
 
                 QueuePackets(propPacketUtil.Done());
+
+                // A level up or class change can leave attribute points to allot.
+                UpdateRemainBonusPoint();
             }
 
             if ((updateFlags & ActorUpdateFlags.Hotbar) != 0)
@@ -2969,16 +2991,16 @@ namespace Meteor.Map.Actors
             actionList.Add(new CommandResult(Id, BattleUtils.ClassExperienceTextIds[classId], 0, (ushort)exp, bonusPercent));
 
             bool leveled = false;
-            int diff = MAXEXP[GetLevel() - 1] - charaWork.battleSave.skillPoint[classId - 1];            
+            // classId need not be the current class (GM commands), so use that class's own level.
+            Func<short> classLevel = () => (short)Math.Max((short)1, charaWork.battleSave.skillLevel[classId - 1]);
+            int diff = MAXEXP[classLevel() - 1] - charaWork.battleSave.skillPoint[classId - 1];
             //While there is enough experience to level up, keep leveling up, unlocking skills and removing experience from exp until we don't have enough to level up
-            while (exp >= diff && GetLevel() < charaWork.battleSave.skillLevelCap[classId])
+            while (exp >= diff && classLevel() < charaWork.battleSave.skillLevelCap[classId])
             {
-                //Level up
                 LevelUp(classId, actionList);
                 leveled = true;
-                //Reduce exp based on how much exp is needed to level
                 exp -= diff;
-                diff = MAXEXP[GetLevel() - 1];
+                diff = MAXEXP[classLevel() - 1];
             }
 
             if(leveled)
@@ -2987,19 +3009,19 @@ namespace Meteor.Map.Actors
                 charaWork.battleSave.skillPoint[classId - 1] = 0;
                 //send new level
                 ActorPropertyPacketUtil levelPropertyPacket = new ActorPropertyPacketUtil("charaWork/stateForAll", this);
-                levelPropertyPacket.AddProperty(String.Format("charaWork.battleSave.skillLevel[{0}]", classId - 1));
+                levelPropertyPacket.AddProperty(string.Format("charaWork.battleSave.skillLevel[{0}]", classId - 1));
                 levelPropertyPacket.AddProperty("charaWork.parameterSave.state_mainSkillLevel");
                 QueuePackets(levelPropertyPacket.Done());
 
-                Database.SetLevel(this, classId, GetLevel());
+                Database.SetLevel(this, classId, classLevel());
                 Database.SavePlayerCurrentClass(this);
             }
             //Cap experience for level 50
-            charaWork.battleSave.skillPoint[classId - 1] = Math.Min(charaWork.battleSave.skillPoint[classId - 1] + exp, MAXEXP[GetLevel() - 1]);
+            charaWork.battleSave.skillPoint[classId - 1] = Math.Min(charaWork.battleSave.skillPoint[classId - 1] + exp, MAXEXP[classLevel() - 1]);
 
             ActorPropertyPacketUtil expPropertyPacket = new ActorPropertyPacketUtil("charaWork/battleStateForSelf", this);
-            expPropertyPacket.AddProperty(String.Format("charaWork.battleSave.skillPoint[{0}]", classId - 1));
-            
+            expPropertyPacket.AddProperty(string.Format("charaWork.battleSave.skillPoint[{0}]", classId - 1));
+
             QueuePackets(expPropertyPacket.Done());
             Database.SetExp(this, classId, charaWork.battleSave.skillPoint[classId - 1]);
 
@@ -3034,15 +3056,83 @@ namespace Meteor.Map.Actors
             {
                 //Increase level
                 charaWork.battleSave.skillLevel[classId - 1]++;
-                charaWork.parameterSave.state_mainSkillLevel++;
+                // state_mainSkillLevel is the current class's level, so only it follows the current class.
+                if (classId == GetClass())
+                    charaWork.parameterSave.state_mainSkillLevel = charaWork.battleSave.skillLevel[classId - 1];
 
-                //33909: You attain level [level].
+                //33909: You attain level [level]. The class id goes with it, as in retail.
                 if (actionList != null)
-                    actionList.Add(new CommandResult(Id, 33909, 0, (ushort)charaWork.battleSave.skillLevel[classId - 1]));
+                    actionList.Add(new CommandResult(Id, 33909, 0, (ushort)charaWork.battleSave.skillLevel[classId - 1], classId));
 
-                EquipAbilitiesAtLevel(classId, GetLevel(), actionList);
+                EquipAbilitiesAtLevel(classId, charaWork.battleSave.skillLevel[classId - 1], actionList);
                 questStateManager.UpdateLevel(GetHighestLevel());
+
+                // New level: new stats and max HP/MP, and both refilled.
+                if (classId == GetClass())
+                {
+                    CalculateBaseStats();
+                    if (IsAlive())
+                    {
+                        SetHP((uint)GetMaxHP());
+                        SetMP((uint)GetMaxMP());
+                    }
+                }
             }
+        }
+
+        // GM: sets a class (current or not) to a level. Going up runs LevelUp once per level, so actions
+        // are learned and stats recalculated as usual; going down only lowers the level. EXP into the
+        // new level starts at 0. Returns the level up messages.
+        public List<CommandResult> SetClassLevel(byte classId, short level)
+        {
+            List<CommandResult> actionList = new List<CommandResult>();
+            if (classId < 1 || classId > charaWork.battleSave.skillLevel.Length)
+                return actionList;
+            short cap = charaWork.battleSave.skillLevelCap[classId];
+            level = Math.Max((short)1, Math.Min(level, cap));
+            bool current = classId == GetClass();
+
+            if (level > charaWork.battleSave.skillLevel[classId - 1])
+            {
+                while (charaWork.battleSave.skillLevel[classId - 1] < level)
+                {
+                    short before = charaWork.battleSave.skillLevel[classId - 1];
+                    LevelUp(classId, actionList);
+                    if (charaWork.battleSave.skillLevel[classId - 1] == before)
+                        break;
+                }
+            }
+            else if (level < charaWork.battleSave.skillLevel[classId - 1])
+            {
+                charaWork.battleSave.skillLevel[classId - 1] = level;
+                questStateManager.UpdateLevel(GetHighestLevel());
+                if (current)
+                {
+                    charaWork.parameterSave.state_mainSkillLevel = level;
+                    CalculateBaseStats();
+                    if (IsAlive())
+                    {
+                        SetHP((uint)Math.Min(GetHP(), GetMaxHP()));
+                        SetMP((uint)Math.Min(GetMP(), GetMaxMP()));
+                    }
+                }
+            }
+
+            charaWork.battleSave.skillPoint[classId - 1] = 0;
+
+            ActorPropertyPacketUtil levelPropertyPacket = new ActorPropertyPacketUtil("charaWork/stateForAll", this);
+            levelPropertyPacket.AddProperty(string.Format("charaWork.battleSave.skillLevel[{0}]", classId - 1));
+            levelPropertyPacket.AddProperty("charaWork.parameterSave.state_mainSkillLevel");
+            QueuePackets(levelPropertyPacket.Done());
+            ActorPropertyPacketUtil expPropertyPacket = new ActorPropertyPacketUtil("charaWork/battleStateForSelf", this);
+            expPropertyPacket.AddProperty(string.Format("charaWork.battleSave.skillPoint[{0}]", classId - 1));
+            QueuePackets(expPropertyPacket.Done());
+
+            Database.SetLevel(this, classId, level);
+            Database.SetExp(this, classId, 0);
+            if (current)
+                Database.SavePlayerCurrentClass(this);
+            return actionList;
         }
         
         public static byte ConvertClassIdToJobId(byte classId)
@@ -3128,12 +3218,80 @@ namespace Meteor.Map.Actors
             QueuePackets(comboPropertyPacket.Done());
         }
 
+        // The weapon's own delay and hit count, so a recalculation (level up, gear change) can swap
+        // them under whatever status effects have done to those values.
+        private int weaponBaseDelay = 0;
+        private int weaponBaseHits = 0;
+
+        // Status effects such as Haste or Spinning Heel change Delay and HitCount. Setting both straight
+        // to the weapon's values on every recalculation would wipe those changes, and the effect would
+        // then undo itself a second time when it wears off. So with no effects active they're set
+        // exactly; otherwise Delay is scaled by the change in the weapon's delay and HitCount shifted
+        // by the change in its hit count.
+        private void RebaseWeaponMods(int delay, int hits)
+        {
+            bool hasEffects = false;
+            if (statusEffects != null)
+                foreach (var effect in statusEffects.GetStatusEffects())
+                {
+                    hasEffects = true;
+                    break;
+                }
+
+            if (!hasEffects || weaponBaseDelay <= 0)
+                SetMod((uint)Modifier.Delay, delay);
+            else if (delay != weaponBaseDelay)
+                SetMod((uint)Modifier.Delay, (long)Math.Round(GetMod(Modifier.Delay) * delay / (double)weaponBaseDelay));
+
+            if (!hasEffects || weaponBaseHits <= 0)
+                SetMod((uint)Modifier.HitCount, hits);
+            else if (hits != weaponBaseHits)
+                SetMod((uint)Modifier.HitCount, Math.Max(1, (long)GetMod(Modifier.HitCount) + hits - weaponBaseHits));
+
+            weaponBaseDelay = delay;
+            weaponBaseHits = hits;
+        }
+
+        // The client's CharaBaseClass calcPotencial: (level, value) pairs, linear in between. The client
+        // only reads its sign (positive means not a notorious monster).
+        private static readonly int[] POTENCIAL_LEVELS = { 98, 93, 88, 83, 78, 73, 68, 63, 58, 53, 48, 43, 38, 33, 28, 23, 18, 13, 9, 5, 1 };
+        private static readonly float[] POTENCIAL_VALUES = { 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
+
+        public static float CalcPotencial(int level)
+        {
+            for (int i = 0; i < POTENCIAL_LEVELS.Length; i++)
+            {
+                if (POTENCIAL_LEVELS[i] > level)
+                    continue;
+                if (i == 0 || level == POTENCIAL_LEVELS[i])
+                    return POTENCIAL_VALUES[i];
+                float t = (level - POTENCIAL_LEVELS[i]) / (float)(POTENCIAL_LEVELS[i - 1] - POTENCIAL_LEVELS[i]);
+                return POTENCIAL_VALUES[i] + (POTENCIAL_VALUES[i - 1] - POTENCIAL_VALUES[i]) * t;
+            }
+            return 1.0f;
+        }
+
+        // Gear at 0% condition gives no stats. Items with no durability on their sheet never break, and
+        // items with no saved modifiers count as full condition.
+        public static bool IsGearBroken(InventoryItem item)
+        {
+            if (item == null || item.modifiers == null || item.modifiers.durability != 0)
+                return false;
+            ItemData data = Server.GetItemGamedata(item.itemId);
+            return data != null && data.durability > 0;
+        }
+
+        public bool IsEquippedGearBroken(ushort slot)
+        {
+            return IsGearBroken(GetEquipment()?.GetItemAtSlot(slot));
+        }
+
         public override void CalculateBaseStats()
         {
-            base.CalculateBaseStats();
-            //Add weapon property mod
+            charaWork.battleSave.potencial = CalcPotencial(GetLevel());
+
             var equip = GetEquipment();
-            var mainHandItem = equip.GetItemAtSlot(SLOT_MAINHAND);
+            var mainHandItem = equip?.GetItemAtSlot(SLOT_MAINHAND);
             var damageAttribute = 0;
             var attackDelay = 3000;
             var hitCount = 1;
@@ -3141,37 +3299,49 @@ namespace Meteor.Map.Actors
             if (mainHandItem != null)
             {
                 var mainHandWeapon = (Server.GetItemGamedata(mainHandItem.itemId) as WeaponItem);
-                damageAttribute = mainHandWeapon.damageAttributeType1;
-                attackDelay = (int) (mainHandWeapon.damageInterval * 1000);
-                hitCount = mainHandWeapon.frequency;
+                if (mainHandWeapon != null)
+                {
+                    damageAttribute = mainHandWeapon.damageAttributeType1;
+                    attackDelay = (int)(mainHandWeapon.damageInterval * 1000);
+                    hitCount = Math.Max(1, (int)mainHandWeapon.frequency);
+                }
             }
 
-            var hasShield = equip.GetItemAtSlot(SLOT_OFFHAND) != null ? 1 : 0;
-            SetMod((uint)Modifier.CanBlock, hasShield);
+            var offHandItem = equip?.GetItemAtSlot(SLOT_OFFHAND);
+            SetMod((uint)Modifier.CanBlock, offHandItem != null && !IsGearBroken(offHandItem) ? 1 : 0);
 
             SetMod((uint)Modifier.AttackType, damageAttribute);
-            SetMod((uint)Modifier.Delay, attackDelay);
-            SetMod((uint)Modifier.HitCount, hitCount);
+            RebaseWeaponMods(attackDelay > 0 ? attackDelay : 3000, hitCount);
 
-            //These stats all correlate in a 3:2 fashion
-            //It seems these stats don't actually increase their respective stats. The magic stats do, however
-            AddMod((uint)Modifier.Attack, (long)(GetMod(Modifier.Strength) * 0.667));
-            AddMod((uint)Modifier.Accuracy, (long)(GetMod(Modifier.Dexterity) * 0.667));
-            AddMod((uint)Modifier.Defense, (long)(GetMod(Modifier.Vitality) * 0.667));
-
-            //These stats correlate in a 4:1 fashion. (Unsure if MND is accurate but it would make sense for it to be)
-            AddMod((uint)Modifier.AttackMagicPotency, (long)((float)GetMod(Modifier.Intelligence) * 0.25));
-
-            AddMod((uint)Modifier.MagicAccuracy, (long)((float)GetMod(Modifier.Mind) * 0.25));
-            AddMod((uint)Modifier.HealingMagicPotency, (long)((float)GetMod(Modifier.Mind) * 0.25));
-
-            AddMod((uint)Modifier.MagicEvasion, (long)((float)GetMod(Modifier.Piety) * 0.25));
-            AddMod((uint)Modifier.EnfeeblingMagicPotency, (long)((float)GetMod(Modifier.Piety) * 0.25));
-
-            //VIT correlates to HP in a 1:1 fashion
-            AddMod((uint)Modifier.Hp, (long)((float)Modifier.Vitality));
+            // player.lua's onCalculateBaseStats sets the level, class and gear stats.
+            if (!LuaEngine.CallLuaBattleFunction(this, "onCalculateBaseStats", this))
+            {
+                // Without the script, the old fixed ratios.
+                SetBaseStat((uint)Modifier.Attack, (long)(GetMod(Modifier.Strength) * 0.667));
+                SetBaseStat((uint)Modifier.Accuracy, (long)(GetMod(Modifier.Dexterity) * 0.667));
+                SetBaseStat((uint)Modifier.Defense, (long)(GetMod(Modifier.Vitality) * 0.667));
+                SetBaseStat((uint)Modifier.AttackMagicPotency, (long)(GetMod(Modifier.Intelligence) * 0.25));
+                SetBaseStat((uint)Modifier.MagicAccuracy, (long)(GetMod(Modifier.Mind) * 0.25));
+                SetBaseStat((uint)Modifier.HealingMagicPotency, (long)(GetMod(Modifier.Mind) * 0.25));
+                SetBaseStat((uint)Modifier.MagicEvasion, (long)(GetMod(Modifier.Piety) * 0.25));
+                SetBaseStat((uint)Modifier.EnfeeblingMagicPotency, (long)(GetMod(Modifier.Piety) * 0.25));
+            }
 
             CalculateTraitMods();
+
+            uint hpMax = (uint)GetMod(Modifier.Hp);
+            if (hpMax > 0)
+                charaWork.parameterSave.hpMax[0] = (short)Math.Min(hpMax, (uint)short.MaxValue);
+            uint mpMax = (uint)GetMod(Modifier.Mp);
+            if (mpMax > 0)
+                charaWork.parameterSave.mpMax = (short)Math.Min(mpMax, (uint)short.MaxValue);
+
+            if (charaWork.parameterSave.hp[0] > charaWork.parameterSave.hpMax[0])
+                charaWork.parameterSave.hp[0] = charaWork.parameterSave.hpMax[0];
+            if (charaWork.parameterSave.mp > charaWork.parameterSave.mpMax)
+                charaWork.parameterSave.mp = charaWork.parameterSave.mpMax;
+
+            updateFlags |= ActorUpdateFlags.HpTpMp | ActorUpdateFlags.Stats;
         }
 
         public bool HasTrait(ushort id)
@@ -3186,18 +3356,226 @@ namespace Meteor.Map.Actors
             return (trait != null) && (trait.job == GetClass()) && (trait.level <= GetLevel());
         }
 
+        #region Attribute (bonus) points
+        // 5 points at level 10 and 1 more each level (45 at 50), allotted per class; jobs use their base
+        // class's. Each attribute takes at most 3 + (level - 10) / 2. Same rules as battle/stats.lua.
+        private Dictionary<byte, int[]> bonusAllotments = new Dictionary<byte, int[]>();
+
+        // Jobs and their base classes: MNK PGL, PLD GLA, WAR MRD, BRD ARC, DRG LNC, BLM THM, WHM CNJ.
+        private static readonly Dictionary<byte, byte> JOB_BASE_CLASS = new Dictionary<byte, byte>
+        {
+            { 15, 2 }, { 16, 3 }, { 17, 4 }, { 18, 7 }, { 19, 8 }, { 26, 22 }, { 27, 23 },
+        };
+
+        public static int BonusPointTotal(int level)
+        {
+            return level < 10 ? 0 : 5 + (level - 10);
+        }
+
+        public static int BonusPointCap(int level)
+        {
+            return level < 10 ? 0 : 3 + (level - 10) / 2;
+        }
+
+        public bool HasBonusAllotment(byte classId)
+        {
+            return bonusAllotments.ContainsKey(classId);
+        }
+
+        // Points in one attribute (0 STR, 1 VIT, 2 DEX, 3 INT, 4 MND, 5 PIE) for a class; 0 if none stored.
+        public int GetBonusPoint(byte classId, int attribute)
+        {
+            int[] points;
+            if (attribute < 0 || attribute > 5 || !bonusAllotments.TryGetValue(classId, out points))
+                return 0;
+            return points[attribute];
+        }
+
+        // From BonusPointCommand.lua once the player confirms. Refused when the points add up to more
+        // than the level allows or one attribute is over its cap.
+        public bool SetBonusAllotment(byte classId, int level, int str, int vit, int dex, int intel, int mnd, int pie)
+        {
+            int[] points = { str, vit, dex, intel, mnd, pie };
+            int cap = BonusPointCap(level), sum = 0;
+            foreach (int p in points)
+            {
+                if (p < 0 || p > cap)
+                    return false;
+                sum += p;
+            }
+            if (sum > BonusPointTotal(level))
+                return false;
+            bonusAllotments[classId] = points;
+            Database.SaveBonusAllotment(this, classId, points);
+            CalculateBaseStats();
+            UpdateRemainBonusPoint();
+            return true;
+        }
+
+        // Shows or hides the console tray's "points to allot" icon for the current class.
+        public void UpdateRemainBonusPoint(bool send = true)
+        {
+            byte classId = (byte)GetClass();
+            byte baseClass;
+            if (JOB_BASE_CLASS.TryGetValue(classId, out baseClass))
+                classId = baseClass;
+            int total = BonusPointTotal(GetLevel());
+            int spent = 0;
+            int[] points;
+            if (bonusAllotments.TryGetValue(classId, out points))
+                foreach (int p in points)
+                    spent += p;
+            bool remain = total - spent > 0;
+            if (remain == playerWork.isRemainBonusPoint)
+                return;
+            playerWork.isRemainBonusPoint = remain;
+            if (send && playerSession != null)
+            {
+                var util = new ActorPropertyPacketUtil("playerWork/consoleTray", this);
+                util.AddProperty("playerWork.isRemainBonusPoint");
+                QueuePackets(util.Done());
+            }
+        }
+        #endregion
+
+        #region Rested bonus
+        // EXP that still earns the +50% rested bonus. At level 50 it isn't used up. Stored in
+        // characters.restBonus.
+        public int restBonusPool;
+
+        // The pool holds at most 1.5 levels' worth of EXP and fills in 24 hours of resting in an inn,
+        // online or logged out there. Both are our choice; 1.x only said "up to a maximum".
+        public const double REST_POOL_CAP_LEVELS = 1.5;
+        public const double REST_POOL_FILL_HOURS = 24.0;
+        private const double REST_ACCRUE_CHECK_SECONDS = 1.0;
+
+        public uint restInnLogoutTime;
+        private DateTime nextInnRestCheck = DateTime.MinValue;
+        private DateTime lastRestAccrue = DateTime.MinValue;
+        private double restAccrueRemainder = 0;
+
+        public bool HasRestedBonus()
+        {
+            return restBonusPool > 0;
+        }
+
+        // playerWork.restBonusExpRate, the multiplier the client shows.
+        public float GetRestBonusExpRate()
+        {
+            return restBonusPool > 0 ? 1.5f : 0.0f;
+        }
+
+        public void ConsumeRestedBonus(int expEarned)
+        {
+            if (restBonusPool <= 0 || expEarned <= 0 || GetLevel() >= 50)
+                return;
+            SetRestedBonusPool(Math.Max(0, restBonusPool - expEarned));
+        }
+
+        public int GetRestedBonusCap()
+        {
+            int level = Math.Max(1, Math.Min((int)GetLevel(), MAXEXP.Length));
+            return (int)(MAXEXP[level - 1] * REST_POOL_CAP_LEVELS);
+        }
+
+        public void AccrueRestedHours(double hours)
+        {
+            if (hours <= 0)
+                return;
+            int cap = GetRestedBonusCap();
+            if (restBonusPool >= cap)
+                return;
+            double gain = cap / REST_POOL_FILL_HOURS * hours + restAccrueRemainder;
+            int whole = (int)Math.Floor(gain);
+            restAccrueRemainder = gain - whole;
+            if (whole > 0)
+                SetRestedBonusPool(Math.Min(cap, restBonusPool + whole));
+        }
+
+        // At login: credit the time away if the player logged out in an inn room.
+        public void AccrueRestedOffline()
+        {
+            if (restInnLogoutTime == 0)
+                return;
+            uint now = Utils.UnixTimeStampUTC();
+            if (now > restInnLogoutTime)
+                AccrueRestedHours((now - restInnLogoutTime) / 3600.0);
+            restInnLogoutTime = 0;
+            Database.SetRestInnLogoutTime(this, 0);
+        }
+
+        // Resting is the inn status: gained on entering an inn room, lost on leaving it [RCAP]. The pool
+        // fills while it is on.
+        private void UpdateInnResting(DateTime tick)
+        {
+            if (tick < nextInnRestCheck)
+                return;
+            nextInnRestCheck = tick.AddSeconds(REST_ACCRUE_CHECK_SECONDS);
+            if (CurrentArea == null || IsZoneing || playerSession == null || playerSession.isUpdatesLocked || statusEffects == null)
+                return;
+
+            bool inInn = CurrentArea.isInn && IsAlive();
+            StatusEffect resting = statusEffects.GetStatusEffectById((uint)StatusEffectId.Resting);
+            CommandResultContainer results = new CommandResultContainer();
+            bool changed = false;
+            if (inInn && resting == null)
+            {
+                StatusEffect effect = Server.GetWorldManager().GetStatusEffect((uint)StatusEffectId.Resting);
+                if (effect != null)
+                {
+                    effect.SetDuration(UInt32.MaxValue);
+                    changed = statusEffects.AddStatusEffect(effect, this, results, effect.GetStatusGainTextId());
+                }
+                lastRestAccrue = tick;
+            }
+            else if (!inInn && resting != null)
+                changed = statusEffects.RemoveStatusEffect(resting, results, resting.GetStatusLossTextId(), false);
+            else if (resting != null)
+            {
+                if (lastRestAccrue != DateTime.MinValue)
+                    AccrueRestedHours((tick - lastRestAccrue).TotalHours);
+                lastRestAccrue = tick;
+            }
+
+            if (changed)
+            {
+                results.CombineLists();
+                DoBattleAction(0, 0x7c000062, results.GetList());
+            }
+        }
+
+        public void SetRestedBonusPool(int pool)
+        {
+            pool = Math.Max(0, pool);
+            bool rateChanged = (pool > 0) != (restBonusPool > 0);
+            restBonusPool = pool;
+            Database.SetRestBonus(this, pool);
+            if (rateChanged)
+            {
+                playerWork.restBonusExpRate = GetRestBonusExpRate();
+                var propertyBuilder = new ActorPropertyPacketUtil("playerWork/expBonus", this);
+                propertyBuilder.AddProperty("playerWork.restBonusExpRate");
+                QueuePackets(propertyBuilder.Done());
+            }
+        }
+        #endregion
+
         public void CalculateTraitMods()
         {
             var traitIds = Server.GetWorldManager().GetAllBattleTraitIdsForClass((byte) GetClass());
 
+            var traitMods = new Dictionary<uint, double>();
             foreach(var traitId in traitIds)
             {
                 var trait = Server.GetWorldManager().GetBattleTrait(traitId);
                 if(HasTrait(trait))
                 {
-                    AddMod(trait.modifier, trait.bonus);
+                    double current;
+                    traitMods.TryGetValue(trait.modifier, out current);
+                    traitMods[trait.modifier] = current + trait.bonus;
                 }
             }
+            ReplaceStatLayer("trait", traitMods);
         }
 
         public bool HasItemEquippedInSlot(uint itemId, ushort slot)

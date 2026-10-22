@@ -57,7 +57,17 @@ namespace Meteor.Map.utils
         {
             currentActorPropertyPacket.AddTarget();
             currentTarget = target;
-            currentActorPropertyPacket.SetTarget(target);            
+            // The target name is written when the packet is closed, and nothing reserved room for it
+            // before this switch. A nearly full packet then wrote past its 0x88-byte buffer, so start a
+            // new packet when the name and one more property wouldn't fit.
+            const int LARGEST_PROPERTY = 9;
+            if (currentActorPropertyPacket.RemainingBytes() < 1 + System.Text.Encoding.ASCII.GetByteCount(target) + LARGEST_PROPERTY)
+            {
+                subPackets.Add(currentActorPropertyPacket.BuildPacket(forActor.Id));
+                currentActorPropertyPacket = new SetActorPropetyPacket(target);
+            }
+            else
+                currentActorPropertyPacket.SetTarget(target);
         }
 
         public List<SubPacket> Done()

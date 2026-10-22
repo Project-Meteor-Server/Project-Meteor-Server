@@ -16,10 +16,10 @@ function onTrigger(player, argc, name, posX, posY, posZ, rotation)
 	end	
 
     local pos = player:GetPos();
-    local x = posX or pos[1];
-    local y = posY or pos[2];
-    local z = posZ or pos[3];
-    local rot = rotation or pos[4];
+    local x = posX or pos[0];
+    local y = posY or pos[1];
+    local z = posZ or pos[2];
+    local rot = rotation or pos[3];
 				
 	actor = player.CurrentArea:FindActorInZoneByUniqueID(name);
 	if (actor ~= nil) then

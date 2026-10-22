@@ -1,4 +1,6 @@
 require("global");
+require("battle/stats");
+require("battle/statlayers");
 
 local initClassItems, initRaceItems;
 
@@ -191,4 +193,13 @@ function initRaceItems(player)
 
 	player:GetEquipment():Set({9,11},{5,6}, 0);
 	
+end
+
+-- Called by Player.CalculateBaseStats at login, level up and class change. Base attributes, max
+-- HP/MP, gear and derived stats come from battle/stats.lua; afterwards the server copies max HP/MP
+-- from the result.
+function onCalculateBaseStats(player)
+	stats.applyPlayerBaseStats(player);
+	-- Percentage statuses size their share from the new base values.
+	statlayers.refresh(player);
 end

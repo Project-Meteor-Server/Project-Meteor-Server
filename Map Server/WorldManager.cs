@@ -456,7 +456,7 @@ namespace Meteor.Map
                                 battleNpc.npcSpawnType = (NpcSpawnType)reader.GetUInt32("spawnType");
 
                                 battleNpc.charaWork.parameterSave.state_mainSkill[0] = reader.GetByte("currentJob");
-                                battleNpc.charaWork.parameterSave.state_mainSkillLevel = (short)Program.Random.Next(reader.GetByte("minLevel"), reader.GetByte("maxLevel"));
+                                battleNpc.charaWork.parameterSave.state_mainSkillLevel = (short)Program.Random.Next(reader.GetByte("minLevel"), reader.GetByte("maxLevel") + 1);
 
                                 battleNpc.allegiance = (CharacterTargetingAllegiance)reader.GetByte("allegiance");
 
@@ -482,6 +482,7 @@ namespace Meteor.Map
                                 battleNpc.dropListId = reader.GetUInt32("dropListId");
                                 battleNpc.spellListId = reader.GetUInt32("spellListId");
                                 battleNpc.skillListId = reader.GetUInt32("skillListId");
+                                battleNpc.CalculateBaseStats();
 
                                 //battleNpc.SetMod((uint)Modifier.ResistFire, )
 
@@ -588,7 +589,7 @@ namespace Meteor.Map
                             battleNpc.npcSpawnType = (NpcSpawnType)reader.GetUInt32("spawnType");
 
                             battleNpc.charaWork.parameterSave.state_mainSkill[0] = reader.GetByte("currentJob");
-                            battleNpc.charaWork.parameterSave.state_mainSkillLevel = (short)Program.Random.Next(reader.GetByte("minLevel"), reader.GetByte("maxLevel"));
+                            battleNpc.charaWork.parameterSave.state_mainSkillLevel = (short)Program.Random.Next(reader.GetByte("minLevel"), reader.GetByte("maxLevel") + 1);
 
                             battleNpc.allegiance = (CharacterTargetingAllegiance)reader.GetByte("allegiance");
 

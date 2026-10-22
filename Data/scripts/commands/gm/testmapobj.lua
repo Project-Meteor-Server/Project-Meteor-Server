@@ -28,16 +28,16 @@ function onTrigger(player, argc, animation, layoutId, instanceId, maxInstanceId)
 		end	
 
 		local pos = player:GetPos();
-		local x = pos[1];
-		local y = pos[2];
-		local z = pos[3];
-		local zone = pos[5];
+		local x = pos[0];
+		local y = pos[1];
+		local z = pos[2];
+		local zone = pos[4];
 			 
 		actorClassId = tonumber(actorClassId);
 		
 		if (actorClassId ~= nil) then		
 			zone = player.CurrentArea;
-			actor = zone:SpawnActor(actorClassId, "mapobj", pos[1], pos[2], pos[3], tonumber(layoutId), tonumber(instanceId));
+			actor = zone:SpawnActor(actorClassId, "mapobj", pos[0], pos[1], pos[2], tonumber(layoutId), tonumber(instanceId));
 			
 			 print("test");
 			wait(2);

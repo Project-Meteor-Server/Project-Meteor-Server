@@ -21,10 +21,10 @@ function onTrigger(player, argc, actorClassId, name, motionPack, posX, posY, pos
 
 	local actorClassId = tonumber(actorClassId);
     local pos = player:GetPos();
-    local x = x or pos[1];
-    local y = y or pos[2];
-    local z = z or pos[3];
-    local rot = rotation or pos[4];
+    local x = x or pos[0];
+    local y = y or pos[1];
+    local z = z or pos[2];
+    local rot = rotation or pos[3];
 	
 	if (actorClassId ~= nil and name ~= nil) then
 		

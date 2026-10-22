@@ -191,3 +191,14 @@ function printf(s, ...)
         print(s);
     end;
 end;
+-- C# arrays reach scripts as C# objects, indexed from 0. Copies one into a Lua table indexed from 1,
+-- for scripts that loop over it or page through it with # and [1].
+function arrayToTable(array)
+	local t = {};
+	if (array ~= nil) then
+		for i = 0, array.Length - 1 do
+			t[i + 1] = array[i];
+		end
+	end
+	return t;
+end

@@ -27,6 +27,7 @@ using Meteor.Map.Actors;
 using Meteor.Map.packets.send.actor.battle;
 using Meteor.Map.actors.chara.npc;
 using Meteor.Common;
+using Meteor.Map.actors.group;
 
 namespace Meteor.Map.actors.chara.ai.utils
 {
@@ -761,44 +762,89 @@ namespace Meteor.Map.actors.chara.ai.utils
 
         #region experience helpers
         //See 1.19 patch notes for exp info.
-        public static ushort GetBaseEXP(Player player, BattleNpc mob)
+
+        // Party members this close to the kill share its EXP. Retail's distance isn't known; this is
+        // the loot distance.
+        public const float EXP_RANGE = 50.0f;
+        // Members more than 10 levels below the party's highest get no EXP.
+        public const int EXP_LEVEL_WINDOW = 10;
+        public const byte RESTED_BONUS = 50;     // +50% while the rested pool lasts
+        public const byte FOOD_EXP_BONUS = 3;    // any food (Well Fed)
+
+        // Who gets EXP for a kill: the killer's party members who are alive, in the mob's area and
+        // within EXP_RANGE, and no more than EXP_LEVEL_WINDOW levels below the highest of them. A
+        // killer with no party gets it alone.
+        public static List<Player> GetExpEligibleMembers(Player killer, BattleNpc mob)
         {
-            //The way EXP seems to work for most enemies is that it gets the lower character's level, gets the base exp for that level, then uses dlvl to modify that exp
-            //Less than -19 dlvl gives 0 exp and no message is sent.
-            //This equation doesn't seem to work for certain bosses or NMs.
-            //Some enemies might give less EXP? Unsure on this. It seems like there might have been a change in base exp amounts after 1.19
+            List<Player> inRange = new List<Player>();
+            if (killer.currentParty is Party party && mob.CurrentArea != null)
+            {
+                foreach (uint memberId in party.members)
+                {
+                    Player member = mob.CurrentArea.FindActorInArea<Player>(memberId);
+                    if (member != null && member.IsAlive() && XZDistance(mob, member) <= EXP_RANGE)
+                        inRange.Add(member);
+                }
+            }
+            if (inRange.Count == 0 && killer.IsAlive() && killer.CurrentArea == mob.CurrentArea)
+                inRange.Add(killer);
 
-            //Example:
-            //Level 50 in a party kills a level 45 enemy
-            //Base exp is 400, as that's the base EXP for level 45
-            //That's multiplied by the dlvl modifier for -5, which is 0.5625, which gives 225
-            //That's then multiplied by the party modifier, which seems to be 0.667 regardless of party size, which gives 150
-            //150 is then modified by bonus experience from food, rested exp, links, and chains
+            int highest = 0;
+            foreach (Player member in inRange)
+                highest = Math.Max(highest, (int)member.GetLevel());
+            return inRange.FindAll(m => m.GetLevel() >= highest - EXP_LEVEL_WINDOW);
+        }
 
+        private static double XZDistance(Actor a, Actor b)
+        {
+            double dx = a.positionX - b.positionX, dz = a.positionZ - b.positionZ;
+            return Math.Sqrt(dx * dx + dz * dz);
+        }
+
+        // EXP multiplier by party size: 0.75, 0.67 and 0.58 for 2, 3 and 4 members, the ratios of party
+        // to solo EXP in the 1.19 tables. Five or more aren't in the source; 0.5 is our choice.
+        public static double GetPartyExpModifier(int memberCount)
+        {
+            switch (memberCount)
+            {
+                case 0:
+                case 1: return 1.0;
+                case 2: return 0.75;
+                case 3: return 2.0 / 3.0;
+                case 4: return 7.0 / 12.0;
+                default: return 0.5;
+            }
+        }
+
+        // 1.19 capped the bonus for higher-level foes without saying by how much. From the 1.19 tables:
+        // 1.5x below level 10, 2x in the teens, 2.5x in the twenties, 3x from 30 (by the lower level).
+        public static double GetLevelDifferenceCap(int baseLevel)
+        {
+            if (baseLevel < 10) return 1.5;
+            if (baseLevel < 20) return 2.0;
+            if (baseLevel < 30) return 2.5;
+            return 3.0;
+        }
+
+        public static ushort GetBaseEXP(Player player, BattleNpc mob, int partySize = 1)
+        {
+            // Base EXP at the lower of the two levels, times a level-difference modifier (x(1 + 0.2 dlvl)
+            // above, x(1 + 0.1 dlvl + 0.0025 dlvl^2) below, nothing at dlvl <= -20), capped, times the
+            // party-size modifier. Some bosses and NMs don't follow this.
             int dlvl = mob.GetLevel() - player.GetLevel();
             if (dlvl <= -20)
                 return 0;
 
-            int baseLevel = Math.Min(player.GetLevel(), mob.GetLevel());
-            ushort baseEXP = BASEEXP[baseLevel - 1];
+            int baseLevel = Math.Max(1, Math.Min(Math.Min((int)player.GetLevel(), (int)mob.GetLevel()), BASEEXP.Length));
+            double baseEXP = BASEEXP[baseLevel - 1];
 
             double dlvlModifier = 1.0;
-
-            //There's 2 functions depending on if the dlvl is positive or negative. 
             if (dlvl >= 0)
-                //I'm not sure if this caps out at some point. This is correct up to at least +9 dlvl though.
-                dlvlModifier += 0.2 * dlvl;
+                dlvlModifier = Math.Min(1.0 + 0.2 * dlvl, GetLevelDifferenceCap(baseLevel));
             else
-                //0.1x + 0.0025x^2
                 dlvlModifier += 0.1 * dlvl + 0.0025 * (dlvl * dlvl);
 
-            //The party modifier isn't clear yet. It seems like it might just be 0.667 for any number of members in a group, but the 1.19 notes say it's variable
-            //There also seem to be some cases where it simply doesn't apply but it isn't obvious if that's correct or when it applies if it is correct
-            double partyModifier = player.currentParty.GetMemberCount() == 1 ? 1.0 : 0.667;
-
-            baseEXP = (ushort) (baseEXP * dlvlModifier * partyModifier);
-
-            return baseEXP;
+            return (ushort)(baseEXP * dlvlModifier * GetPartyExpModifier(partySize));
         }
 
         //Gets the EXP bonus when enemies link
@@ -884,38 +930,55 @@ namespace Meteor.Map.actors.chara.ai.utils
             return timeLimit;
         }
 
-        //Calculates bonus EXP for Links and Chains
-        public static void AddBattleBonusEXP(Player attacker, BattleNpc defender, CommandResultContainer actionContainer)
+        // One member's EXP for a kill, with every bonus shown as one "(+N%)": link, chain, rested, food
+        // and gear (Modifier.Exp). The bonuses add up.
+        public static void AddBattleBonusEXP(Player attacker, BattleNpc defender, CommandResultContainer actionContainer, int partySize = 1)
         {
-            ushort baseExp = GetBaseEXP(attacker, defender);
+            ushort baseExp = GetBaseEXP(attacker, defender, partySize);
 
             //Only bother calculating the rest if there's actually exp to be gained.
             //0 exp sends no message
             if (baseExp > 0)
             {
-                int totalBonus = 0;//GetMod(Modifier.bonusEXP)
+                int totalBonus = 0;
 
                 var linkCount = defender.GetMobMod(MobModifier.LinkCount);
                 totalBonus += GetLinkBonus((byte)Math.Min(linkCount, 255));
 
-                StatusEffect effect = attacker.statusEffects.GetStatusEffectById((uint)StatusEffectId.EXPChain);
-                ushort expChainNumber = 0;
-                uint timeLimit = 100;
-                if (effect != null)
+                // Chains only count foes of equal or higher level. A lower one neither continues nor
+                // breaks the chain.
+                if (defender.GetLevel() >= attacker.GetLevel())
                 {
-                    expChainNumber = effect.GetTier();
-                    timeLimit = (uint)(GetChainTimeLimit(expChainNumber));
-                    actionContainer?.AddEXPAction(new CommandResult(attacker.Id, 33919, 0, expChainNumber, (byte)timeLimit));
+                    StatusEffect effect = attacker.statusEffects.GetStatusEffectById((uint)StatusEffectId.EXPChain);
+                    ushort expChainNumber = 0;
+                    uint timeLimit = 100;
+                    if (effect != null)
+                    {
+                        expChainNumber = effect.GetTier();
+                        timeLimit = (uint)(GetChainTimeLimit(expChainNumber));
+                        actionContainer?.AddEXPAction(new CommandResult(attacker.Id, 33919, 0, expChainNumber, (byte)timeLimit));
+                    }
+
+                    totalBonus += GetChainBonus(expChainNumber);
+
+                    StatusEffect newChain = Server.GetWorldManager().GetStatusEffect((uint)StatusEffectId.EXPChain);
+                    newChain.SetDuration(timeLimit);
+                    newChain.SetTier((byte)(Math.Min(expChainNumber + 1, 255)));
+                    attacker.statusEffects.AddStatusEffect(newChain, attacker);
                 }
 
-                totalBonus += GetChainBonus(expChainNumber);
+                bool rested = attacker.HasRestedBonus();
+                if (rested)
+                    totalBonus += RESTED_BONUS;
+                if (attacker.statusEffects.HasStatusEffect(StatusEffectId.WellFed))
+                    totalBonus += FOOD_EXP_BONUS;
+                totalBonus += Math.Max(0, (int)attacker.GetMod(Modifier.Exp));
 
-                StatusEffect newChain = Server.GetWorldManager().GetStatusEffect((uint)StatusEffectId.EXPChain);
-                newChain.SetDuration(timeLimit);
-                newChain.SetTier((byte)(Math.Min(expChainNumber + 1, 255)));
-                attacker.statusEffects.AddStatusEffect(newChain, attacker);
+                byte bonusPercent = (byte)totalBonus.Min(255);
+                actionContainer?.AddEXPActions(attacker.AddExp(baseExp, (byte)attacker.GetClass(), bonusPercent));
 
-                actionContainer?.AddEXPActions(attacker.AddExp(baseExp, (byte)attacker.GetClass(), (byte)(totalBonus.Min(255))));
+                if (rested)
+                    attacker.ConsumeRestedBonus(baseExp + (int)Math.Ceiling(baseExp * bonusPercent / 100.0f));
             }
         }
 

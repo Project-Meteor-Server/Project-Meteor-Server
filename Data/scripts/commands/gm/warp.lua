@@ -32,11 +32,11 @@ function onTrigger(player, argc, p1, p2, p3, p4, privateArea, privateAreaType, n
     
     -- we're getting a list/array from c# so 0 index
     local pos = player:GetPos();
-    local player_x = pos[1];
-    local player_y = pos[2];
-    local player_z = pos[3];
-    local player_rot = pos[4];
-    local player_zone = pos[5];
+    local player_x = pos[0];
+    local player_y = pos[1];
+    local player_z = pos[2];
+    local player_rot = pos[3];
+    local player_zone = pos[4];
     
     local worldManager = GetWorldManager();
     privateAreaType = privateAreaType or 0;
