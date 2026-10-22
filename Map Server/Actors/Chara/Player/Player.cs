@@ -3392,14 +3392,18 @@ namespace Meteor.Map.Actors
         }
 
         // From BonusPointCommand.lua once the player confirms. Refused when the points add up to more
-        // than the level allows or one attribute is over its cap.
+        // than the level allows, one attribute is over its cap, or one goes down: the client's widget
+        // only adds, so a lower value means a forged request. Taking points back is the Keeper's Hymn.
         public bool SetBonusAllotment(byte classId, int level, int str, int vit, int dex, int intel, int mnd, int pie)
         {
             int[] points = { str, vit, dex, intel, mnd, pie };
+            int[] old;
+            bonusAllotments.TryGetValue(classId, out old);
             int cap = BonusPointCap(level), sum = 0;
-            foreach (int p in points)
+            for (int i = 0; i < points.Length; i++)
             {
-                if (p < 0 || p > cap)
+                int p = points[i];
+                if (p < 0 || p > cap || (old != null && p < old[i]))
                     return false;
                 sum += p;
             }

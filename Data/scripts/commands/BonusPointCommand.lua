@@ -13,8 +13,8 @@ Attribute points [OFF 1.20 dev1228]: 5 at Lv10, +1 per level (45 at Lv50), allot
 Keeper's Hymn from 1.21a.
 
 Stored per class in characters_bonus_points (Player.SetBonusAllotment, which re-checks the sum and the
-cap). Points not yet allotted are unspent, as in retail: the console tray icon shows and the screen
-opens with them all to spend.
+cap, and refuses lowering an attribute). Points not yet allotted are unspent, as in retail: the
+console tray icon shows and the screen opens with them all to spend.
 
 --]]
 
