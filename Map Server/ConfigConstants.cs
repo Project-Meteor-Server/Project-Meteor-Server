@@ -41,6 +41,13 @@ namespace Meteor.Map
         public static String DATABASE_USERNAME;
         public static String DATABASE_PASSWORD;
 
+        public static bool NAVMESH_ENABLED = true;
+        public static String NAVMESH_PATH = "./navmesh";
+        public static String COLLISION_PATH = "./collision";
+        /// <summary>On: shorten hops that would walk the client through walls or off ledges. Log: count them only.</summary>
+        public enum ChordMode { Off, Log, On }
+        public static ChordMode CHORD_VALIDATOR = ChordMode.On;
+
         public static bool Load()
         {
             Program.Log.Info("Loading map_config.ini file... ");
@@ -64,6 +71,17 @@ namespace Meteor.Map
             ConfigConstants.DATABASE_NAME =         configIni.GetValue("Database", "database", "");
             ConfigConstants.DATABASE_USERNAME =     configIni.GetValue("Database", "username", "");
             ConfigConstants.DATABASE_PASSWORD =     configIni.GetValue("Database", "password", "");            
+
+            ConfigConstants.NAVMESH_ENABLED =       configIni.GetValue("Navigation", "enabled", "true").ToLower().Equals("true");
+            ConfigConstants.NAVMESH_PATH =          configIni.GetValue("Navigation", "path", "./navmesh");
+            ConfigConstants.COLLISION_PATH =        configIni.GetValue("Navigation", "collision",
+                Path.Combine(Path.GetDirectoryName(Path.GetFullPath(ConfigConstants.NAVMESH_PATH).TrimEnd(Path.DirectorySeparatorChar)) ?? ".", "collision"));
+            switch (configIni.GetValue("Navigation", "chord_validator", "on").Trim().ToLower())
+            {
+                case "off": ConfigConstants.CHORD_VALIDATOR = ChordMode.Off; break;
+                case "log": ConfigConstants.CHORD_VALIDATOR = ChordMode.Log; break;
+                default: ConfigConstants.CHORD_VALIDATOR = ChordMode.On; break;
+            }
 
             return true;
         }

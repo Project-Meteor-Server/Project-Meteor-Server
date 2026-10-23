@@ -36,17 +36,17 @@ namespace Meteor.Map.actors.chara.ai
         private Stack<State> states;
         private DateTime latestUpdate;
         private DateTime prevUpdate;
-        public readonly PathFind pathFind;
+        public readonly Mover mover;
         private TargetFind targetFind;
         private ActionQueue actionQueue;
         private DateTime lastActionTime;
 
-        public AIContainer(Character actor, Controller controller, PathFind pathFind, TargetFind targetFind)
+        public AIContainer(Character actor, Controller controller, Mover mover, TargetFind targetFind)
         {
             this.owner = actor;
             this.states = new Stack<State>();
             this.controller = controller;
-            this.pathFind = pathFind;
+            this.mover = mover;
             this.targetFind = targetFind;
             latestUpdate = DateTime.Now;
             prevUpdate = latestUpdate;
@@ -70,11 +70,6 @@ namespace Meteor.Map.actors.chara.ai
 
             // todo: trigger listeners
 
-            if (controller == null && pathFind != null)
-            {
-                pathFind.FollowPath();
-            }
-
             // todo: action queues
             if (controller != null && controller.canUpdate)
                 controller.Update(tick);
@@ -88,6 +83,8 @@ namespace Meteor.Map.actors.chara.ai
                     states.Pop().Cleanup();
                 }
             }
+            // Last, so it moves toward the goal the controller and states set this tick.
+            mover?.Update(tick);
             owner.PostUpdate(tick);
         }
 
@@ -153,7 +150,7 @@ namespace Meteor.Map.actors.chara.ai
 
         public bool CanFollowPath()
         {
-            return pathFind != null && (GetCurrentState() == null || GetCurrentState().CanChangeState());
+            return mover != null && (GetCurrentState() == null || GetCurrentState().CanChangeState());
         }
 
         public bool CanChangeState()
@@ -217,7 +214,7 @@ namespace Meteor.Map.actors.chara.ai
         {
             // todo: reset cooldowns and stuff here too?
             targetFind?.Reset();
-            pathFind?.Clear();
+            mover?.Stop();
             ClearStates();
             InternalDisengage();
         }
@@ -333,7 +330,7 @@ namespace Meteor.Map.actors.chara.ai
 
         public void InternalDisengage()
         {
-            pathFind?.Clear();
+            mover?.Stop();
             GetTargetFind()?.Reset();
 
             owner.updateFlags |= ActorUpdateFlags.HpTpMp;
@@ -379,7 +376,7 @@ namespace Meteor.Map.actors.chara.ai
 
         public void InternalDie(DateTime tick, uint fadeoutTimerSeconds)
         {
-            pathFind?.Clear();
+            mover?.Stop();
             ClearStates();
             ForceChangeState(new DeathState(owner, tick, fadeoutTimerSeconds));
         }

@@ -197,6 +197,11 @@ namespace Meteor.Map.Actors
             return spawnPacket;
         }
 
+        // While the Mover holds these, it alone sends 0x00CF: one per hop, not one per position change.
+        public bool cadenceHold;
+        public Vector3 cadenceTarget;
+        public float cadenceRot;
+
         public SubPacket CreatePositionUpdatePacket()
         {
             return MoveActorToPositionPacket.BuildPacket(Id, positionX, positionY, positionZ, rotation, moveState);
@@ -468,7 +473,14 @@ namespace Meteor.Map.Actors
                         positionUpdates.Remove(pos);
 
                     }
-                    packets.Add(CreatePositionUpdatePacket());
+                    if (cadenceTarget != null)
+                    {
+                        Vector3 t = cadenceTarget;
+                        cadenceTarget = null;
+                        packets.Add(MoveActorToPositionPacket.BuildPacket(Id, t.X, t.Y, t.Z, cadenceRot, moveState));
+                    }
+                    else if (!cadenceHold)
+                        packets.Add(CreatePositionUpdatePacket());
                 }
 
                 if ((updateFlags & ActorUpdateFlags.Speed) != 0)
@@ -738,15 +750,19 @@ namespace Meteor.Map.Actors
 
         public void ClearPositionUpdates()
         {
-            positionUpdates.Clear();
+            positionUpdates?.Clear();
         }
 
         public Vector3 FindRandomPoint(float x, float y, float z, float minRadius, float maxRadius)
         {
-            var angle = Program.Random.NextDouble() * Math.PI * 2;
-            var radius = Math.Sqrt(Program.Random.NextDouble() * (maxRadius - minRadius)) + minRadius;
+            var navMesh = utils.NavmeshUtils.GetNavMesh(CurrentArea);
+            if (navMesh != null && navMesh.TryRandomPointInRing(new Vector3(x, y, z), minRadius, maxRadius, out var point))
+                return point;
 
-            return new Vector3(x + (float)(radius * Math.Cos(angle)), y, z + (float)(radius * Math.Sin(angle)));
+            var angle = Program.Random.NextDouble() * Math.PI * 2;
+            var radius = actors.chara.ai.MoverMath.RingRadius(Program.Random.NextDouble(), minRadius, maxRadius);
+            float px = x + (float)(radius * Math.Cos(angle)), pz = z + (float)(radius * Math.Sin(angle));
+            return utils.NavmeshUtils.SnapToGround(CurrentArea, px, y, pz);
         }
 
         public Vector3 FindRandomPointAroundTarget(Actor target, float minRadius, float maxRadius)

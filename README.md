@@ -38,6 +38,12 @@ navgen's [docs/FORMATS.md](https://github.com/rubymatrix/meteor-navgen/blob/main
 Meshes and collision come from game data, so they stay local and are never committed.
 Tests: `dotnet test "Tests/Navigation Tests"`.
 
+The Map server paths monsters, allies, pets and npcs on them. Put navgen's output (`*.nav` plus
+`manifest.json`) in `Data/navmesh/` and the collision export (`zones.json`, `<zone>/static.xcol`)
+in `Data/collision/`; the build copies them to `navmesh/` and `collision/` next to the server.
+Both paths are set in `map_config.ini` (`[Navigation]`). A zone with no mesh still works: its
+actors walk in straight lines.
+
 Pull Requests
 ========
 Commits should contain a descriptive name for what you are modifying
