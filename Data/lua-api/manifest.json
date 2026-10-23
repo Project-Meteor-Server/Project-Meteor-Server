@@ -17258,7 +17258,7 @@
           "returns": "nil",
           "params": [
             {
-              "name": "attacker",
+              "name": "player",
               "type": "Player"
             },
             {

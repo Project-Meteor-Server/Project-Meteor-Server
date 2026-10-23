@@ -3920,11 +3920,11 @@ function __AttackUtils.CalculateDamage(attacker, defender) end
 ---@field PhysicalHitTypeTextIds table<HitType, number>
 ---@field RESTED_BONUS number
 local __BattleUtils = {}
----@param attacker Player
+---@param player Player
 ---@param defender BattleNpc
 ---@param actionContainer CommandResultContainer
 ---@param partySize? number
-function __BattleUtils.AddBattleBonusEXP(attacker, defender, actionContainer, partySize) end
+function __BattleUtils.AddBattleBonusEXP(player, defender, actionContainer, partySize) end
 ---@param attacker Character
 ---@param defender Character
 ---@param skill BattleCommand
