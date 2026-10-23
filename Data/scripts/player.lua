@@ -1,4 +1,6 @@
 require("global");
+require("battle/stats");
+require("battle/statlayers");
 
 local initClassItems, initRaceItems;
 
@@ -191,4 +193,9 @@ function initRaceItems(player)
 
 	player:GetEquipment():Set({9,11},{5,6}, 0);
 	
+end
+
+function onCalculateBaseStats(player)
+	stats.applyPlayerBaseStats(player);
+	statlayers.refresh(player);
 end

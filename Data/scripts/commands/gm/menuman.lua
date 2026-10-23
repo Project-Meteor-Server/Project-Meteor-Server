@@ -9,10 +9,10 @@ properties = {
 function onTrigger(player, argc)
 
     local pos = player:GetPos();
-    local x = pos[1];
-    local y = pos[2];
-    local z = pos[3];
-    local rot = pos[4];
+    local x = pos[0];
+    local y = pos[1];
+    local z = pos[2];
+    local rot = pos[3];
 	
 	local actor = player.CurrentArea:SpawnActor(9114437, "menuman", x, y, z, rot, 0, 0);				
 	

@@ -191,3 +191,12 @@ function printf(s, ...)
         print(s);
     end;
 end;
+function arrayToTable(array)
+	local t = {};
+	if (array ~= nil) then
+		for i = 0, array.Length - 1 do
+			t[i + 1] = array[i];
+		end
+	end
+	return t;
+end

@@ -232,6 +232,11 @@ namespace Meteor.Map.packets.send.actor
             isMore = flag;
         }
 
+        public int RemainingBytes()
+        {
+            return MAXBYTES - runningByteTotal;
+        }
+
         public void SetTarget(string target)
         {
             currentTarget = target;

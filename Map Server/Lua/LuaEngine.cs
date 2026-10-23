@@ -74,6 +74,7 @@ namespace Meteor.Map.lua
             ["GetWorldMaster"] = (Func<Actor>)(() => Server.GetWorldManager().GetActor()),
             ["GetItemGamedata"] = (Func<uint, ItemData>)Server.GetItemGamedata,
             ["GetGuildleveGamedata"] = (Func<uint, GuildleveData>)Server.GetGuildleveGamedata,
+            ["GetMateriaGamedata"] = (Func<int, MateriaData>)Server.GetMateriaGamedata,
             ["GetLuaInstance"] = (Func<LuaEngine>)LuaEngine.GetInstance,
             ["GetRecipeResolver"] = (Func<RecipeResolver>)Server.ResolveRecipe,
         };
@@ -206,7 +207,7 @@ namespace Meteor.Map.lua
         /// // todo: this is dumb, should probably make a function for each action with different default return values
         /// or just make generic function and pass default value as first arg after functionName
         /// </summary>
-        public static void CallLuaBattleFunction(Character actor, string functionName, params object[] args)
+        public static bool CallLuaBattleFunction(Character actor, string functionName, params object[] args)
         {
             // todo: should use "scripts/zones/ZONE_NAME/battlenpcs/NAME.lua" instead of scripts/unique
             string path = "";
@@ -223,13 +224,32 @@ namespace Meteor.Map.lua
                 if (!(actor.aiContainer.GetController<PetController>()?.GetPetMaster() is Player))
                     path = String.Format($"{ConfigConstants.OPTIONS_SCRIPTPATH}/unique/{0}/{1}/{2}.lua", actor.CurrentArea.ZoneName, actor is BattleNpc ? "Monster" : "PopulaceStandard", ((Npc)actor).GetUniqueId());
             }
-            // dont wanna throw an error if file doesnt exist
-            if (File.Exists(path))
-            {
-                var script = ScriptEngine.Instance.Load(path);
-                if (script.HasFunction(functionName))
-                    script.Call(functionName, args);
-            }
+            return CallLuaScriptFileFunction(path, functionName, args);
+        }
+
+        public const string FILEPATH_BATTLENPC_STATS = "/battlenpc_stats.lua";
+
+        // True if the file and function exist and it ran without error.
+        public static bool CallLuaScriptFileFunction(string path, string functionName, params object[] args)
+        {
+            if (!File.Exists(path))
+                return false;
+            var script = ScriptEngine.Instance.Load(path);
+            if (script == null || !script.HasFunction(functionName))
+                return false;
+            return script.Call(functionName, args) != null;
+        }
+
+        // defaultValue when the call fails or doesn't return a number.
+        public static int CallLuaScriptFileFunctionForInt(string path, string functionName, int defaultValue, params object[] args)
+        {
+            if (!File.Exists(path))
+                return defaultValue;
+            var script = ScriptEngine.Instance.Load(path);
+            if (script == null || !script.HasFunction(functionName))
+                return defaultValue;
+            object[] result = script.Call(functionName, args);
+            return result != null && result.Length > 0 && result[0] is double d ? (int)d : defaultValue;
         }
 
         public static int CallLuaStatusEffectFunction(Character actor, StatusEffect effect, string functionName, params object[] args)

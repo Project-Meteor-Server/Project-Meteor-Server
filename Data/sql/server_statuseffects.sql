@@ -47,6 +47,8 @@ set autocommit=0;
 INSERT INTO `server_statuseffects` VALUES (223001,'quick',9,2,0,0,0,0,30328,30331);
 INSERT INTO `server_statuseffects` VALUES (223002,'haste',9,2,0,0,0,0,30328,30331);
 INSERT INTO `server_statuseffects` VALUES (223003,'slow',21,2,0,0,0,0,30335,30338);
+-- Resting: the inn status, gained entering an inn room (30330) and lost leaving it (30331) [RCAP]. No timer.
+INSERT INTO `server_statuseffects` VALUES (223263,'resting',536870914,1,0,0,0,0,30330,30331);
 INSERT INTO `server_statuseffects` VALUES (223004,'petrification',264241173,2,0,0,0,0,30335,30338);
 INSERT INTO `server_statuseffects` VALUES (223005,'paralysis',21,2,3000,0,0,0,30335,30338);
 INSERT INTO `server_statuseffects` VALUES (223006,'silence',4194325,2,0,0,0,0,30335,30338);

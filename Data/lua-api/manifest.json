@@ -26,6 +26,16 @@
       "params": []
     },
     {
+      "name": "GetMateriaGamedata",
+      "returns": "MateriaData",
+      "params": [
+        {
+          "name": "arg1",
+          "type": "number"
+        }
+      ]
+    },
+    {
       "name": "GetRecipeResolver",
       "returns": "RecipeResolver",
       "params": []
@@ -1533,6 +1543,11 @@
         }
       ],
       "methods": [
+        {
+          "name": "CalculateBaseStats",
+          "returns": "nil",
+          "params": []
+        },
         {
           "name": "CanAttack",
           "returns": "boolean",
@@ -3346,6 +3361,16 @@
           "params": []
         },
         {
+          "name": "GetBaseStat",
+          "returns": "number",
+          "params": [
+            {
+              "name": "modifier",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "GetClass",
           "returns": "number",
           "params": []
@@ -3466,6 +3491,20 @@
           "params": [
             {
               "name": "statId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetStatLayer",
+          "returns": "number",
+          "params": [
+            {
+              "name": "layer",
+              "type": "string"
+            },
+            {
+              "name": "modifier",
               "type": "number"
             }
           ]
@@ -4081,6 +4120,20 @@
           ]
         },
         {
+          "name": "ReplaceStatLayer",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "layer",
+              "type": "string"
+            },
+            {
+              "name": "values",
+              "type": "table\u003Cnumber, number\u003E"
+            }
+          ]
+        },
+        {
           "name": "ResetProcs",
           "returns": "nil",
           "params": []
@@ -4100,6 +4153,20 @@
             },
             {
               "name": "id",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetBaseStat",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "modifier",
+              "type": "number"
+            },
+            {
+              "name": "value",
               "type": "number"
             }
           ]
@@ -4207,6 +4274,24 @@
             },
             {
               "name": "val",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetStatLayer",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "layer",
+              "type": "string"
+            },
+            {
+              "name": "modifier",
+              "type": "number"
+            },
+            {
+              "name": "value",
               "type": "number"
             }
           ]
@@ -4673,6 +4758,16 @@
           "static": true
         },
         {
+          "name": "REST_POOL_CAP_LEVELS",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "REST_POOL_FILL_HOURS",
+          "type": "number",
+          "static": true
+        },
+        {
           "name": "SLOT_BODY",
           "type": "number",
           "static": true
@@ -5028,6 +5123,16 @@
           "writable": true
         },
         {
+          "name": "restBonusPool",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "restInnLogoutTime",
+          "type": "number",
+          "writable": true
+        },
+        {
           "name": "sentRetainerSpawn",
           "type": "boolean",
           "writable": true
@@ -5108,6 +5213,21 @@
               "type": "boolean"
             }
           ]
+        },
+        {
+          "name": "AccrueRestedHours",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "hours",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "AccrueRestedOffline",
+          "returns": "nil",
+          "params": []
         },
         {
           "name": "AddAwardedRecipe",
@@ -5232,6 +5352,28 @@
           ]
         },
         {
+          "name": "BonusPointCap",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "level",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "BonusPointTotal",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "level",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "BroadcastCountdown",
           "returns": "nil",
           "params": [
@@ -5285,6 +5427,17 @@
               "name": "msgParams",
               "type": "any[]",
               "params": true
+            }
+          ]
+        },
+        {
+          "name": "CalcPotencial",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "level",
+              "type": "number"
             }
           ]
         },
@@ -5444,6 +5597,16 @@
             {
               "name": "completed",
               "type": "Quest"
+            }
+          ]
+        },
+        {
+          "name": "ConsumeRestedBonus",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "expEarned",
+              "type": "number"
             }
           ]
         },
@@ -5629,6 +5792,20 @@
           "params": []
         },
         {
+          "name": "GetBonusPoint",
+          "returns": "number",
+          "params": [
+            {
+              "name": "classId",
+              "type": "number"
+            },
+            {
+              "name": "attribute",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "GetCurrentClassOrJob",
           "returns": "number",
           "params": []
@@ -5804,6 +5981,16 @@
           "params": []
         },
         {
+          "name": "GetRestBonusExpRate",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "GetRestedBonusCap",
+          "returns": "number",
+          "params": []
+        },
+        {
           "name": "GetSNpcCoordinate",
           "returns": "number",
           "params": []
@@ -5942,6 +6129,16 @@
           ]
         },
         {
+          "name": "HasBonusAllotment",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "classId",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "HasGuildleve",
           "returns": "boolean",
           "params": [
@@ -6006,6 +6203,11 @@
           ]
         },
         {
+          "name": "HasRestedBonus",
+          "returns": "boolean",
+          "params": []
+        },
+        {
           "name": "HasTrait",
           "returns": "boolean",
           "params": [
@@ -6029,6 +6231,27 @@
           "name": "IsChocoboRentalActive",
           "returns": "boolean",
           "params": []
+        },
+        {
+          "name": "IsEquippedGearBroken",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "slot",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "IsGearBroken",
+          "static": true,
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "item",
+              "type": "InventoryItem"
+            }
+          ]
         },
         {
           "name": "IsInParty",
@@ -6061,6 +6284,17 @@
           "params": [
             {
               "name": "id",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "IsSyncedGeneralParameter",
+          "static": true,
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "index",
               "type": "number"
             }
           ]
@@ -6699,6 +6933,58 @@
           ]
         },
         {
+          "name": "SetBonusAllotment",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "classId",
+              "type": "number"
+            },
+            {
+              "name": "level",
+              "type": "number"
+            },
+            {
+              "name": "str",
+              "type": "number"
+            },
+            {
+              "name": "vit",
+              "type": "number"
+            },
+            {
+              "name": "dex",
+              "type": "number"
+            },
+            {
+              "name": "intel",
+              "type": "number"
+            },
+            {
+              "name": "mnd",
+              "type": "number"
+            },
+            {
+              "name": "pie",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetClassLevel",
+          "returns": "CommandResult[]",
+          "params": [
+            {
+              "name": "classId",
+              "type": "number"
+            },
+            {
+              "name": "level",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "SetCombos",
           "returns": "nil",
           "params": [
@@ -6860,6 +7146,16 @@
           "params": [
             {
               "name": "type",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetRestedBonusPool",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "pool",
               "type": "number"
             }
           ]
@@ -7040,6 +7336,17 @@
             {
               "name": "slotsToUpdate",
               "type": "number[]"
+            }
+          ]
+        },
+        {
+          "name": "UpdateRemainBonusPoint",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "send",
+              "type": "boolean",
+              "optional": true
             }
           ]
         },
@@ -8624,6 +8931,26 @@
       ],
       "methods": [
         {
+          "name": "GetMateriaGrade",
+          "returns": "number",
+          "params": [
+            {
+              "name": "slot",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetMateriaType",
+          "returns": "number",
+          "params": [
+            {
+              "name": "slot",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "WriteBytes",
           "returns": "nil",
           "params": [
@@ -8639,6 +8966,11 @@
       "name": "ItemData",
       "fullName": "Meteor.Map.DataObjects.ItemData",
       "members": [
+        {
+          "name": "COMPATIBILITY_CLASS_COUNT",
+          "type": "number",
+          "static": true
+        },
         {
           "name": "catalogID",
           "type": "number"
@@ -8753,6 +9085,16 @@
         }
       ],
       "methods": [
+        {
+          "name": "GetCompatibility",
+          "returns": "number",
+          "params": [
+            {
+              "name": "classId",
+              "type": "number"
+            }
+          ]
+        },
         {
           "name": "GetItemHQValue",
           "returns": "number",
@@ -9089,6 +9431,45 @@
           "name": "IsWeaverWeapon",
           "returns": "boolean",
           "params": []
+        }
+      ]
+    },
+    {
+      "name": "MateriaData",
+      "fullName": "Meteor.Map.DataObjects.MateriaData",
+      "members": [
+        {
+          "name": "GRADE_COUNT",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "bonus1Type",
+          "type": "number"
+        },
+        {
+          "name": "bonus2Type",
+          "type": "number"
+        },
+        {
+          "name": "id",
+          "type": "number"
+        }
+      ],
+      "methods": [
+        {
+          "name": "GetBonusValue",
+          "returns": "number",
+          "params": [
+            {
+              "name": "bonus",
+              "type": "number"
+            },
+            {
+              "name": "grade",
+              "type": "number"
+            }
+          ]
         }
       ]
     },
@@ -10169,6 +10550,12 @@
           "params": []
         },
         {
+          "name": "GetItemCompatibilityGamedata",
+          "static": true,
+          "returns": "table\u003Cnumber, number[]\u003E",
+          "params": []
+        },
+        {
           "name": "GetItemGamedata",
           "static": true,
           "returns": "table\u003Cnumber, ItemData\u003E",
@@ -10203,6 +10590,12 @@
               "type": "Player"
             }
           ]
+        },
+        {
+          "name": "GetMateriaGamedata",
+          "static": true,
+          "returns": "table\u003Cnumber, MateriaData\u003E",
+          "params": []
         },
         {
           "name": "GetQuestGamedata",
@@ -10252,6 +10645,17 @@
             {
               "name": "name",
               "type": "string"
+            }
+          ]
+        },
+        {
+          "name": "LoadBonusAllotments",
+          "static": true,
+          "returns": "table\u003Cnumber, number[]\u003E",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
             }
           ]
         },
@@ -10412,6 +10816,25 @@
             {
               "name": "questId",
               "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SaveBonusAllotment",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            },
+            {
+              "name": "classId",
+              "type": "number"
+            },
+            {
+              "name": "points",
+              "type": "number[]"
             }
           ]
         },
@@ -10628,6 +11051,36 @@
             },
             {
               "name": "quantity",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetRestBonus",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            },
+            {
+              "name": "pool",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetRestInnLogoutTime",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            },
+            {
+              "name": "unixTime",
               "type": "number"
             }
           ]
@@ -11045,12 +11498,38 @@
           ]
         },
         {
+          "name": "GetItemCompatibility",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "key",
+              "type": "number"
+            },
+            {
+              "name": "classId",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "GetItemGamedata",
           "static": true,
           "returns": "ItemData",
           "params": [
             {
               "name": "id",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetMateriaGamedata",
+          "static": true,
+          "returns": "MateriaData",
+          "params": [
+            {
+              "name": "type",
               "type": "number"
             }
           ]
@@ -18093,6 +18572,21 @@
           "writable": true
         },
         {
+          "name": "EXP_LEVEL_WINDOW",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "EXP_RANGE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "FOOD_EXP_BONUS",
+          "type": "number",
+          "static": true
+        },
+        {
           "name": "HitTypeEffectsMagical",
           "type": "table\u003CHitType, HitEffect\u003E",
           "static": true,
@@ -18127,6 +18621,11 @@
           "type": "table\u003CHitType, number\u003E",
           "static": true,
           "writable": true
+        },
+        {
+          "name": "RESTED_BONUS",
+          "type": "number",
+          "static": true
         }
       ],
       "methods": [
@@ -18136,7 +18635,7 @@
           "returns": "nil",
           "params": [
             {
-              "name": "attacker",
+              "name": "player",
               "type": "Player"
             },
             {
@@ -18146,6 +18645,11 @@
             {
               "name": "actionContainer",
               "type": "CommandResultContainer"
+            },
+            {
+              "name": "partySize",
+              "type": "number",
+              "optional": true
             }
           ]
         },
@@ -18497,6 +19001,11 @@
             {
               "name": "mob",
               "type": "BattleNpc"
+            },
+            {
+              "name": "partySize",
+              "type": "number",
+              "optional": true
             }
           ]
         },
@@ -18569,6 +19078,21 @@
           ]
         },
         {
+          "name": "GetExpEligibleMembers",
+          "static": true,
+          "returns": "Player[]",
+          "params": [
+            {
+              "name": "killer",
+              "type": "Player"
+            },
+            {
+              "name": "mob",
+              "type": "BattleNpc"
+            }
+          ]
+        },
+        {
           "name": "GetHitRate",
           "static": true,
           "returns": "number",
@@ -18588,6 +19112,17 @@
             {
               "name": "action",
               "type": "CommandResult"
+            }
+          ]
+        },
+        {
+          "name": "GetLevelDifferenceCap",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "baseLevel",
+              "type": "number"
             }
           ]
         },
@@ -18622,6 +19157,17 @@
             {
               "name": "action",
               "type": "CommandResult"
+            }
+          ]
+        },
+        {
+          "name": "GetPartyExpModifier",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "memberCount",
+              "type": "number"
             }
           ]
         },
@@ -20863,6 +21409,11 @@
       "fullName": "Meteor.Map.lua.LuaEngine",
       "members": [
         {
+          "name": "FILEPATH_BATTLENPC_STATS",
+          "type": "string",
+          "static": true
+        },
+        {
           "name": "FILEPATH_COMMANDS",
           "type": "string",
           "static": true
@@ -20977,7 +21528,7 @@
         {
           "name": "CallLuaBattleFunction",
           "static": true,
-          "returns": "nil",
+          "returns": "boolean",
           "params": [
             {
               "name": "actor",
@@ -21063,6 +21614,50 @@
             {
               "name": "optional",
               "type": "boolean"
+            },
+            {
+              "name": "args",
+              "type": "any[]",
+              "params": true
+            }
+          ]
+        },
+        {
+          "name": "CallLuaScriptFileFunction",
+          "static": true,
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "path",
+              "type": "string"
+            },
+            {
+              "name": "functionName",
+              "type": "string"
+            },
+            {
+              "name": "args",
+              "type": "any[]",
+              "params": true
+            }
+          ]
+        },
+        {
+          "name": "CallLuaScriptFileFunctionForInt",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "path",
+              "type": "string"
+            },
+            {
+              "name": "functionName",
+              "type": "string"
+            },
+            {
+              "name": "defaultValue",
+              "type": "number"
             },
             {
               "name": "args",
@@ -25705,6 +26300,11 @@
         {
           "name": "CloseStreams",
           "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "RemainingBytes",
+          "returns": "number",
           "params": []
         },
         {

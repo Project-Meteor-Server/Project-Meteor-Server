@@ -27,7 +27,7 @@ function onEventStarted(player, npc, eventType, eventName)
 	if (eventType == 1) then
 		local defaultTalk = player:GetDefaultTalkQuest(npc);
 		local tutorialTalk = player:GetTutorialQuest(npc);
-		local activeQuests = player:GetQuestsForNpc(npc);
+		local activeQuests = arrayToTable(player:GetQuestsForNpc(npc));
 		local possibleQuests = {};
 		
 		-- Create the switch table for this npc
@@ -65,7 +65,7 @@ function onEventStarted(player, npc, eventType, eventName)
 			chosenQuest = possibleQuests[1];
 		end
 	else
-		local activeQuests = player:GetQuestsForNpc(npc);
+		local activeQuests = arrayToTable(player:GetQuestsForNpc(npc));
 		if (#activeQuests != 0) then
 			chosenQuest = activeQuests[1];
 		end

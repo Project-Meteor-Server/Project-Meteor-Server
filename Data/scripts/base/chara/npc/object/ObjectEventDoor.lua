@@ -18,7 +18,7 @@ function onEventStarted(player, npc, triggerName)
 	local choice = callClientFunction(player, "eventDoorMoveAsk");
 	
 	if (choice == 1) then
-		local activeQuests = player:GetQuestsForNpc(npc);
+		local activeQuests = arrayToTable(player:GetQuestsForNpc(npc));
 		-- Either let the player choose the quest or start it if it's the only one.
 		local chosenQuest;
 		

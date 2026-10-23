@@ -236,31 +236,31 @@ namespace Meteor.Map.Actors
             charaWork.property[2] = 1;
             charaWork.property[4] = 1;
 
-            charaWork.command[0] =  0xA0F00000 | 21001;
-            charaWork.command[1] =  0xA0F00000 | 21001;
+            charaWork.command[0] = 0xA0F00000 | 21001;
+            charaWork.command[1] = 0xA0F00000 | 21001;
 
-            charaWork.command[2] =  0xA0F00000 | 21002;
-            charaWork.command[3] =  0xA0F00000 | 12004;
-            charaWork.command[4] =  0xA0F00000 | 21005;
-            charaWork.command[5] =  0xA0F00000 | 21006;
-            charaWork.command[6] =  0xA0F00000 | 21007;
-            charaWork.command[7] =  0xA0F00000 | 12009;
-            charaWork.command[8] =  0xA0F00000 | 12010;
-            charaWork.command[9] =  0xA0F00000 | 12005;
+            charaWork.command[2] = 0xA0F00000 | 21002;
+            charaWork.command[3] = 0xA0F00000 | 12004;
+            charaWork.command[4] = 0xA0F00000 | 21005;
+            charaWork.command[5] = 0xA0F00000 | 21006;
+            charaWork.command[6] = 0xA0F00000 | 21007;
+            charaWork.command[7] = 0xA0F00000 | 12009;
+            charaWork.command[8] = 0xA0F00000 | 12010;
+            charaWork.command[9] = 0xA0F00000 | 12005;
             charaWork.command[10] = 0xA0F00000 | 12007;
             charaWork.command[11] = 0xA0F00000 | 12011;
             charaWork.command[12] = 0xA0F00000 | 22012;
             charaWork.command[13] = 0xA0F00000 | 22013;
             charaWork.command[14] = 0xA0F00000 | 29497;
-            charaWork.command[15] = 0xA0F00000 | 22015;            
+            charaWork.command[15] = 0xA0F00000 | 22015;
 
             charaWork.commandAcquired[27150 - 26000] = true;
-            
+
             playerWork.questGuildleveComplete[120050 - 120001] = true;
 
-            for (int i = 0; i < charaWork.additionalCommandAcquired.Length; i++ )
+            for (int i = 0; i < charaWork.additionalCommandAcquired.Length; i++)
                 charaWork.additionalCommandAcquired[i] = true;
-            
+
             for (int i = 0; i < charaWork.commandCategory.Length; i++)
                 charaWork.commandCategory[i] = 1;
 
@@ -291,10 +291,20 @@ namespace Meteor.Map.Actors
 
             this.aiContainer = new AIContainer(this, new PlayerController(this), null, new TargetFind(this));
             allegiance = CharacterTargetingAllegiance.Player;
+            bonusAllotments = Database.LoadBonusAllotments(this);
             CalculateBaseStats();
+            AccrueRestedOffline();
+            UpdateRemainBonusPoint(false);
 
             questStateManager = new QuestStateManager(this);
             questStateManager.Init(questScenario, playerWork.questScenarioComplete);
+        }
+
+        // The client keeps 3-18 and 23-34 in battleParameter. HP/MP/TP (0-2) are sent separately and
+        // the client computes 19-22 itself.
+        public static bool IsSyncedGeneralParameter(int index)
+        {
+            return (index >= 3 && index <= 18) || (index >= 23 && index <= 34);
         }
 
         public List<SubPacket> Create0x132Packets()
@@ -464,7 +474,7 @@ namespace Meteor.Map.Actors
             //General Parameters
             for (int i = 3; i < charaWork.battleTemp.generalParameter.Length; i++)
             {
-                if (charaWork.battleTemp.generalParameter[i] != 0)
+                if (IsSyncedGeneralParameter(i) && charaWork.battleTemp.generalParameter[i] != 0)
                     propPacketUtil.AddProperty(String.Format("charaWork.battleTemp.generalParameter[{0}]", i));
             }
 
@@ -587,6 +597,8 @@ namespace Meteor.Map.Actors
             }
 
             propPacketUtil.AddProperty("playerWork.restBonusExpRate");
+            if (playerWork.isRemainBonusPoint)
+                propPacketUtil.AddProperty("playerWork.isRemainBonusPoint");
 
             //Profile
             propPacketUtil.AddProperty("playerWork.tribe");
@@ -804,6 +816,8 @@ namespace Meteor.Map.Actors
         {
             playerSession.LockUpdates(true);
 
+            Database.SetRestInnLogoutTime(this, CurrentArea != null && CurrentArea.isInn ? Utils.UnixTimeStampUTC() : 0);
+
             //Remove actor from zone and main server list
             CurrentArea.RemoveActorFromZone(this);
 
@@ -824,7 +838,7 @@ namespace Meteor.Map.Actors
             {
                 if (quest != null)
                     quest.GetData().Save();
-            }    
+            }
         }
 
         public void CleanupAndSave(uint destinationZone, ushort spawnType, float destinationX, float destinationY, float destinationZ, float destinationRot)
@@ -887,7 +901,7 @@ namespace Meteor.Map.Actors
         public void SetSleeping()
         {
             playerSession.LockUpdates(true);
-            switch(GetInnCode())
+            switch (GetInnCode())
             {
                 case 1:
                     positionX = -162.42f;
@@ -958,7 +972,7 @@ namespace Meteor.Map.Actors
             ChangeMusic(CurrentArea.bgmDay);
         }
 
-        
+
 
 
         public void SendMountAppearance()
@@ -1037,7 +1051,7 @@ namespace Meteor.Map.Actors
 
         public void GraphicChange(uint slot, uint graphicId)
         {
-            appearanceIds[slot] = graphicId;           
+            appearanceIds[slot] = graphicId;
         }
 
         public void GraphicChange(uint slot, uint weapId, uint equipId, uint variantId, uint colorId)
@@ -1051,12 +1065,12 @@ namespace Meteor.Map.Actors
                 mixedVariantId = variantId;
 
             uint graphicId =
-                    (weapId & 0x3FF)  << 20 |
+                    (weapId & 0x3FF) << 20 |
                     (equipId & 0x3FF) << 10 |
                     (mixedVariantId & 0x3FF);
 
-            appearanceIds[slot] = graphicId;            
-            
+            appearanceIds[slot] = graphicId;
+
         }
 
         public void GraphicChange(int slot, InventoryItem invItem)
@@ -1129,7 +1143,7 @@ namespace Meteor.Map.Actors
             if (lastStep == 0)
             {
                 int maxLength;
-                if ((sizeof(short) * charaWork.battleSave.skillLevel.Length)-lastPosition < 0x5E)
+                if ((sizeof(short) * charaWork.battleSave.skillLevel.Length) - lastPosition < 0x5E)
                     maxLength = (sizeof(short) * charaWork.battleSave.skillLevel.Length) - lastPosition;
                 else
                     maxLength = 0x5E;
@@ -1167,7 +1181,7 @@ namespace Meteor.Map.Actors
                 Buffer.BlockCopy(charaWork.battleSave.skillLevelCap, lastPosition, skillCapBuffer, 0, skillCapBuffer.Length);
                 SetActorPropetyPacket charaInfo1 = new SetActorPropetyPacket("charaWork/exp");
 
-                
+
                 if (maxLength == 0x5E)
                 {
                     charaInfo1.SetIsArrayMode(true);
@@ -1186,7 +1200,7 @@ namespace Meteor.Map.Actors
 
                 QueuePacket(charaInfo1.BuildPacket(Id));
             }
-           
+
         }
 
         private void SendAchievedAetheryte(ushort from, ushort to)
@@ -1203,14 +1217,14 @@ namespace Meteor.Map.Actors
         {
             byte[] data = questStateManager.GetCompletionSliceBytes(from, to);
 
-            SetActorPropetyPacket completedQuestWorkUpdate = new SetActorPropetyPacket(from, to, "playerWork/journal");            
+            SetActorPropetyPacket completedQuestWorkUpdate = new SetActorPropetyPacket(from, to, "playerWork/journal");
             completedQuestWorkUpdate.AddBitfield(Utils.MurmurHash2("playerWork.questScenarioComplete", 0), data);
             completedQuestWorkUpdate.AddTarget();
             QueuePacket(completedQuestWorkUpdate.BuildPacket(Id));
         }
 
         public void OnWorkSyncRequest(string propertyName, ushort from = 0, ushort to = 0)
-        {               
+        {
             switch (propertyName)
             {
                 case "charaWork/exp":
@@ -1283,19 +1297,18 @@ namespace Meteor.Map.Actors
 
             //Set rested EXP
             charaWork.parameterSave.state_mainSkill[0] = classId;
-            charaWork.parameterSave.state_mainSkillLevel = charaWork.battleSave.skillLevel[classId-1];
-            playerWork.restBonusExpRate = 0.0f;
-            for(int i = charaWork.commandBorder; i < charaWork.command.Length; i++)
+            charaWork.parameterSave.state_mainSkillLevel = charaWork.battleSave.skillLevel[classId - 1];
+            playerWork.restBonusExpRate = GetRestBonusExpRate();
+
+            if (currentJob != 0 && ConvertClassIdToJobId(classId) != currentJob)
+            {
+                currentJob = 0;
+                BroadcastPacket(SetCurrentJobPacket.BuildPacket(Id, 0), true);
+            }
+            for (int i = charaWork.commandBorder; i < charaWork.command.Length; i++)
             {
                 charaWork.command[i] = 0;
                 charaWork.commandCategory[i] = 0;
-            }
-
-            //If new class, init abilties and level
-            if (charaWork.battleSave.skillLevel[classId - 1] <= 0)
-            {
-                UpdateClassLevel(classId, 1);
-                EquipAbilitiesAtLevel(classId, 1);
             }
 
             ActorPropertyPacketUtil propertyBuilder = new ActorPropertyPacketUtil("charaWork/stateForAll", this);
@@ -1309,9 +1322,9 @@ namespace Meteor.Map.Actors
             Database.LoadHotbar(this);
 
             var time = Utils.UnixTimeStampUTC();
-            for(int i = charaWork.commandBorder; i < charaWork.command.Length; i++)
+            for (int i = charaWork.commandBorder; i < charaWork.command.Length; i++)
             {
-                if(charaWork.command[i] != 0)
+                if (charaWork.command[i] != 0)
                 {
                     charaWork.parameterSave.commandSlot_recastTime[i - charaWork.commandBorder] = time + charaWork.parameterTemp.maxCommandRecastTime[i - charaWork.commandBorder];
                 }
@@ -1325,7 +1338,8 @@ namespace Meteor.Map.Actors
                 BroadcastPacket(packet, true);
 
             Database.SavePlayerCurrentClass(this);
-            RecalculateStats();
+            CalculateBaseStats();
+            questStateManager.UpdateLevel(GetLevel());
         }
 
         public void UpdateClassLevel(byte classId, short level)
@@ -1333,7 +1347,7 @@ namespace Meteor.Map.Actors
             Database.PlayerCharacterUpdateClassLevel(this, classId, level);
             charaWork.battleSave.skillLevel[classId - 1] = level;
             ActorPropertyPacketUtil propertyBuilder = new ActorPropertyPacketUtil("charaWork/stateForAll", this);
-            propertyBuilder.AddProperty(String.Format("charaWork.battleSave.skillLevel[{0}]", classId-1));
+            propertyBuilder.AddProperty(String.Format("charaWork.battleSave.skillLevel[{0}]", classId - 1));
             List<SubPacket> packets = propertyBuilder.Done();
             QueuePackets(packets);
         }
@@ -1391,10 +1405,10 @@ namespace Meteor.Map.Actors
                 propPacketUtil.AddProperty("charaWork.eventTemp.bazaarMateria");
                 doUpdate = true;
             }
-            
-            if (!noUpdate && doUpdate)            
-                BroadcastPackets(propPacketUtil.Done(), true);            
-        }        
+
+            if (!noUpdate && doUpdate)
+                BroadcastPackets(propPacketUtil.Done(), true);
+        }
 
         public int GetCurrentGil()
         {
@@ -1428,7 +1442,7 @@ namespace Meteor.Map.Actors
         public ReferencedItemPackage GetEquipment()
         {
             return equipment;
-        }     
+        }
 
         public byte GetInitialTown()
         {
@@ -1476,7 +1490,7 @@ namespace Meteor.Map.Actors
         }
 
         public void SetHomePoint(uint aetheryteId)
-        {            
+        {
             homepoint = aetheryteId;
             Database.SavePlayerHomePoints(this);
         }
@@ -1556,7 +1570,7 @@ namespace Meteor.Map.Actors
             for (int i = 0; i < questScenario.Length; i++)
             {
                 if (questScenario[i] != null && questScenario[i].Equals(oldQuestInstance))
-                {                    
+                {
                     SendQuestClientUpdate(i);
                     oldQuestInstance.OnComplete();
                     Database.SaveCompletedQuests(playerSession.GetActor());
@@ -1662,7 +1676,7 @@ namespace Meteor.Map.Actors
 
             if (activeQuest == null)
                 questStateManager.ForceAddActiveQuest(questScenario[freeSlot]);
-            
+
             SendQuestClientUpdate(freeSlot);
 
             if (!isSilent)
@@ -1798,7 +1812,7 @@ namespace Meteor.Map.Actors
         {
             // Set name and appearance
             SNpcNickname = nickname;
-            SNpcSkin = (byte) (actorClassId - 1070000);
+            SNpcSkin = (byte)(actorClassId - 1070000);
 
             switch (SNpcSkin % 16)
             {
@@ -1917,7 +1931,7 @@ namespace Meteor.Map.Actors
                     }
                 }
             }
-        }      
+        }
 
         public bool HasGuildleve(uint id)
         {
@@ -1938,23 +1952,23 @@ namespace Meteor.Map.Actors
             switch (npc.CurrentArea.RegionId)
             {
                 case 101:
-                    defaultTalk = (Quest) Server.GetStaticActors("DftSea");
+                    defaultTalk = (Quest)Server.GetStaticActors("DftSea");
                     break;
                 case 102:
-                    defaultTalk = (Quest) Server.GetStaticActors("DftRoc");
+                    defaultTalk = (Quest)Server.GetStaticActors("DftRoc");
                     break;
                 case 103:
-                    defaultTalk = (Quest) Server.GetStaticActors("DftFst");
+                    defaultTalk = (Quest)Server.GetStaticActors("DftFst");
                     break;
                 case 104:
                 case 107:
-                    defaultTalk = (Quest) Server.GetStaticActors("DftWil");
+                    defaultTalk = (Quest)Server.GetStaticActors("DftWil");
                     break;
                 case 105:
-                    defaultTalk = (Quest) Server.GetStaticActors("DftLak");
+                    defaultTalk = (Quest)Server.GetStaticActors("DftLak");
                     break;
                 case 805:
-                    defaultTalk = (Quest) Server.GetStaticActors("DftSrt");
+                    defaultTalk = (Quest)Server.GetStaticActors("DftSrt");
                     break;
             }
 
@@ -2030,7 +2044,7 @@ namespace Meteor.Map.Actors
         }
 
         public void SetNpcLs(uint npcLsId, uint state)
-        {            
+        {
             bool isCalling, isExtra;
             isCalling = isExtra = false;
 
@@ -2123,18 +2137,18 @@ namespace Meteor.Map.Actors
         }
 
         public void AddDirector(Director director, bool spawnImmediatly = false)
-        {            
+        {
             if (!ownedDirectors.Contains(director))
             {
                 ownedDirectors.Add(director);
-                director.AddMember(this);                
+                director.AddMember(this);
             }
         }
 
         public void SendDirectorPackets(Director director)
         {
             QueuePackets(director.GetSpawnPackets());
-            QueuePackets(director.GetInitPackets());        
+            QueuePackets(director.GetInitPackets());
         }
 
         public void RemoveDirector(Director director)
@@ -2146,7 +2160,7 @@ namespace Meteor.Map.Actors
                 director.RemoveMember(this);
             }
         }
-        
+
         public GuildleveDirector GetGuildleveDirector()
         {
             foreach (Director d in ownedDirectors)
@@ -2162,8 +2176,8 @@ namespace Meteor.Map.Actors
         {
             foreach (Director d in ownedDirectors)
             {
-                if (d.GetScriptPath().Equals(directorName))                
-                    return d;                
+                if (d.GetScriptPath().Equals(directorName))
+                    return d;
             }
 
             return null;
@@ -2191,7 +2205,7 @@ namespace Meteor.Map.Actors
             QueuePacket(InventoryBeginChangePacket.BuildPacket(toBeExamined.Id, true));
             toBeExamined.GetEquipment().SendUpdateAsItemPackage(this, ItemPackage.MAXSIZE_EQUIPMENT_OTHERPLAYER, ItemPackage.EQUIPMENT_OTHERPLAYER);
             QueuePacket(InventoryEndChangePacket.BuildPacket(toBeExamined.Id));
-        }        
+        }
 
         public void SendDataPacket(params object[] parameters)
         {
@@ -2239,7 +2253,7 @@ namespace Meteor.Map.Actors
         public void SetEventStatus(Actor actor, string conditionName, bool enabled, byte type)
         {
             QueuePacket(SetEventStatusPacket.BuildPacket(actor.Id, enabled, type, conditionName));
-        }       
+        }
 
         public void RunEventFunction(string functionName, params object[] parameters)
         {
@@ -2259,13 +2273,13 @@ namespace Meteor.Map.Actors
             currentEventName = "";
             currentEventType = 0;
             currentEventRunning = null;
-        }        
+        }
 
         public void BroadcastCountdown(byte countdownLength, ulong syncTime)
         {
             BroadcastPacket(StartCountdownPacket.BuildPacket(Id, countdownLength, syncTime, "Go!"), true);
         }
-        
+
         public void SendInstanceUpdate(bool force = false)
         {
             //Server.GetWorldManager().SeamlessCheck(this);
@@ -2348,7 +2362,7 @@ namespace Meteor.Map.Actors
             if (currentParty == null)
                 return;
 
-            Party partyGroup = (Party) currentParty;
+            Party partyGroup = (Party)currentParty;
 
             for (int i = 0; i < partyGroup.members.Count; i++)
             {
@@ -2365,7 +2379,7 @@ namespace Meteor.Map.Actors
 
             currentParty = null;
         }
-        
+
         public void IssueChocobo(byte appearanceId, string nameResponse)
         {
             Database.IssuePlayerChocobo(this, appearanceId, nameResponse);
@@ -2382,7 +2396,7 @@ namespace Meteor.Map.Actors
             Database.ChangePlayerChocoboAppearance(this, appearanceId);
             chocoboAppearance = appearanceId;
         }
-        
+
         public void StartChocoboRental(byte numMins)
         {
             rentalExpireTime = Utils.UnixTimeStampUTC() + ((uint)numMins * 60);
@@ -2425,10 +2439,11 @@ namespace Meteor.Map.Actors
                 retainerMeetingGroup = null;
             }
         }
-        
+
         public override void Update(DateTime tick)
         {
-            
+            UpdateInnResting(tick);
+
             // Chocobo Rental Expirey
             if (rentalExpireTime != 0)
             {
@@ -2446,7 +2461,7 @@ namespace Meteor.Map.Actors
                 }
                 else
                 {
-                    rentalMinLeft = (byte) ((rentalExpireTime - tickUTC) /60);
+                    rentalMinLeft = (byte)((rentalExpireTime - tickUTC) / 60);
                 }
             }
 
@@ -2459,7 +2474,7 @@ namespace Meteor.Map.Actors
         {
             // todo: is this correct?
             if (this.playerSession.isUpdatesLocked)
-                return;           
+                return;
 
             // todo: should probably add another flag for battleTemp since all this uses reflection
             packets = new List<SubPacket>();
@@ -2473,11 +2488,8 @@ namespace Meteor.Map.Actors
 
             if ((updateFlags & ActorUpdateFlags.HpTpMp) != 0)
             {
-                var propPacketUtil = new ActorPropertyPacketUtil("charaWork/stateAtQuicklyForAll", this);
-
-                // todo: should this be using job as index?
-                propPacketUtil.AddProperty("charaWork.parameterSave.hp[0]");
-                propPacketUtil.AddProperty("charaWork.parameterSave.hpMax[0]");
+                // The client's target rank display listens to stateForAll.
+                var propPacketUtil = new ActorPropertyPacketUtil("charaWork/stateForAll", this);
                 propPacketUtil.AddProperty("charaWork.parameterSave.state_mainSkill[0]");
                 propPacketUtil.AddProperty("charaWork.parameterSave.state_mainSkillLevel");
 
@@ -2491,7 +2503,7 @@ namespace Meteor.Map.Actors
 
                 for (uint i = 0; i < 35; i++)
                 {
-                    if (GetMod(i) != charaWork.battleTemp.generalParameter[i])
+                    if (IsSyncedGeneralParameter((int)i) && GetMod(i) != charaWork.battleTemp.generalParameter[i])
                     {
                         charaWork.battleTemp.generalParameter[i] = (short)GetMod(i);
                         propPacketUtil.AddProperty(String.Format("charaWork.battleTemp.generalParameter[{0}]", i));
@@ -2499,6 +2511,7 @@ namespace Meteor.Map.Actors
                 }
 
                 QueuePackets(propPacketUtil.Done());
+                UpdateRemainBonusPoint();
             }
 
             if ((updateFlags & ActorUpdateFlags.Hotbar) != 0)
@@ -2508,7 +2521,7 @@ namespace Meteor.Map.Actors
 
                 updateFlags ^= ActorUpdateFlags.Hotbar;
             }
-            
+
             base.PostUpdate(tick, packets);
         }
 
@@ -2578,11 +2591,11 @@ namespace Meteor.Map.Actors
             ushort hotbarSlot = 0;
 
             //If the class we're equipping for is the current class, we can just look at charawork.command
-            if(classId == charaWork.parameterSave.state_mainSkill[0])
+            if (classId == charaWork.parameterSave.state_mainSkill[0])
                 hotbarSlot = FindFirstCommandSlotById(0);
             //Otherwise, we need to check the database.
             else
-                hotbarSlot = (ushort) (Database.FindFirstCommandSlot(this, classId) + charaWork.commandBorder);
+                hotbarSlot = (ushort)(Database.FindFirstCommandSlot(this, classId) + charaWork.commandBorder);
 
             EquipAbility(classId, commandId, hotbarSlot, printMessage);
         }
@@ -2597,8 +2610,8 @@ namespace Meteor.Map.Actors
             ushort lowHotbarSlot = (ushort)(hotbarSlot - charaWork.commandBorder);
             ushort maxRecastTime = (ushort)(ability != null ? ability.maxRecastTimeSeconds : 5);
             uint recastEnd = Utils.UnixTimeStampUTC() + maxRecastTime;
-            
-            Database.EquipAbility(this, classId, (ushort) (hotbarSlot - charaWork.commandBorder), commandId, recastEnd);
+
+            Database.EquipAbility(this, classId, (ushort)(hotbarSlot - charaWork.commandBorder), commandId, recastEnd);
             //If the class we're equipping for is the current class (need to find out if state_mainSkill is supposed to change when you're a job)
             //then equip the ability in charawork.commands and save in databse, otherwise just save in database
             if (classId == GetCurrentClassOrJob())
@@ -2613,7 +2626,7 @@ namespace Meteor.Map.Actors
             }
 
 
-            if(printMessage)
+            if (printMessage)
                 SendGameMessage(Server.GetWorldManager().GetActor(), 30603, 0x20, 0, commandId);
         }
 
@@ -2624,7 +2637,7 @@ namespace Meteor.Map.Actors
             //0 indexed hotbar slots for saving to database and recast timers
             uint lowHotbarSlot1 = (ushort)(hotbarSlot1 - charaWork.commandBorder);
             uint lowHotbarSlot2 = (ushort)(hotbarSlot2 - charaWork.commandBorder);
-            
+
             //Store information about first command
             uint commandId = charaWork.command[hotbarSlot1];
             uint recastEnd = charaWork.parameterSave.commandSlot_recastTime[lowHotbarSlot1];
@@ -2654,7 +2667,7 @@ namespace Meteor.Map.Actors
         {
             ushort trueHotbarSlot = (ushort)(hotbarSlot + charaWork.commandBorder - 1);
             uint commandId = charaWork.command[trueHotbarSlot];
-            Database.UnequipAbility(this,  hotbarSlot);
+            Database.UnequipAbility(this, hotbarSlot);
             charaWork.command[trueHotbarSlot] = 0;
             hotbarSlotsToUpdate.Add(trueHotbarSlot);
 
@@ -2668,7 +2681,7 @@ namespace Meteor.Map.Actors
         //If the returned value is outside the hotbar, it indicates it wasn't found.
         public ushort FindFirstCommandSlotById(uint commandId)
         {
-            if(commandId != 0)
+            if (commandId != 0)
                 commandId |= 0xA0F00000;
 
             ushort firstSlot = (ushort)(charaWork.commandBorder + 30);
@@ -2684,7 +2697,7 @@ namespace Meteor.Map.Actors
 
             return firstSlot;
         }
-        
+
         private void UpdateHotbarTimer(uint commandId, uint recastTimeMs)
         {
             ushort slot = FindFirstCommandSlotById(commandId);
@@ -2962,44 +2975,44 @@ namespace Meteor.Map.Actors
         public List<CommandResult> AddExp(int exp, byte classId, byte bonusPercent = 0)
         {
             List<CommandResult> actionList = new List<CommandResult>();
-            exp += (int) Math.Ceiling((exp * bonusPercent / 100.0f));
+            exp += (int)Math.Ceiling((exp * bonusPercent / 100.0f));
 
             //You earn [exp] (+[bonusPercent]%) experience points.
             //In non-english languages there are unique messages for each language, hence the use of ClassExperienceTextIds
             actionList.Add(new CommandResult(Id, BattleUtils.ClassExperienceTextIds[classId], 0, (ushort)exp, bonusPercent));
 
             bool leveled = false;
-            int diff = MAXEXP[GetLevel() - 1] - charaWork.battleSave.skillPoint[classId - 1];            
+            // classId may not be the current class.
+            Func<short> classLevel = () => (short)Math.Max((short)1, charaWork.battleSave.skillLevel[classId - 1]);
+            int diff = MAXEXP[classLevel() - 1] - charaWork.battleSave.skillPoint[classId - 1];
             //While there is enough experience to level up, keep leveling up, unlocking skills and removing experience from exp until we don't have enough to level up
-            while (exp >= diff && GetLevel() < charaWork.battleSave.skillLevelCap[classId])
+            while (exp >= diff && classLevel() < charaWork.battleSave.skillLevelCap[classId])
             {
-                //Level up
                 LevelUp(classId, actionList);
                 leveled = true;
-                //Reduce exp based on how much exp is needed to level
                 exp -= diff;
-                diff = MAXEXP[GetLevel() - 1];
+                diff = MAXEXP[classLevel() - 1];
             }
 
-            if(leveled)
+            if (leveled)
             {
                 //Set exp to current class to 0 so that exp is added correctly
                 charaWork.battleSave.skillPoint[classId - 1] = 0;
                 //send new level
                 ActorPropertyPacketUtil levelPropertyPacket = new ActorPropertyPacketUtil("charaWork/stateForAll", this);
-                levelPropertyPacket.AddProperty(String.Format("charaWork.battleSave.skillLevel[{0}]", classId - 1));
+                levelPropertyPacket.AddProperty(string.Format("charaWork.battleSave.skillLevel[{0}]", classId - 1));
                 levelPropertyPacket.AddProperty("charaWork.parameterSave.state_mainSkillLevel");
                 QueuePackets(levelPropertyPacket.Done());
 
-                Database.SetLevel(this, classId, GetLevel());
+                Database.SetLevel(this, classId, classLevel());
                 Database.SavePlayerCurrentClass(this);
             }
             //Cap experience for level 50
-            charaWork.battleSave.skillPoint[classId - 1] = Math.Min(charaWork.battleSave.skillPoint[classId - 1] + exp, MAXEXP[GetLevel() - 1]);
+            charaWork.battleSave.skillPoint[classId - 1] = Math.Min(charaWork.battleSave.skillPoint[classId - 1] + exp, MAXEXP[classLevel() - 1]);
 
             ActorPropertyPacketUtil expPropertyPacket = new ActorPropertyPacketUtil("charaWork/battleStateForSelf", this);
-            expPropertyPacket.AddProperty(String.Format("charaWork.battleSave.skillPoint[{0}]", classId - 1));
-            
+            expPropertyPacket.AddProperty(string.Format("charaWork.battleSave.skillPoint[{0}]", classId - 1));
+
             QueuePackets(expPropertyPacket.Done());
             Database.SetExp(this, classId, charaWork.battleSave.skillPoint[classId - 1]);
 
@@ -3034,22 +3047,85 @@ namespace Meteor.Map.Actors
             {
                 //Increase level
                 charaWork.battleSave.skillLevel[classId - 1]++;
-                charaWork.parameterSave.state_mainSkillLevel++;
+                if (classId == GetClass())
+                    charaWork.parameterSave.state_mainSkillLevel = charaWork.battleSave.skillLevel[classId - 1];
 
                 //33909: You attain level [level].
                 if (actionList != null)
-                    actionList.Add(new CommandResult(Id, 33909, 0, (ushort)charaWork.battleSave.skillLevel[classId - 1]));
+                    actionList.Add(new CommandResult(Id, 33909, 0, (ushort)charaWork.battleSave.skillLevel[classId - 1], classId));
 
-                EquipAbilitiesAtLevel(classId, GetLevel(), actionList);
+                EquipAbilitiesAtLevel(classId, charaWork.battleSave.skillLevel[classId - 1], actionList);
                 questStateManager.UpdateLevel(GetHighestLevel());
+                if (classId == GetClass())
+                {
+                    CalculateBaseStats();
+                    if (IsAlive())
+                    {
+                        SetHP((uint)GetMaxHP());
+                        SetMP((uint)GetMaxMP());
+                    }
+                }
             }
         }
-        
+
+        // Lowering a level doesn't unlearn actions.
+        public List<CommandResult> SetClassLevel(byte classId, short level)
+        {
+            List<CommandResult> actionList = new List<CommandResult>();
+            if (classId < 1 || classId > charaWork.battleSave.skillLevel.Length)
+                return actionList;
+            short cap = charaWork.battleSave.skillLevelCap[classId];
+            level = Math.Max((short)1, Math.Min(level, cap));
+            bool current = classId == GetClass();
+
+            if (level > charaWork.battleSave.skillLevel[classId - 1])
+            {
+                while (charaWork.battleSave.skillLevel[classId - 1] < level)
+                {
+                    short before = charaWork.battleSave.skillLevel[classId - 1];
+                    LevelUp(classId, actionList);
+                    if (charaWork.battleSave.skillLevel[classId - 1] == before)
+                        break;
+                }
+            }
+            else if (level < charaWork.battleSave.skillLevel[classId - 1])
+            {
+                charaWork.battleSave.skillLevel[classId - 1] = level;
+                questStateManager.UpdateLevel(GetHighestLevel());
+                if (current)
+                {
+                    charaWork.parameterSave.state_mainSkillLevel = level;
+                    CalculateBaseStats();
+                    if (IsAlive())
+                    {
+                        SetHP((uint)Math.Min(GetHP(), GetMaxHP()));
+                        SetMP((uint)Math.Min(GetMP(), GetMaxMP()));
+                    }
+                }
+            }
+
+            charaWork.battleSave.skillPoint[classId - 1] = 0;
+
+            ActorPropertyPacketUtil levelPropertyPacket = new ActorPropertyPacketUtil("charaWork/stateForAll", this);
+            levelPropertyPacket.AddProperty(string.Format("charaWork.battleSave.skillLevel[{0}]", classId - 1));
+            levelPropertyPacket.AddProperty("charaWork.parameterSave.state_mainSkillLevel");
+            QueuePackets(levelPropertyPacket.Done());
+            ActorPropertyPacketUtil expPropertyPacket = new ActorPropertyPacketUtil("charaWork/battleStateForSelf", this);
+            expPropertyPacket.AddProperty(string.Format("charaWork.battleSave.skillPoint[{0}]", classId - 1));
+            QueuePackets(expPropertyPacket.Done());
+
+            Database.SetLevel(this, classId, level);
+            Database.SetExp(this, classId, 0);
+            if (current)
+                Database.SavePlayerCurrentClass(this);
+            return actionList;
+        }
+
         public static byte ConvertClassIdToJobId(byte classId)
         {
             byte jobId = classId;
 
-            switch(classId)
+            switch (classId)
             {
                 case CLASSID_PUG:
                 case CLASSID_GLA:
@@ -3081,21 +3157,21 @@ namespace Meteor.Map.Actors
         public byte GetCurrentClassOrJob()
         {
             if (currentJob != 0)
-                return (byte) currentJob;
+                return (byte)currentJob;
             return charaWork.parameterSave.state_mainSkill[0];
         }
 
         public void hpstuff(uint hp)
         {
             SetMaxHP(hp);
-            SetHP(hp);            
+            SetHP(hp);
             mpMaxBase = (ushort)hp;
             charaWork.parameterSave.mpMax = (short)hp;
             charaWork.parameterSave.mp = (short)hp;
             AddTP(3000);
             updateFlags |= ActorUpdateFlags.HpTpMp;
         }
-        
+
         public void SetCombos(int comboId1 = 0, int comboId2 = 0)
         {
             SetCombos(new int[] { comboId1, comboId2 });
@@ -3108,7 +3184,7 @@ namespace Meteor.Map.Actors
             //If we're starting or continuing a combo chain, add the status effect and combo cost bonus
             if (comboIds[0] != 0)
             {
-                StatusEffect comboEffect = new StatusEffect(this, Server.GetWorldManager().GetStatusEffect((uint) StatusEffectId.Combo));
+                StatusEffect comboEffect = new StatusEffect(this, Server.GetWorldManager().GetStatusEffect((uint)StatusEffectId.Combo));
                 comboEffect.SetDuration(13);
                 comboEffect.SetOverwritable(1);
                 statusEffects.AddStatusEffect(comboEffect, this);
@@ -3117,7 +3193,7 @@ namespace Meteor.Map.Actors
             //Otherwise we're ending a combo, remove the status
             else
             {
-                statusEffects.RemoveStatusEffect(statusEffects.GetStatusEffectById((uint) StatusEffectId.Combo));
+                statusEffects.RemoveStatusEffect(statusEffects.GetStatusEffectById((uint)StatusEffectId.Combo));
                 playerWork.comboCostBonusRate = 0;
             }
 
@@ -3128,12 +3204,74 @@ namespace Meteor.Map.Actors
             QueuePackets(comboPropertyPacket.Done());
         }
 
+        private int weaponBaseDelay = 0;
+        private int weaponBaseHits = 0;
+
+        // Statuses like Haste also change Delay and HitCount. Overwriting them here would let a status
+        // undo itself twice when it wears off, so while any status is up only the weapon's change is
+        // applied.
+        private void RebaseWeaponMods(int delay, int hits)
+        {
+            bool hasEffects = false;
+            if (statusEffects != null)
+                foreach (var effect in statusEffects.GetStatusEffects())
+                {
+                    hasEffects = true;
+                    break;
+                }
+
+            if (!hasEffects || weaponBaseDelay <= 0)
+                SetMod((uint)Modifier.Delay, delay);
+            else if (delay != weaponBaseDelay)
+                SetMod((uint)Modifier.Delay, (long)Math.Round(GetMod(Modifier.Delay) * delay / (double)weaponBaseDelay));
+
+            if (!hasEffects || weaponBaseHits <= 0)
+                SetMod((uint)Modifier.HitCount, hits);
+            else if (hits != weaponBaseHits)
+                SetMod((uint)Modifier.HitCount, Math.Max(1, (long)GetMod(Modifier.HitCount) + hits - weaponBaseHits));
+
+            weaponBaseDelay = delay;
+            weaponBaseHits = hits;
+        }
+
+        // The client's CharaBaseClass calcPotencial. The client only checks it is positive (not an NM).
+        private static readonly int[] POTENCIAL_LEVELS = { 98, 93, 88, 83, 78, 73, 68, 63, 58, 53, 48, 43, 38, 33, 28, 23, 18, 13, 9, 5, 1 };
+        private static readonly float[] POTENCIAL_VALUES = { 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
+
+        public static float CalcPotencial(int level)
+        {
+            for (int i = 0; i < POTENCIAL_LEVELS.Length; i++)
+            {
+                if (POTENCIAL_LEVELS[i] > level)
+                    continue;
+                if (i == 0 || level == POTENCIAL_LEVELS[i])
+                    return POTENCIAL_VALUES[i];
+                float t = (level - POTENCIAL_LEVELS[i]) / (float)(POTENCIAL_LEVELS[i - 1] - POTENCIAL_LEVELS[i]);
+                return POTENCIAL_VALUES[i] + (POTENCIAL_VALUES[i - 1] - POTENCIAL_VALUES[i]) * t;
+            }
+            return 1.0f;
+        }
+
+        // 0% condition gives no stats. Items without durability on their sheet never break.
+        public static bool IsGearBroken(InventoryItem item)
+        {
+            if (item == null || item.modifiers == null || item.modifiers.durability != 0)
+                return false;
+            ItemData data = Server.GetItemGamedata(item.itemId);
+            return data != null && data.durability > 0;
+        }
+
+        public bool IsEquippedGearBroken(ushort slot)
+        {
+            return IsGearBroken(GetEquipment()?.GetItemAtSlot(slot));
+        }
+
         public override void CalculateBaseStats()
         {
-            base.CalculateBaseStats();
-            //Add weapon property mod
+            charaWork.battleSave.potencial = CalcPotencial(GetLevel());
+
             var equip = GetEquipment();
-            var mainHandItem = equip.GetItemAtSlot(SLOT_MAINHAND);
+            var mainHandItem = equip?.GetItemAtSlot(SLOT_MAINHAND);
             var damageAttribute = 0;
             var attackDelay = 3000;
             var hitCount = 1;
@@ -3141,37 +3279,48 @@ namespace Meteor.Map.Actors
             if (mainHandItem != null)
             {
                 var mainHandWeapon = (Server.GetItemGamedata(mainHandItem.itemId) as WeaponItem);
-                damageAttribute = mainHandWeapon.damageAttributeType1;
-                attackDelay = (int) (mainHandWeapon.damageInterval * 1000);
-                hitCount = mainHandWeapon.frequency;
+                if (mainHandWeapon != null)
+                {
+                    damageAttribute = mainHandWeapon.damageAttributeType1;
+                    attackDelay = (int)(mainHandWeapon.damageInterval * 1000);
+                    hitCount = Math.Max(1, (int)mainHandWeapon.frequency);
+                }
             }
 
-            var hasShield = equip.GetItemAtSlot(SLOT_OFFHAND) != null ? 1 : 0;
-            SetMod((uint)Modifier.CanBlock, hasShield);
+            var offHandItem = equip?.GetItemAtSlot(SLOT_OFFHAND);
+            SetMod((uint)Modifier.CanBlock, offHandItem != null && !IsGearBroken(offHandItem) ? 1 : 0);
 
             SetMod((uint)Modifier.AttackType, damageAttribute);
-            SetMod((uint)Modifier.Delay, attackDelay);
-            SetMod((uint)Modifier.HitCount, hitCount);
+            RebaseWeaponMods(attackDelay > 0 ? attackDelay : 3000, hitCount);
 
-            //These stats all correlate in a 3:2 fashion
-            //It seems these stats don't actually increase their respective stats. The magic stats do, however
-            AddMod((uint)Modifier.Attack, (long)(GetMod(Modifier.Strength) * 0.667));
-            AddMod((uint)Modifier.Accuracy, (long)(GetMod(Modifier.Dexterity) * 0.667));
-            AddMod((uint)Modifier.Defense, (long)(GetMod(Modifier.Vitality) * 0.667));
-
-            //These stats correlate in a 4:1 fashion. (Unsure if MND is accurate but it would make sense for it to be)
-            AddMod((uint)Modifier.AttackMagicPotency, (long)((float)GetMod(Modifier.Intelligence) * 0.25));
-
-            AddMod((uint)Modifier.MagicAccuracy, (long)((float)GetMod(Modifier.Mind) * 0.25));
-            AddMod((uint)Modifier.HealingMagicPotency, (long)((float)GetMod(Modifier.Mind) * 0.25));
-
-            AddMod((uint)Modifier.MagicEvasion, (long)((float)GetMod(Modifier.Piety) * 0.25));
-            AddMod((uint)Modifier.EnfeeblingMagicPotency, (long)((float)GetMod(Modifier.Piety) * 0.25));
-
-            //VIT correlates to HP in a 1:1 fashion
-            AddMod((uint)Modifier.Hp, (long)((float)Modifier.Vitality));
+            // player.lua's onCalculateBaseStats sets the level, class and gear stats.
+            if (!LuaEngine.CallLuaBattleFunction(this, "onCalculateBaseStats", this))
+            {
+                SetBaseStat((uint)Modifier.Attack, (long)(GetMod(Modifier.Strength) * 0.667));
+                SetBaseStat((uint)Modifier.Accuracy, (long)(GetMod(Modifier.Dexterity) * 0.667));
+                SetBaseStat((uint)Modifier.Defense, (long)(GetMod(Modifier.Vitality) * 0.667));
+                SetBaseStat((uint)Modifier.AttackMagicPotency, (long)(GetMod(Modifier.Intelligence) * 0.25));
+                SetBaseStat((uint)Modifier.MagicAccuracy, (long)(GetMod(Modifier.Mind) * 0.25));
+                SetBaseStat((uint)Modifier.HealingMagicPotency, (long)(GetMod(Modifier.Mind) * 0.25));
+                SetBaseStat((uint)Modifier.MagicEvasion, (long)(GetMod(Modifier.Piety) * 0.25));
+                SetBaseStat((uint)Modifier.EnfeeblingMagicPotency, (long)(GetMod(Modifier.Piety) * 0.25));
+            }
 
             CalculateTraitMods();
+
+            uint hpMax = (uint)GetMod(Modifier.Hp);
+            if (hpMax > 0)
+                charaWork.parameterSave.hpMax[0] = (short)Math.Min(hpMax, (uint)short.MaxValue);
+            uint mpMax = (uint)GetMod(Modifier.Mp);
+            if (mpMax > 0)
+                charaWork.parameterSave.mpMax = (short)Math.Min(mpMax, (uint)short.MaxValue);
+
+            if (charaWork.parameterSave.hp[0] > charaWork.parameterSave.hpMax[0])
+                charaWork.parameterSave.hp[0] = charaWork.parameterSave.hpMax[0];
+            if (charaWork.parameterSave.mp > charaWork.parameterSave.mpMax)
+                charaWork.parameterSave.mp = charaWork.parameterSave.mpMax;
+
+            updateFlags |= ActorUpdateFlags.HpTpMp | ActorUpdateFlags.Stats;
         }
 
         public bool HasTrait(ushort id)
@@ -3186,18 +3335,220 @@ namespace Meteor.Map.Actors
             return (trait != null) && (trait.job == GetClass()) && (trait.level <= GetLevel());
         }
 
+        #region Attribute (bonus) points
+        // Jobs use their base class's points. Keep the rules in step with battle/stats.lua.
+        private Dictionary<byte, int[]> bonusAllotments = new Dictionary<byte, int[]>();
+
+        // MNK PGL, PLD GLA, WAR MRD, BRD ARC, DRG LNC, BLM THM, WHM CNJ.
+        private static readonly Dictionary<byte, byte> JOB_BASE_CLASS = new Dictionary<byte, byte>
+        {
+            { 15, 2 }, { 16, 3 }, { 17, 4 }, { 18, 7 }, { 19, 8 }, { 26, 22 }, { 27, 23 },
+        };
+
+        public static int BonusPointTotal(int level)
+        {
+            return level < 10 ? 0 : 5 + (level - 10);
+        }
+
+        public static int BonusPointCap(int level)
+        {
+            return level < 10 ? 0 : 3 + (level - 10) / 2;
+        }
+
+        public bool HasBonusAllotment(byte classId)
+        {
+            return bonusAllotments.ContainsKey(classId);
+        }
+
+        // attribute: 0 STR, 1 VIT, 2 DEX, 3 INT, 4 MND, 5 PIE.
+        public int GetBonusPoint(byte classId, int attribute)
+        {
+            int[] points;
+            if (attribute < 0 || attribute > 5 || !bonusAllotments.TryGetValue(classId, out points))
+                return 0;
+            return points[attribute];
+        }
+
+        // The client's widget only adds points, so a lowered attribute is a forged request. Points come
+        // back only through the Keeper's Hymn.
+        public bool SetBonusAllotment(byte classId, int level, int str, int vit, int dex, int intel, int mnd, int pie)
+        {
+            int[] points = { str, vit, dex, intel, mnd, pie };
+            int[] old;
+            bonusAllotments.TryGetValue(classId, out old);
+            int cap = BonusPointCap(level), sum = 0;
+            for (int i = 0; i < points.Length; i++)
+            {
+                int p = points[i];
+                if (p < 0 || p > cap || (old != null && p < old[i]))
+                    return false;
+                sum += p;
+            }
+            if (sum > BonusPointTotal(level))
+                return false;
+            bonusAllotments[classId] = points;
+            Database.SaveBonusAllotment(this, classId, points);
+            CalculateBaseStats();
+            UpdateRemainBonusPoint();
+            return true;
+        }
+
+        public void UpdateRemainBonusPoint(bool send = true)
+        {
+            byte classId = (byte)GetClass();
+            byte baseClass;
+            if (JOB_BASE_CLASS.TryGetValue(classId, out baseClass))
+                classId = baseClass;
+            int total = BonusPointTotal(GetLevel());
+            int spent = 0;
+            int[] points;
+            if (bonusAllotments.TryGetValue(classId, out points))
+                foreach (int p in points)
+                    spent += p;
+            bool remain = total - spent > 0;
+            if (remain == playerWork.isRemainBonusPoint)
+                return;
+            playerWork.isRemainBonusPoint = remain;
+            if (send && playerSession != null)
+            {
+                var util = new ActorPropertyPacketUtil("playerWork/consoleTray", this);
+                util.AddProperty("playerWork.isRemainBonusPoint");
+                QueuePackets(util.Done());
+            }
+        }
+        #endregion
+
+        #region Rested bonus
+        public int restBonusPool;
+
+        // Guesses: 1.x only said the pool fills "up to a maximum".
+        public const double REST_POOL_CAP_LEVELS = 1.5;
+        public const double REST_POOL_FILL_HOURS = 24.0;
+        private const double REST_ACCRUE_CHECK_SECONDS = 1.0;
+
+        public uint restInnLogoutTime;
+        private DateTime nextInnRestCheck = DateTime.MinValue;
+        private DateTime lastRestAccrue = DateTime.MinValue;
+        private double restAccrueRemainder = 0;
+
+        public bool HasRestedBonus()
+        {
+            return restBonusPool > 0;
+        }
+
+        public float GetRestBonusExpRate()
+        {
+            return restBonusPool > 0 ? 1.5f : 0.0f;
+        }
+
+        public void ConsumeRestedBonus(int expEarned)
+        {
+            if (restBonusPool <= 0 || expEarned <= 0 || GetLevel() >= 50)
+                return;
+            SetRestedBonusPool(Math.Max(0, restBonusPool - expEarned));
+        }
+
+        public int GetRestedBonusCap()
+        {
+            int level = Math.Max(1, Math.Min((int)GetLevel(), MAXEXP.Length));
+            return (int)(MAXEXP[level - 1] * REST_POOL_CAP_LEVELS);
+        }
+
+        public void AccrueRestedHours(double hours)
+        {
+            if (hours <= 0)
+                return;
+            int cap = GetRestedBonusCap();
+            if (restBonusPool >= cap)
+                return;
+            double gain = cap / REST_POOL_FILL_HOURS * hours + restAccrueRemainder;
+            int whole = (int)Math.Floor(gain);
+            restAccrueRemainder = gain - whole;
+            if (whole > 0)
+                SetRestedBonusPool(Math.Min(cap, restBonusPool + whole));
+        }
+
+        public void AccrueRestedOffline()
+        {
+            if (restInnLogoutTime == 0)
+                return;
+            uint now = Utils.UnixTimeStampUTC();
+            if (now > restInnLogoutTime)
+                AccrueRestedHours((now - restInnLogoutTime) / 3600.0);
+            restInnLogoutTime = 0;
+            Database.SetRestInnLogoutTime(this, 0);
+        }
+
+        private void UpdateInnResting(DateTime tick)
+        {
+            if (tick < nextInnRestCheck)
+                return;
+            nextInnRestCheck = tick.AddSeconds(REST_ACCRUE_CHECK_SECONDS);
+            if (CurrentArea == null || IsZoneing || playerSession == null || playerSession.isUpdatesLocked || statusEffects == null)
+                return;
+
+            bool inInn = CurrentArea.isInn && IsAlive();
+            StatusEffect resting = statusEffects.GetStatusEffectById((uint)StatusEffectId.Resting);
+            CommandResultContainer results = new CommandResultContainer();
+            bool changed = false;
+            if (inInn && resting == null)
+            {
+                StatusEffect effect = Server.GetWorldManager().GetStatusEffect((uint)StatusEffectId.Resting);
+                if (effect != null)
+                {
+                    effect.SetDuration(UInt32.MaxValue);
+                    changed = statusEffects.AddStatusEffect(effect, this, results, effect.GetStatusGainTextId());
+                }
+                lastRestAccrue = tick;
+            }
+            else if (!inInn && resting != null)
+                changed = statusEffects.RemoveStatusEffect(resting, results, resting.GetStatusLossTextId(), false);
+            else if (resting != null)
+            {
+                if (lastRestAccrue != DateTime.MinValue)
+                    AccrueRestedHours((tick - lastRestAccrue).TotalHours);
+                lastRestAccrue = tick;
+            }
+
+            if (changed)
+            {
+                results.CombineLists();
+                DoBattleAction(0, 0x7c000062, results.GetList());
+            }
+        }
+
+        public void SetRestedBonusPool(int pool)
+        {
+            pool = Math.Max(0, pool);
+            bool rateChanged = (pool > 0) != (restBonusPool > 0);
+            restBonusPool = pool;
+            Database.SetRestBonus(this, pool);
+            if (rateChanged)
+            {
+                playerWork.restBonusExpRate = GetRestBonusExpRate();
+                var propertyBuilder = new ActorPropertyPacketUtil("playerWork/expBonus", this);
+                propertyBuilder.AddProperty("playerWork.restBonusExpRate");
+                QueuePackets(propertyBuilder.Done());
+            }
+        }
+        #endregion
+
         public void CalculateTraitMods()
         {
-            var traitIds = Server.GetWorldManager().GetAllBattleTraitIdsForClass((byte) GetClass());
+            var traitIds = Server.GetWorldManager().GetAllBattleTraitIdsForClass((byte)GetClass());
 
-            foreach(var traitId in traitIds)
+            var traitMods = new Dictionary<uint, double>();
+            foreach (var traitId in traitIds)
             {
                 var trait = Server.GetWorldManager().GetBattleTrait(traitId);
-                if(HasTrait(trait))
+                if (HasTrait(trait))
                 {
-                    AddMod(trait.modifier, trait.bonus);
+                    double current;
+                    traitMods.TryGetValue(trait.modifier, out current);
+                    traitMods[trait.modifier] = current + trait.bonus;
                 }
             }
+            ReplaceStatLayer("trait", traitMods);
         }
 
         public bool HasItemEquippedInSlot(uint itemId, ushort slot)
@@ -3214,7 +3565,7 @@ namespace Meteor.Map.Actors
 
         public void StartTradeTransaction(Player otherPlayer)
         {
-            myOfferings = new ReferencedItemPackage(this, ItemPackage.MAXSIZE_TRADE, ItemPackage.TRADE);            
+            myOfferings = new ReferencedItemPackage(this, ItemPackage.MAXSIZE_TRADE, ItemPackage.TRADE);
             otherTrader = otherPlayer;
             isTradeAccepted = false;
         }
@@ -3238,20 +3589,20 @@ namespace Meteor.Map.Actors
         {
             return isTradeAccepted;
         }
-        
+
         public void AddTradeItem(ushort slot, ItemRefParam chosenItem, int tradeQuantity)
         {
             if (!IsTrading())
                 return;
-            
+
             //Get chosen item
             InventoryItem offeredItem = itemPackages[chosenItem.itemPackage].GetItemAtSlot(chosenItem.slot);
             offeredItem.SetTradeQuantity(tradeQuantity);
-            
+
             myOfferings.Set(slot, offeredItem);
             SendTradePackets();
         }
-        
+
         public void RemoveTradeItem(ushort slot)
         {
             if (!IsTrading())
@@ -3297,7 +3648,7 @@ namespace Meteor.Map.Actors
         {
             if (!IsTrading())
                 return;
-            isTradeAccepted = accepted;            
+            isTradeAccepted = accepted;
         }
 
         public void FinishTradeTransaction()
@@ -3321,6 +3672,6 @@ namespace Meteor.Map.Actors
             myOfferings = null;
             otherTrader = null;
         }
-        
+
     }
 }

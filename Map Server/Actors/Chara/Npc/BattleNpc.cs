@@ -108,6 +108,12 @@ namespace Meteor.Map.Actors
             CalculateBaseStats();
         }
 
+        public override void CalculateBaseStats()
+        {
+            lua.LuaEngine.CallLuaScriptFileFunction(ConfigConstants.OPTIONS_SCRIPTPATH + lua.LuaEngine.FILEPATH_BATTLENPC_STATS, "onCalculateBaseStats", this);
+            base.CalculateBaseStats();
+        }
+
         public override List<SubPacket> GetSpawnPackets(Player player, ushort spawnType)
         {
             List<SubPacket> subpackets = new List<SubPacket>();
@@ -295,17 +301,23 @@ namespace Meteor.Map.Actors
                             var partyMember = CurrentArea.FindActorInArea<Character>(memberId);
                             // onDeath(monster, player, killer)
                             lua.LuaEngine.CallLuaBattleFunction(this, "onDeath", this, partyMember, lastAttacker);
-
-                            // todo: add actual experience calculation and exp bonus values.
-                            if (partyMember is Player)
-                                BattleUtils.AddBattleBonusEXP((Player)partyMember, this, actionContainer);
                         }
                     }
                     else
                     {
                         // onDeath(monster, player, killer)
                         lua.LuaEngine.CallLuaBattleFunction(this, "onDeath", this, lastAttacker, lastAttacker);
-                        //((Player)lastAttacker).QueuePacket(BattleActionX01Packet.BuildPacket(lastAttacker.actorId, 0, 0, new BattleAction(actorId, 30108, 0)));
+                    }
+
+                    List<Player> expMembers = BattleUtils.GetExpEligibleMembers((Player)lastAttacker, this);
+                    foreach (Player member in expMembers)
+                        BattleUtils.AddBattleBonusEXP(member, this, actionContainer, expMembers.Count);
+
+                    HashSet<Player> credited = new HashSet<Player>(expMembers) { (Player)lastAttacker };
+                    foreach (Player member in credited)
+                    {
+                        try { member.HandleBNpcKill(GetActorClassId()); }
+                        catch (Exception e) { Program.Log.Error("Quest kill hook failed: {0}", e); }
                     }
                 }
 

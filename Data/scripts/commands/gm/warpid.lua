@@ -23,13 +23,13 @@ function onTrigger(player, argc, uID)
         local actorPos = actor:GetPos();
         local playerPos = player:GetPos();
 
-        if actorPos[5] == playerPos[5] then
-            worldManager:DoPlayerMoveInZone(player, actorPos[1], actorPos[2], actorPos[3], actorPos[4], 0x00);
+        if actorPos[4] == playerPos[4] then
+            worldManager:DoPlayerMoveInZone(player, actorPos[0], actorPos[1], actorPos[2], actorPos[3], 0x00);
         else
-            worldManager:DoZoneChange(player, actorPos[5], nil, 0, 0x02, actorPos[1], actorPos[2], actorPos[3], actorPos[4]);  
+            worldManager:DoZoneChange(player, actorPos[4], nil, 0, 0x02, actorPos[0], actorPos[1], actorPos[2], actorPos[3]);  
         end
         
-        message =  string.format("Moving to %s 's coordinates @ zone %s, %.3f %.3f %.3f ", uID, actorPos[5], actorPos[1], actorPos[2], actorPos[3]);
+        message =  string.format("Moving to %s 's coordinates @ zone %s, %.3f %.3f %.3f ", uID, actorPos[4], actorPos[0], actorPos[1], actorPos[2]);
 	end	;
 
     player:SendMessage(messageID, sender, message);
