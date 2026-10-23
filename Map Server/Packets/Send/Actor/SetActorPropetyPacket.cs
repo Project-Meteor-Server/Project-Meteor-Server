@@ -232,7 +232,6 @@ namespace Meteor.Map.packets.send.actor
             isMore = flag;
         }
 
-        // Bytes still free in this packet's property area.
         public int RemainingBytes()
         {
             return MAXBYTES - runningByteTotal;

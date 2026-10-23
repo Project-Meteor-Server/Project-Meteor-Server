@@ -25,10 +25,7 @@ using MySql.Data.MySqlClient;
 
 namespace Meteor.Map.DataObjects
 {
-    /// <summary>
-    /// One materia type from gamedata_items_materia: up to two bonuses, each with a value per grade
-    /// 0-15. Grades 0-3 come from the tier I item, 4-7 tier II, 8-11 tier III, 12-15 tier IV.
-    /// </summary>
+    // Grades 0-3 are the tier I materia, 4-7 tier II, 8-11 tier III, 12-15 tier IV.
     class MateriaData
     {
         public const int GRADE_COUNT = 16;
@@ -51,7 +48,6 @@ namespace Meteor.Map.DataObjects
             }
         }
 
-        /// <summary>Bonus 1 or 2 at a grade; 0 when the grade is out of range.</summary>
         public int GetBonusValue(int bonus, int grade)
         {
             if (grade < 0 || grade >= GRADE_COUNT)

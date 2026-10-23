@@ -131,6 +131,11 @@ namespace Meteor.Map.actors.chara.ai.utils
                                         270, 280, 290, 300, 310, 320, 330, 340, 350, 360,   //Level <= 40
                                         370, 380, 380, 390, 400, 410, 420, 430, 430, 440};  //Level <= 50
 
+        public const float EXP_RANGE = 50.0f;
+        public const int EXP_LEVEL_WINDOW = 10;
+        public const byte RESTED_BONUS = 50;
+        public const byte FOOD_EXP_BONUS = 3;
+
         public static bool TryAttack(Character attacker, Character defender, CommandResult action, ref CommandResult error)
         {
             // todo: get hit rate, hit count, set hit effect
@@ -192,7 +197,7 @@ namespace Meteor.Map.actors.chara.ai.utils
             action.amount = (ushort)(action.amount * damageTakenPercent).Clamp(0, 9999);
         }
 
-        
+
         public static void CalculateBlockDamage(Character attacker, Character defender, BattleCommand skill, CommandResult action)
         {
             double percentBlocked;
@@ -254,11 +259,11 @@ namespace Meteor.Map.actors.chara.ai.utils
         {
             var mitigation = Math.Min(action.amount, defender.GetMod(Modifier.Stoneskin));
 
-            action.amount = (ushort) (action.amount - mitigation).Clamp(0, 9999);
+            action.amount = (ushort)(action.amount - mitigation).Clamp(0, 9999);
             defender.SubtractMod((uint)Modifier.Stoneskin, mitigation);
         }
 
-        public static void DamageTarget(Character attacker, Character defender, BattleCommand skill, CommandResult action, CommandResultContainer actionContainer= null)
+        public static void DamageTarget(Character attacker, Character defender, BattleCommand skill, CommandResult action, CommandResultContainer actionContainer = null)
         {
             if (defender != null)
             {
@@ -320,7 +325,7 @@ namespace Meteor.Map.actors.chara.ai.utils
         public static double GetParryRate(Character attacker, Character defender, BattleCommand skill, CommandResult action)
         {
             //Can't parry with shield, can't parry rear attacks
-            if (defender.GetMod((uint)Modifier.CanBlock) != 0 || action.param == (byte) HitDirection.Rear)
+            if (defender.GetMod((uint)Modifier.CanBlock) != 0 || action.param == (byte)HitDirection.Rear)
                 return 0;
 
             double parryRate = 10.0;
@@ -334,7 +339,7 @@ namespace Meteor.Map.actors.chara.ai.utils
         {
             if (action.actionType == ActionType.Status)
                 return 0.0;
-            
+
             //using 10.0 for now since gear isn't working
             double critRate = 10.0;// 0.16 * attacker.GetMod((uint)Modifier.CritRating);//Crit rating adds .16% per point
 
@@ -387,7 +392,7 @@ namespace Meteor.Map.actors.chara.ai.utils
                 action.hitType = HitType.Crit;
                 CalculateCritDamage(attacker, defender, skill, action);
 
-                if(skill != null)
+                if (skill != null)
                     skill.actionCrit = true;
 
                 return true;
@@ -415,7 +420,7 @@ namespace Meteor.Map.actors.chara.ai.utils
 
             if (i != -1)
             {
-                action.hitType = (HitType) ((int) HitType.SingleResist + i);
+                action.hitType = (HitType)((int)HitType.SingleResist + i);
                 CalculateResistDamage(attacker, defender, skill, action);
                 return true;
             }
@@ -481,7 +486,7 @@ namespace Meteor.Map.actors.chara.ai.utils
                     FinishActionStatus(caster, target, skill, action, actionContainer);
                     break;
                 default:
-                    action.effectId = (uint) HitEffect.AnimationEffectType;
+                    action.effectId = (uint)HitEffect.AnimationEffectType;
                     actionContainer.AddAction(action);
                     break;
             }
@@ -501,7 +506,7 @@ namespace Meteor.Map.actors.chara.ai.utils
                 if (!TryCrit(attacker, defender, skill, action))
                     //Block and parry order don't really matter because if you can block you can't parry and vice versa
                     if (!TryBlock(attacker, defender, skill, action))
-                        if(!TryParry(attacker, defender, skill, action))
+                        if (!TryParry(attacker, defender, skill, action))
                             //Finally if it's none of these, the attack was a hit
                             action.hitType = HitType.Hit;
             }
@@ -529,7 +534,7 @@ namespace Meteor.Map.actors.chara.ai.utils
             CalculatePhysicalDamageTaken(attacker, defender, skill, action);
 
             actionContainer.AddAction(action);
-            action.enmity = (ushort) (action.enmity * (skill != null ? skill.enmityModifier : 1));
+            action.enmity = (ushort)(action.enmity * (skill != null ? skill.enmityModifier : 1));
 
             //Damage the target
             DamageTarget(attacker, defender, skill, action, actionContainer);
@@ -718,7 +723,7 @@ namespace Meteor.Map.actors.chara.ai.utils
                     {
                         //If we need an extra action to show the status text
                         if (isAdditional)
-                            results.AddAction(target.Id, effect.GetStatusGainTextId(), skill.statusId | (uint) HitEffect.StatusEffectType);
+                            results.AddAction(target.Id, effect.GetStatusGainTextId(), skill.statusId | (uint)HitEffect.StatusEffectType);
                     }
                     else
                         action.worldMasterTextId = 32002;//Is this right?
@@ -730,7 +735,7 @@ namespace Meteor.Map.actors.chara.ai.utils
                     {
                         //If we need an extra action to show the status text
                         if (isAdditional)
-                            results.AddAction(target.Id, 30328, skill.statusId | (uint) HitEffect.StatusEffectType);
+                            results.AddAction(target.Id, 30328, skill.statusId | (uint)HitEffect.StatusEffectType);
                     }
                     else
                         action.worldMasterTextId = 32002;//Is this right?
@@ -763,17 +768,6 @@ namespace Meteor.Map.actors.chara.ai.utils
         #region experience helpers
         //See 1.19 patch notes for exp info.
 
-        // Party members this close to the kill share its EXP. Retail's distance isn't known; this is
-        // the loot distance.
-        public const float EXP_RANGE = 50.0f;
-        // Members more than 10 levels below the party's highest get no EXP.
-        public const int EXP_LEVEL_WINDOW = 10;
-        public const byte RESTED_BONUS = 50;     // +50% while the rested pool lasts
-        public const byte FOOD_EXP_BONUS = 3;    // any food (Well Fed)
-
-        // Who gets EXP for a kill: the killer's party members who are alive, in the mob's area and
-        // within EXP_RANGE, and no more than EXP_LEVEL_WINDOW levels below the highest of them. A
-        // killer with no party gets it alone.
         public static List<Player> GetExpEligibleMembers(Player killer, BattleNpc mob)
         {
             List<Player> inRange = new List<Player>();
@@ -801,8 +795,6 @@ namespace Meteor.Map.actors.chara.ai.utils
             return Math.Sqrt(dx * dx + dz * dz);
         }
 
-        // EXP multiplier by party size: 0.75, 0.67 and 0.58 for 2, 3 and 4 members, the ratios of party
-        // to solo EXP in the 1.19 tables. Five or more aren't in the source; 0.5 is our choice.
         public static double GetPartyExpModifier(int memberCount)
         {
             switch (memberCount)
@@ -816,8 +808,7 @@ namespace Meteor.Map.actors.chara.ai.utils
             }
         }
 
-        // 1.19 capped the bonus for higher-level foes without saying by how much. From the 1.19 tables:
-        // 1.5x below level 10, 2x in the teens, 2.5x in the twenties, 3x from 30 (by the lower level).
+        // 1.19 capped the bonus for higher-level foes without giving the cap. These fit its EXP tables.
         public static double GetLevelDifferenceCap(int baseLevel)
         {
             if (baseLevel < 10) return 1.5;
@@ -828,9 +819,7 @@ namespace Meteor.Map.actors.chara.ai.utils
 
         public static ushort GetBaseEXP(Player player, BattleNpc mob, int partySize = 1)
         {
-            // Base EXP at the lower of the two levels, times a level-difference modifier (x(1 + 0.2 dlvl)
-            // above, x(1 + 0.1 dlvl + 0.0025 dlvl^2) below, nothing at dlvl <= -20), capped, times the
-            // party-size modifier. Some bosses and NMs don't follow this.
+            // Some bosses and NMs don't follow this.
             int dlvl = mob.GetLevel() - player.GetLevel();
             if (dlvl <= -20)
                 return 0;
@@ -930,11 +919,9 @@ namespace Meteor.Map.actors.chara.ai.utils
             return timeLimit;
         }
 
-        // One member's EXP for a kill, with every bonus shown as one "(+N%)": link, chain, rested, food
-        // and gear (Modifier.Exp). The bonuses add up.
-        public static void AddBattleBonusEXP(Player attacker, BattleNpc defender, CommandResultContainer actionContainer, int partySize = 1)
+        public static void AddBattleBonusEXP(Player player, BattleNpc defender, CommandResultContainer actionContainer, int partySize = 1)
         {
-            ushort baseExp = GetBaseEXP(attacker, defender, partySize);
+            ushort baseExp = GetBaseEXP(player, defender, partySize);
 
             //Only bother calculating the rest if there's actually exp to be gained.
             //0 exp sends no message
@@ -945,18 +932,17 @@ namespace Meteor.Map.actors.chara.ai.utils
                 var linkCount = defender.GetMobMod(MobModifier.LinkCount);
                 totalBonus += GetLinkBonus((byte)Math.Min(linkCount, 255));
 
-                // Chains only count foes of equal or higher level. A lower one neither continues nor
-                // breaks the chain.
-                if (defender.GetLevel() >= attacker.GetLevel())
+                // A lower-level foe neither continues nor breaks the chain.
+                if (defender.GetLevel() >= player.GetLevel())
                 {
-                    StatusEffect effect = attacker.statusEffects.GetStatusEffectById((uint)StatusEffectId.EXPChain);
+                    StatusEffect effect = player.statusEffects.GetStatusEffectById((uint)StatusEffectId.EXPChain);
                     ushort expChainNumber = 0;
                     uint timeLimit = 100;
                     if (effect != null)
                     {
                         expChainNumber = effect.GetTier();
                         timeLimit = (uint)(GetChainTimeLimit(expChainNumber));
-                        actionContainer?.AddEXPAction(new CommandResult(attacker.Id, 33919, 0, expChainNumber, (byte)timeLimit));
+                        actionContainer?.AddEXPAction(new CommandResult(player.Id, 33919, 0, expChainNumber, (byte)timeLimit));
                     }
 
                     totalBonus += GetChainBonus(expChainNumber);
@@ -964,21 +950,21 @@ namespace Meteor.Map.actors.chara.ai.utils
                     StatusEffect newChain = Server.GetWorldManager().GetStatusEffect((uint)StatusEffectId.EXPChain);
                     newChain.SetDuration(timeLimit);
                     newChain.SetTier((byte)(Math.Min(expChainNumber + 1, 255)));
-                    attacker.statusEffects.AddStatusEffect(newChain, attacker);
+                    player.statusEffects.AddStatusEffect(newChain, player);
                 }
 
-                bool rested = attacker.HasRestedBonus();
+                bool rested = player.HasRestedBonus();
                 if (rested)
                     totalBonus += RESTED_BONUS;
-                if (attacker.statusEffects.HasStatusEffect(StatusEffectId.WellFed))
+                if (player.statusEffects.HasStatusEffect(StatusEffectId.WellFed))
                     totalBonus += FOOD_EXP_BONUS;
-                totalBonus += Math.Max(0, (int)attacker.GetMod(Modifier.Exp));
+                totalBonus += Math.Max(0, (int)player.GetMod(Modifier.Exp));
 
                 byte bonusPercent = (byte)totalBonus.Min(255);
-                actionContainer?.AddEXPActions(attacker.AddExp(baseExp, (byte)attacker.GetClass(), bonusPercent));
+                actionContainer?.AddEXPActions(player.AddExp(baseExp, (byte)player.GetClass(), bonusPercent));
 
                 if (rested)
-                    attacker.ConsumeRestedBonus(baseExp + (int)Math.Ceiling(baseExp * bonusPercent / 100.0f));
+                    player.ConsumeRestedBonus(baseExp + (int)Math.Ceiling(baseExp * bonusPercent / 100.0f));
             }
         }
 

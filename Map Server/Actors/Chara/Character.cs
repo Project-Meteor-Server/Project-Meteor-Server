@@ -757,15 +757,13 @@ namespace Meteor.Map.Actors
             // todo: recalculate stats and crap
             updateFlags |= ActorUpdateFlags.HpTpMp;
 
-            // Only fill the hit count when nothing has set it, so recalculating after a level change
-            // doesn't undo a database or status value. Players take theirs from the weapon instead.
+            // Keep a hit count already set by the database, a status or the weapon.
             if (GetMod((uint)Modifier.HitCount) <= 0)
                 SetMod((uint)Modifier.HitCount, 1);
         }
 
-        // Stat layers. Each layer remembers what it last added to each modifier, so recalculating it
-        // (level up, class change, traits) replaces its share instead of adding on top. Equipment and
-        // status effects keep adding their own amounts around it.
+        // Each layer remembers what it last added to each modifier, so recalculating a layer replaces
+        // its share instead of stacking on top.
         private Dictionary<string, Dictionary<uint, double>> statLayers = new Dictionary<string, Dictionary<uint, double>>();
 
         public void SetStatLayer(string layer, uint modifier, double value)
@@ -781,7 +779,7 @@ namespace Meteor.Map.Actors
             mods[modifier] = value;
         }
 
-        // Replaces a whole layer: modifiers it no longer lists go back to 0.
+        // Modifiers missing from values go back to 0.
         public void ReplaceStatLayer(string layer, Dictionary<uint, double> values)
         {
             Dictionary<uint, double> mods;
@@ -804,7 +802,6 @@ namespace Meteor.Map.Actors
             return 0;
         }
 
-        // Called by the stats scripts for a character's own base values (level, class, tribe).
         public void SetBaseStat(uint modifier, double value)
         {
             SetStatLayer("base", modifier, value);

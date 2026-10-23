@@ -108,8 +108,6 @@ namespace Meteor.Map.Actors
             CalculateBaseStats();
         }
 
-        // battlenpc_stats.lua fills in what the database leaves out (HP and attributes by level),
-        // then the base class sets HP and MP from the result.
         public override void CalculateBaseStats()
         {
             lua.LuaEngine.CallLuaScriptFileFunction(ConfigConstants.OPTIONS_SCRIPTPATH + lua.LuaEngine.FILEPATH_BATTLENPC_STATS, "onCalculateBaseStats", this);
@@ -311,13 +309,10 @@ namespace Meteor.Map.Actors
                         lua.LuaEngine.CallLuaBattleFunction(this, "onDeath", this, lastAttacker, lastAttacker);
                     }
 
-                    // EXP goes to the party members close enough to share it, solo kills included,
-                    // each scaled by how many share it.
                     List<Player> expMembers = BattleUtils.GetExpEligibleMembers((Player)lastAttacker, this);
                     foreach (Player member in expMembers)
                         BattleUtils.AddBattleBonusEXP(member, this, actionContainer, expMembers.Count);
 
-                    // Quest kill objectives count for the same members, and always the killer.
                     HashSet<Player> credited = new HashSet<Player>(expMembers) { (Player)lastAttacker };
                     foreach (Player member in credited)
                     {

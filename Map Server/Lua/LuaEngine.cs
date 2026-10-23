@@ -207,8 +207,6 @@ namespace Meteor.Map.lua
         /// // todo: this is dumb, should probably make a function for each action with different default return values
         /// or just make generic function and pass default value as first arg after functionName
         /// </summary>
-        // Calls functionName in the actor's battle script if it defines it. Returns true when the
-        // function existed and ran without error.
         public static bool CallLuaBattleFunction(Character actor, string functionName, params object[] args)
         {
             // todo: should use "scripts/zones/ZONE_NAME/battlenpcs/NAME.lua" instead of scripts/unique
@@ -231,7 +229,7 @@ namespace Meteor.Map.lua
 
         public const string FILEPATH_BATTLENPC_STATS = "/battlenpc_stats.lua";
 
-        // Calls functionName in a script file if both exist. Returns true when it ran without error.
+        // True if the file and function exist and it ran without error.
         public static bool CallLuaScriptFileFunction(string path, string functionName, params object[] args)
         {
             if (!File.Exists(path))
@@ -242,8 +240,7 @@ namespace Meteor.Map.lua
             return script.Call(functionName, args) != null;
         }
 
-        // Like CallLuaScriptFileFunction, but returns the function's first result as a whole number, or
-        // defaultValue when the file or function is missing, it fails, or it doesn't return a number.
+        // defaultValue when the call fails or doesn't return a number.
         public static int CallLuaScriptFileFunctionForInt(string path, string functionName, int defaultValue, params object[] args)
         {
             if (!File.Exists(path))

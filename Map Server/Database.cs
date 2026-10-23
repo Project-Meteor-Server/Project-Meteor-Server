@@ -181,10 +181,7 @@ namespace Meteor.Map
             }
         }
 
-        /// <summary>
-        /// gamedata_compatibility (Data/sql/gamedata_compatibility.sql): compatibility key -> value per
-        /// class id (columns job1-job44; index = class id, 0 = cannot equip). Empty if the table is missing.
-        /// </summary>
+        // Values are indexed by class id; 0 means the class can't equip it.
         public static Dictionary<int, sbyte[]> GetItemCompatibilityGamedata()
         {
             var compatibility = new Dictionary<int, sbyte[]>();
@@ -217,7 +214,6 @@ namespace Meteor.Map
             return compatibility;
         }
 
-        /// <summary>gamedata_items_materia (Data/sql/gamedata_items_materia.sql), by materia type; empty if the table is missing.</summary>
         public static Dictionary<int, MateriaData> GetMateriaGamedata()
         {
             var materia = new Dictionary<int, MateriaData>();
@@ -2890,7 +2886,6 @@ namespace Meteor.Map
             }
         }
 
-        // characters.restBonus: the rested EXP pool.
         public static void SetRestBonus(Player player, int pool)
         {
             using (MySqlConnection conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
@@ -2910,8 +2905,6 @@ namespace Meteor.Map
             }
         }
 
-        // characters.restBonusInnSince: when the player logged out in an inn room (0 if elsewhere), so
-        // the rested pool can fill for the time they were away.
         public static void SetRestInnLogoutTime(Player player, uint unixTime)
         {
             using (MySqlConnection conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
@@ -2931,7 +2924,6 @@ namespace Meteor.Map
             }
         }
 
-        // characters_bonus_points: each class's allotted attribute points (str, vit, dex, int, mnd, pie).
         public static Dictionary<byte, int[]> LoadBonusAllotments(Player player)
         {
             var result = new Dictionary<byte, int[]>();

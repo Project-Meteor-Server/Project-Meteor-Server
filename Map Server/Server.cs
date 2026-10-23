@@ -333,7 +333,7 @@ namespace Meteor.Map
                 return null;
         }
 
-        /// <summary>The compatibility sheet value (0-100) for a class id, or -1 when the key isn't loaded.</summary>
+        // -1 when the key isn't loaded.
         public static int GetItemCompatibility(int key, int classId)
         {
             if (GamedataItemCompatibility == null || !GamedataItemCompatibility.TryGetValue(key, out sbyte[] values))

@@ -1,7 +1,13 @@
 --[[
-Resting (223263): the inn status. It has no stat effect; Player.UpdateInnResting adds and removes it
-and fills the rested EXP pool while it is on.
+
+Resting Script
+
+Notes:
+
+The inn status. Player.UpdateInnResting adds and removes it.
+
 --]]
+
 require("modifiers")
 
 function onGain(owner, effect, actionContainer)

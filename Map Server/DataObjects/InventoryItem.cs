@@ -87,13 +87,11 @@ namespace Meteor.Map.DataObjects
             {                
             }
 
-            /// <summary>The materia type melded in slot 0-4, 0 when empty.</summary>
             public int GetMateriaType(int slot)
             {
                 return slot >= 0 && slot < materiaType.Length ? materiaType[slot] : 0;
             }
 
-            /// <summary>The grade (0-15) of the materia in slot 0-4.</summary>
             public int GetMateriaGrade(int slot)
             {
                 return slot >= 0 && slot < materiaGrade.Length ? materiaGrade[slot] : 0;
