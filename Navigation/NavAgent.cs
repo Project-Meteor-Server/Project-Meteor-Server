@@ -27,7 +27,7 @@ using DotRecast.Detour;
 
 namespace Meteor.Navigation
 {
-    /// <summary>What an actor may cross and how big it is. Use With() for variants.</summary>
+    // What an actor may cross and how big it is. Use With() for variants.
     public sealed class NavAgent
     {
         private static int nextKey;
@@ -39,9 +39,9 @@ namespace Meteor.Navigation
         public readonly float Climb;
         public readonly NavFlags Include;
         public readonly NavFlags Exclude;
-        /// <summary>Areas not listed use the world's costs.</summary>
+        // Areas not listed use the world's costs.
         public readonly IReadOnlyDictionary<int, float> AreaCosts;
-        /// <summary>Drops and climbs higher than this are closed. The client's ground probe only reaches 10 down.</summary>
+        // Drops and climbs higher than this are closed. The client's ground probe only reaches 10 down.
         public readonly float MaxLinkRise;
 
         public NavAgent(string name, float radius, float height, float climb, NavFlags include, NavFlags exclude,
@@ -68,7 +68,7 @@ namespace Meteor.Navigation
 
         private const NavFlags Ground = NavFlags.Walk | NavFlags.Water | NavFlags.Gate | NavFlags.Link;
 
-        /// <summary>Ground where the client would draw the actor on something else, such as a cave ceiling.</summary>
+        // Ground where the client would draw the actor on something else, such as a cave ceiling.
         private const NavFlags ProbeUnsafe = NavFlags.NpcUnsafe;
 
         public static readonly NavAgent Mob = new NavAgent("Mob", 0.5f, 2.0f, 0.75f,
@@ -82,7 +82,7 @@ namespace Meteor.Navigation
         public static readonly NavAgent Ally = new NavAgent("Ally", 0.5f, 2.0f, 0.75f,
             Ground | NavFlags.Lift | NavFlags.Drop, NavFlags.PlayerOnly | ProbeUnsafe, maxLinkRise: CLIENT_LINK_RISE);
 
-        /// <summary>Server-moved player-class actors: anywhere a player goes that other clients draw correctly.</summary>
+        // Server-moved player-class actors: anywhere a player goes that other clients draw correctly.
         public static readonly NavAgent Bot = new NavAgent("Bot", 0.5f, 2.0f, 0.75f,
             Ground | NavFlags.Lift | NavFlags.Drop | NavFlags.PlayerOnly, ProbeUnsafe);
 
@@ -92,7 +92,7 @@ namespace Meteor.Navigation
         public override string ToString() => Name;
     }
 
-    /// <summary>Reused across queries, so it never allocates.</summary>
+    // Reused across queries, so it never allocates.
     internal sealed class NavFilter : IDtQueryFilter
     {
         private NavWorld world;

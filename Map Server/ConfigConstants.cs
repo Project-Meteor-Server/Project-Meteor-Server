@@ -44,7 +44,7 @@ namespace Meteor.Map
         public static bool NAVMESH_ENABLED = true;
         public static String NAVMESH_PATH = "./navmesh";
         public static String COLLISION_PATH = "./collision";
-        /// <summary>On: shorten hops that would walk the client through walls or off ledges. Log: count them only.</summary>
+        // On: shorten hops that would walk the client through walls or off ledges. Log: count them only.
         public enum ChordMode { Off, Log, On }
         public static ChordMode CHORD_VALIDATOR = ChordMode.On;
 

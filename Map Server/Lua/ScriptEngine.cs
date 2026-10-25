@@ -25,11 +25,9 @@ using NLog;
 
 namespace Meteor.Map.lua
 {
-    /// <summary>
-    /// Runs the server's Lua scripts (on LuaJIT, see XLuaEngine). Whatever a script hands back to C#
-    /// arrives as: numbers as double, text as string, true/false as bool, nil as null, Lua tables as
-    /// LuaTableValue, Lua functions as LuaFunctionValue, and server objects as themselves.
-    /// </summary>
+    // Runs the server's Lua scripts (on LuaJIT, see XLuaEngine). Whatever a script hands back to C#
+    // arrives as: numbers as double, text as string, true/false as bool, nil as null, Lua tables as
+    // LuaTableValue, Lua functions as LuaFunctionValue, and server objects as themselves.
     abstract class ScriptEngine
     {
         // NLog.config only shows loggers named Meteor.Map.lua.* in the console.
@@ -39,73 +37,65 @@ namespace Meteor.Map.lua
 
         public static ScriptEngine Instance => instance.Value;
 
-        /// <summary>
-        /// Loads and runs a script file. Each loaded script gets its own set of globals, and so do the
-        /// files it pulls in with require, so two scripts never see each other's variables.
-        /// Returns null when the file does not exist. If the file stops with an error, the error is
-        /// logged and the script is still returned with whatever it set up before the error.
-        /// </summary>
+        // Loads and runs a script file. Each loaded script gets its own set of globals, and so do the
+        // files it pulls in with require, so two scripts never see each other's variables.
+        // Returns null when the file does not exist. If the file stops with an error, the error is
+        // logged and the script is still returned with whatever it set up before the error.
         public abstract LuaScript Load(string path);
 
-        /// <summary>The C# functions every script can call by name (GetWorldManager, ...).</summary>
+        // The C# functions every script can call by name (GetWorldManager, ...).
         public static IReadOnlyDictionary<string, Delegate> Globals => LuaEngine.ScriptGlobals;
     }
 
-    /// <summary>One loaded script file.</summary>
+    // One loaded script file.
     abstract class LuaScript
     {
         public static Logger Log = ScriptEngine.Log;
 
         public string Path { get; protected set; }
 
-        /// <summary>The error the file stopped with while loading, or null.</summary>
+        // The error the file stopped with while loading, or null.
         public string LoadError { get; protected set; }
 
-        /// <summary>The globals the script set up (name and Lua type, e.g. "function"), leaving out
-        /// the ones every script starts with. The tests compare this between engines.</summary>
+        // The globals the script set up (name and Lua type, e.g. "function"), leaving out
+        // the ones every script starts with. The tests compare this between engines.
         public abstract SortedDictionary<string, string> DefinedGlobals();
 
-        /// <summary>True when the script has a function with this name.</summary>
+        // True when the script has a function with this name.
         public abstract bool HasFunction(string name);
 
-        /// <summary>The value of a global, or null when it is not set.</summary>
+        // The value of a global, or null when it is not set.
         public abstract object GetGlobal(string name);
 
-        /// <summary>
-        /// Calls the script's function and returns what it returned. Returns null when there is no
-        /// such function or the call fails; failures are logged with the script line that failed.
-        /// </summary>
+        // Calls the script's function and returns what it returned. Returns null when there is no
+        // such function or the call fails; failures are logged with the script line that failed.
         public abstract object[] Call(string name, params object[] args);
 
-        /// <summary>
-        /// Prepares the script's function to run as a coroutine: a function that can pause partway,
-        /// for example to wait for the player's reply, and carry on later. Null if there is no such
-        /// function. Nothing runs until the first Resume.
-        /// </summary>
+        // Prepares the script's function to run as a coroutine: a function that can pause partway,
+        // for example to wait for the player's reply, and carry on later. Null if there is no such
+        // function. Nothing runs until the first Resume.
         public abstract LuaCoroutine CreateCoroutine(string name);
     }
 
-    /// <summary>A script function that can pause and carry on later (see CreateCoroutine).</summary>
+    // A script function that can pause and carry on later (see CreateCoroutine).
     abstract class LuaCoroutine
     {
-        /// <summary>
-        /// Runs the function until it pauses or ends; the arguments are what the function receives.
-        /// Throws LuaScriptException when the script fails.
-        /// </summary>
+        // Runs the function until it pauses or ends; the arguments are what the function receives.
+        // Throws LuaScriptException when the script fails.
         public abstract LuaResume Resume(params object[] args);
 
-        /// <summary>True once the function has ended or failed; it cannot be resumed again.</summary>
+        // True once the function has ended or failed; it cannot be resumed again.
         public abstract bool IsDead { get; }
     }
 
-    /// <summary>What a coroutine handed back: the values it paused with, or returned at its end.</summary>
+    // What a coroutine handed back: the values it paused with, or returned at its end.
     sealed class LuaResume
     {
         public static readonly object[] None = new object[0];
 
         public object[] Values { get; }
 
-        /// <summary>True when the function paused (and can be resumed); false when it ended.</summary>
+        // True when the function paused (and can be resumed); false when it ended.
         public bool Yielded { get; }
 
         public LuaResume(object[] values, bool yielded)
@@ -118,13 +108,13 @@ namespace Meteor.Map.lua
         public int Count => Values.Length;
     }
 
-    /// <summary>A copy of a Lua table (tables inside it are copied too).</summary>
+    // A copy of a Lua table (tables inside it are copied too).
     sealed class LuaTableValue
     {
         public List<KeyValuePair<object, object>> Pairs { get; } = new List<KeyValuePair<object, object>>();
     }
 
-    /// <summary>Stands in for a Lua function handed back to C#; C# only checks that it is one.</summary>
+    // Stands in for a Lua function handed back to C#; C# only checks that it is one.
     sealed class LuaFunctionValue
     {
         public static readonly LuaFunctionValue Instance = new LuaFunctionValue();
@@ -132,7 +122,7 @@ namespace Meteor.Map.lua
 
     sealed class LuaScriptException : Exception
     {
-        /// <summary>The script's error message with its file, line and call chain.</summary>
+        // The script's error message with its file, line and call chain.
         public string DecoratedMessage { get; }
 
         public LuaScriptException(string decorated, Exception inner = null) : base(decorated, inner)

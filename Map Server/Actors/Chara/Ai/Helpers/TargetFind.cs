@@ -55,42 +55,42 @@ namespace Meteor.Map.actors.chara.ai
         MainTargetPartyOnly = 0x8000,   //Must be used on main target's party (This is for Protect basically.)
     }
 
-    /// <summary> Targeting from/to different entity types </summary>
+    // Targeting from/to different entity types
     enum TargetFindCharacterType : byte
     {
         None,
-        /// <summary> Player can target all <see cref="Player">s in party </summary>
+        // Player can target all Players in party
         PlayerToPlayer,
-        /// <summary> Player can target all <see cref="BattleNpc"/>s (excluding player owned <see cref="Pet"/>s) </summary>
+        // Player can target all BattleNpcs (excluding player owned Pets)
         PlayerToBattleNpc,
-        /// <summary> BattleNpc can target other <see cref="BattleNpc"/>s </summary>
+        // BattleNpc can target other BattleNpcs
         BattleNpcToBattleNpc,
-        /// <summary> BattleNpc can target <see cref="Player"/>s and their <see cref="Pet"/>s </summary>
+        // BattleNpc can target Players and their Pets
         BattleNpcToPlayer,
     }
 
-    /// <summary> Type of AOE region to create </summary>
+    // Type of AOE region to create
     enum TargetFindAOEType : byte
     {
         None,
-        /// <summary> Really a cylinder, uses maxDistance parameter in SetAOEType </summary>
+        // Really a cylinder, uses maxDistance parameter in SetAOEType
         Circle,
-        /// <summary> Create a cone with param in radians </summary>
+        // Create a cone with param in radians
         Cone,
-        /// <summary> Box using self/target coords and </summary>
+        // Box using self/target coords and
         Box
     }
 
-    /// <summary> Set AOE around self or target </summary>
+    // Set AOE around self or target
     enum TargetFindAOETarget : byte
     {
-        /// <summary> Set AOE's origin at target's position </summary>
+        // Set AOE's origin at target's position
         Target,
-        /// <summary> Set AOE's origin to own position. </summary>
+        // Set AOE's origin to own position.
         Self
     }
 
-    /// <summary> Target finding helper class </summary>
+    // Target finding helper class
     class TargetFind
     {
         private Character owner;
@@ -147,15 +147,12 @@ namespace Meteor.Map.actors.chara.ai
             return targets;
         }
 
-        /// <summary>
-        /// Call this before <see cref="FindWithinArea"/> <para/>
-        /// </summary>
-        /// <param name="maxDistance">
-        /// <see cref="TargetFindAOEType.Circle"/> - radius of circle <para/>
-        /// <see cref="TargetFindAOEType.Cone"/> - height of cone <para/>
-        /// <see cref="TargetFindAOEType.Box"/> - width of box / 2 (todo: set box length not just between user and target)
-        /// </param>
-        /// <param name="param"> param in degrees of cone (todo: probably use radians and forget converting at runtime) </param>
+        // Call this before FindWithinArea
+        // maxDistance:
+        // TargetFindAOEType.Circle - radius of circle
+        // TargetFindAOEType.Cone - height of cone
+        // TargetFindAOEType.Box - width of box / 2 (todo: set box length not just between user and target)
+        // param: param in degrees of cone (todo: probably use radians and forget converting at runtime)
         public void SetAOEType(ValidTarget validTarget, TargetFindAOEType aoeType, TargetFindAOETarget aoeTarget, float maxDistance, float minDistance, float height, float aoeRotate, float coneAngle, float param = 0.0f)
         {
             this.validTarget = validTarget;
@@ -168,13 +165,7 @@ namespace Meteor.Map.actors.chara.ai
             this.coneAngle = coneAngle;
         }
 
-        /// <summary>
-        /// Call this to prepare Box AOE
-        /// </summary>
-        /// <param name="validTarget"></param>
-        /// <param name="aoeTarget"></param>
-        /// <param name="length"></param>
-        /// <param name="width"></param>
+        // Call this to prepare Box AOE
         public void SetAOEBox(ValidTarget validTarget, TargetFindAOETarget aoeTarget, float length, float width, float aoeRotateAngle)
         {
             this.validTarget = validTarget;
@@ -187,9 +178,7 @@ namespace Meteor.Map.actors.chara.ai
             this.width = width;
         }
 
-        /// <summary>
-        /// Find and try to add a single target to target list
-        /// </summary>
+        // Find and try to add a single target to target list
         public void FindTarget(Character target, ValidTarget flags)
         {
             validTarget = flags;
@@ -197,10 +186,8 @@ namespace Meteor.Map.actors.chara.ai
             AddTarget(target, false);
         }
 
-        /// <summary>
-        /// <para> Call SetAOEType before calling this </para>
-        /// Find targets within area set by <see cref="SetAOEType"/>
-        /// </summary>
+        // Call SetAOEType before calling this
+        // Find targets within area set by SetAOEType
         public void FindWithinArea(Character target, ValidTarget flags, TargetFindAOETarget aoeTarget)
         {
             targets.Clear();
@@ -234,10 +221,8 @@ namespace Meteor.Map.actors.chara.ai
                 //targets.RemoveRange(8, targets.Count - 8);
         }
 
-        /// <summary>
-        /// Find targets within a box using owner's coordinates and target's coordinates as length
-        /// with corners being `maxDistance` yalms to either side of self and target
-        /// </summary>
+        // Find targets within a box using owner's coordinates and target's coordinates as length
+        // with corners being `maxDistance` yalms to either side of self and target
         private bool IsWithinBox(Character target, bool withPet)
         {
             Vector3 vec = target.GetPosAsVector3() - aoeTargetPosition;

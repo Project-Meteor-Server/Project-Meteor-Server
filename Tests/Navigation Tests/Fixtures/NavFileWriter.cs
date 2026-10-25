@@ -23,7 +23,7 @@ namespace Meteor.Navigation.Tests.Fixtures
         public readonly List<NavSeedDef> Seeds = new List<NavSeedDef>();
         public uint[] Islands;
         public NavGraphData Graph;
-        /// <summary>Sections the reader must skip.</summary>
+        // Sections the reader must skip.
         public readonly List<(string fourcc, byte[] data)> Extra = new List<(string, byte[])>();
 
         public void Write(string path)

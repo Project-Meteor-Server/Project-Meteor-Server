@@ -31,11 +31,9 @@ using Meteor.Navigation;
 
 namespace Meteor.Map.navigation
 {
-    /// <summary>
-    /// The client's collision per zone. All zones together take about 1 GB, so a zone loads in the
-    /// background on first use and unloads after UNLOAD_AFTER unused. Near a zone line, probes also ask
-    /// the next zones in the region, since the client has those loaded too.
-    /// </summary>
+    // The client's collision per zone. All zones together take about 1 GB, so a zone loads in the
+    // background on first use and unloads after UNLOAD_AFTER unused. Near a zone line, probes also ask
+    // the next zones in the region, since the client has those loaded too.
     static class CollisionManager
     {
         public static readonly TimeSpan UNLOAD_AFTER = TimeSpan.FromMinutes(10);
@@ -130,7 +128,7 @@ namespace Meteor.Map.navigation
 
         public static bool Has(string zoneName) => zoneName != null && entryFor.ContainsKey(zoneName);
 
-        /// <summary>Loads it on this thread if needed.</summary>
+        // Loads it on this thread if needed.
         public static CollisionWorld Get(string zoneName)
         {
             if (zoneName == null || !entryFor.TryGetValue(zoneName, out var e))
@@ -147,7 +145,7 @@ namespace Meteor.Map.navigation
             return e.World;
         }
 
-        /// <summary>Null while it loads in the background.</summary>
+        // Null while it loads in the background.
         public static CollisionWorld TryGet(Entry e)
         {
             Touch(e);
@@ -157,15 +155,15 @@ namespace Meteor.Map.navigation
             return w;
         }
 
-        /// <summary>The highest hit over the zone and its neighbours. complete is false while any of them is
-        /// still loading.</summary>
+        // The highest hit over the zone and its neighbours. complete is false while any of them is
+        // still loading.
         public static ProbeResult Probe(string zoneName, float x, float z, float yFrom, NavInstance gates, out float y, out bool complete)
         {
             float top = yFrom + ClientProbe.RayUp;
             return RayDown(zoneName, x, z, top, top - (ClientProbe.RayDown + ClientProbe.RayUp), gates, out y, out complete);
         }
 
-        /// <summary>The highest surface with bottom &lt; y &lt;= top.</summary>
+        // The highest surface with bottom < y <= top.
         public static ProbeResult RayDown(string zoneName, float x, float z, float top, float bottom, NavInstance gates, out float y, out bool complete)
         {
             y = 0;

@@ -66,11 +66,11 @@ namespace Meteor.Map.Actors
             return navMesh == null ? $"{ZoneName} has no navmesh loaded." : navMesh.Describe(new Vector3(x, y, z));
         }
 
-        /// <summary>Returns the position unchanged when there is no ground near it.</summary>
+        // Returns the position unchanged when there is no ground near it.
         public Vector3 SnapToGround(float x, float y, float z) => utils.NavmeshUtils.SnapToGround(this, x, y, z);
 
-        /// <summary>Returns "Ok", "NotFound", "VerticalMismatch" (ground far above or below y; y = 0 means
-        /// unknown), "SmallIsland" (stray geometry on an old mesh) or "NoMesh".</summary>
+        // Returns "Ok", "NotFound", "VerticalMismatch" (ground far above or below y; y = 0 means
+        // unknown), "SmallIsland" (stray geometry on an old mesh) or "NoMesh".
         public string ProjectToGround(float x, float y, float z, out Vector3 ground)
         {
             var navMesh = utils.NavmeshUtils.GetNavMesh(this);
@@ -114,7 +114,7 @@ namespace Meteor.Map.Actors
 
         public Meteor.Navigation.CollisionWorld GetCollision() => navigation.CollisionManager.Get(ZoneName);
 
-        /// <summary>Opens or closes a door, lift or wall for this area only. Returns false when there is no such gate.</summary>
+        // Opens or closes a door, lift or wall for this area only. Returns false when there is no such gate.
         public bool SetGate(string gateId, bool open)
         {
             var instance = GetNavInstance();
@@ -126,7 +126,7 @@ namespace Meteor.Map.Actors
             return found;
         }
 
-        /// <summary>Null when the gate doesn't exist.</summary>
+        // Null when the gate doesn't exist.
         public bool? IsGateOpen(string gateId)
         {
             var instance = GetNavInstance();

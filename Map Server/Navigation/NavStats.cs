@@ -42,7 +42,7 @@ namespace Meteor.Map.navigation
         VerticalMismatch, // ground at that XZ, but far above/below the goal (.nav worlds)
     }
 
-    /// <summary>Path query counts and times per navmesh file. Times are Stopwatch ticks.</summary>
+    // Path query counts and times per navmesh file. Times are Stopwatch ticks.
     static class NavStats
     {
         public const string NO_MESH = "(no navmesh)";

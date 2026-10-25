@@ -29,8 +29,8 @@ using Num = System.Numerics;
 
 namespace Meteor.Map.navigation
 {
-    /// <summary>What ChordValidator checks a line against: the area's navmesh and the client collision
-    /// of its zone and the zones next to it.</summary>
+    // What ChordValidator checks a line against: the area's navmesh and the client collision
+    // of its zone and the zones next to it.
     sealed class AreaChordWorld : IChordWorld
     {
         private readonly Area area;

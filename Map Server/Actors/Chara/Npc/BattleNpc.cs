@@ -243,7 +243,7 @@ namespace Meteor.Map.Actors
             respawnTime = seconds;
         }
 
-        ///<summary> // todo: create an action object? </summary>
+        // // todo: create an action object?
         public bool OnAttack(AttackState state)
         {
             return false;

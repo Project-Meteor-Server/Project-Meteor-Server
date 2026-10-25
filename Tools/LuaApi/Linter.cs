@@ -6,19 +6,17 @@ namespace Meteor.Tools.LuaApi;
 sealed record Finding(string File, int Line, string Rule, string Message, bool Error, Edit? Fix);
 sealed record Edit(int Start, int Length, string Replacement);
 
-/// <summary>
-/// Checks scripts against the list of server functions (Data/lua-api) and against what LuaJIT
-/// accepts. Rules:
-///  case        a server function spelled with different capitals (endEvent for EndEvent)
-///  dot-call    a server object's method called with '.', which leaves out the object itself;
-///              it must be obj:Method()
-///  bit32       the bit32 library, which LuaJIT doesn't have (it has bit)
-///  lua52       syntax or libraries from newer Lua versions that LuaJIT doesn't support
-///  unknown     a call to a method that neither the server nor any script defines (a warning,
-///              since a script can create functions while it runs)
-///  require     require() of a file that doesn't exist, or whose name differs in capitals
-///              (Linux, unlike macOS and Windows, treats battleUtils and battleutils as different files)
-/// </summary>
+// Checks scripts against the list of server functions (Data/lua-api) and against what LuaJIT
+// accepts. Rules:
+//  case        a server function spelled with different capitals (endEvent for EndEvent)
+//  dot-call    a server object's method called with '.', which leaves out the object itself;
+//              it must be obj:Method()
+//  bit32       the bit32 library, which LuaJIT doesn't have (it has bit)
+//  lua52       syntax or libraries from newer Lua versions that LuaJIT doesn't support
+//  unknown     a call to a method that neither the server nor any script defines (a warning,
+//              since a script can create functions while it runs)
+//  require     require() of a file that doesn't exist, or whose name differs in capitals
+//              (Linux, unlike macOS and Windows, treats battleUtils and battleutils as different files)
 sealed class Linter
 {
     static readonly HashSet<string> StringMethods = new()
@@ -35,7 +33,7 @@ sealed class Linter
     readonly HashSet<string> modules;
     readonly Dictionary<string, string> modulesByLowerCase;
 
-    /// <param name="modulePaths">Every script's path under Data/scripts, with / between folders.</param>
+    // modulePaths: Every script's path under Data/scripts, with / between folders.
     public Linter(ApiManifest api, IEnumerable<string> allSources, IEnumerable<string> modulePaths)
     {
         this.api = api;
@@ -51,8 +49,8 @@ sealed class Linter
 
     static string FoldName(string n) => n.Replace("_", "").ToLowerInvariant();
 
-    /// <summary>Collects the function and field names scripts define themselves. A call to one of
-    /// those is on a Lua table, not a server object, so the server-name rules leave it alone.</summary>
+    // Collects the function and field names scripts define themselves. A call to one of
+    // those is on a Lua table, not a server object, so the server-name rules leave it alone.
     void CollectLuaNames(List<Token> t)
     {
         for (int i = 0; i < t.Count; i++)
@@ -196,7 +194,7 @@ sealed class Linter
 
     static bool IsReceiverEnd(Token t) => t.Kind == TokKind.Name || t.Is(")") || t.Is("]");
 
-    /// <summary>True for a.b where a is one of Lua's own libraries (string.format, math.floor, ...).</summary>
+    // True for a.b where a is one of Lua's own libraries (string.format, math.floor, ...).
     static bool IsLibrary(List<Token> t, int dot)
     {
         var recv = t[dot - 1];
@@ -212,8 +210,8 @@ sealed class Linter
         return others.Count == 1 ? others[0] : null;
     }
 
-    /// <summary>Works out bit32.f(n, m, ...) when every argument is a plain number, and returns the
-    /// result as a hex number (e.g. bit32.lshift(1, 4) becomes 0x10). Null when it can't.</summary>
+    // Works out bit32.f(n, m, ...) when every argument is a plain number, and returns the
+    // result as a hex number (e.g. bit32.lshift(1, 4) becomes 0x10). Null when it can't.
     static string? FoldBit32(List<Token> t, int i, out int endIdx)
     {
         endIdx = i;

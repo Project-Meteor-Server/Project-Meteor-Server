@@ -6,8 +6,8 @@ using Xunit;
 
 namespace Meteor.Map.Tests
 {
-    /// <summary>Loads every game script and checks it loads without an error, and that every GM
-    /// command describes itself (permissions, parameters, description) in the expected form.</summary>
+    // Loads every game script and checks it loads without an error, and that every GM
+    // command describes itself (permissions, parameters, description) in the expected form.
     [Collection("engines")]
     public sealed class ScriptCorpusTests
     {
@@ -36,8 +36,8 @@ namespace Meteor.Map.Tests
             Assert.True(script.LoadError == null, script.LoadError);
         }
 
-        /// <summary>The server looks quest scripts up as quests/man/man0l0.lua (all lowercase), so a
-        /// file named Man0l0.lua would be found on macOS and Windows but not on Linux.</summary>
+        // The server looks quest scripts up as quests/man/man0l0.lua (all lowercase), so a
+        // file named Man0l0.lua would be found on macOS and Windows but not on Linux.
         [Fact]
         public void QuestScriptNamesAreLowercase()
         {

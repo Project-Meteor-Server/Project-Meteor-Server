@@ -8,8 +8,8 @@ using Xunit;
 
 namespace Meteor.Map.Tests
 {
-    /// <summary>Sets up the script engine for the tests. Scripts load from ./scripts, which the build
-    /// copies next to the tests.</summary>
+    // Sets up the script engine for the tests. Scripts load from ./scripts, which the build
+    // copies next to the tests.
     public sealed class EngineFixture
     {
         internal readonly ScriptEngine Engine;
@@ -24,7 +24,7 @@ namespace Meteor.Map.Tests
 
         public static string ScriptsDir => Path.Combine(AppContext.BaseDirectory, "scripts");
 
-        /// <summary>The path of every game script (the tests' own scripts are left out).</summary>
+        // The path of every game script (the tests' own scripts are left out).
         public static IEnumerable<string> GameScripts() =>
             Directory.EnumerateFiles(ScriptsDir, "*.lua", SearchOption.AllDirectories)
                 .Select(f => "./" + Path.GetRelativePath(AppContext.BaseDirectory, f).Replace('\\', '/'))
@@ -37,8 +37,8 @@ namespace Meteor.Map.Tests
 
     public enum ProbeKind { None, One, Two, Three }
 
-    /// <summary>A stand-in server object with one of each kind of value scripts pass to the server
-    /// and get back from it.</summary>
+    // A stand-in server object with one of each kind of value scripts pass to the server
+    // and get back from it.
     public sealed class Probe
     {
         public int field = 3;
@@ -87,7 +87,7 @@ namespace Meteor.Map.Tests
 
         public int Marks { get { lock (MarkTimes) return marks; } }
 
-        /// <summary>Does what WorldManager.GetZone and friends do: briefly takes the zone lock.</summary>
+        // Does what WorldManager.GetZone and friends do: briefly takes the zone lock.
         public void TakeZoneLock()
         {
             lock (WorldManager.ZoneLock)

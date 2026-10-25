@@ -10,16 +10,14 @@ using DotRecast.Recast.Geom;
 
 namespace Meteor.Navigation.Tests.Fixtures
 {
-    /// <summary>
-    /// A small world built with DotRecast.Recast and written as .nav, standing in for navgen's fixture:
-    ///
-    ///   room A ─door g1 (GATE_0)─ room B ─ long hall ─────────────── room E ─player-only strip─ pocket F
-    ///     └── loop corridor (wall g2, GATE_1) ──┘        │ lift pad ⇅ lift l0 (gate g3) ⇅ platform (y 10)
-    ///                                                    │ drop pad ← drop l1 (one-way) ←──┘
-    ///   water pool in room B; a rooftop slab (y 6) in room A that no seed reaches (pruned).
-    ///
-    /// Tiles and graph cells are 32 m, built the same way navgen builds them.
-    /// </summary>
+    // A small world built with DotRecast.Recast and written as .nav, standing in for navgen's fixture:
+    //
+    //   room A ─door g1 (GATE_0)─ room B ─ long hall ─────────────── room E ─player-only strip─ pocket F
+    //     └── loop corridor (wall g2, GATE_1) ──┘        │ lift pad ⇅ lift l0 (gate g3) ⇅ platform (y 10)
+    //                                                    │ drop pad ← drop l1 (one-way) ←──┘
+    //   water pool in room B; a rooftop slab (y 6) in room A that no seed reaches (pruned).
+    //
+    // Tiles and graph cells are 32 m, built the same way navgen builds them.
     sealed class SyntheticScene
     {
         public const float CS = 0.25f, CH = 0.2f, RADIUS = 0.5f, HEIGHT = 2.0f, CLIMB = 0.75f, TILE = 32.0f;
@@ -74,7 +72,7 @@ namespace Meteor.Navigation.Tests.Fixtures
             return path;
         });
 
-        /// <summary>The scene written once per test run.</summary>
+        // The scene written once per test run.
         public static string FilePath => cached.Value;
 
         public static NavWorld LoadWorld() => NavWorld.Load(FilePath);
@@ -274,7 +272,7 @@ namespace Meteor.Navigation.Tests.Fixtures
             }
         }
 
-        /// <summary>Every poly in TILE order, poly index order.</summary>
+        // Every poly in TILE order, poly index order.
         private static List<long> AllPolys(DtNavMesh mesh, List<(long tileRef, DtMeshData data)> tiles)
         {
             var list = new List<long>();

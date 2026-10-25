@@ -52,8 +52,8 @@ sealed class ApiManifest
     HashSet<string>? all, methods, globals;
 }
 
-/// <summary>Builds the manifest by reading the map server's own code: every server class, with the
-/// public fields, properties and methods a script can use on it.</summary>
+// Builds the manifest by reading the map server's own code: every server class, with the
+// public fields, properties and methods a script can use on it.
 static class ManifestBuilder
 {
     // Methods every C# object has (ToString, Equals, ...). Scripts don't use them, so they're left
@@ -125,8 +125,8 @@ static class ManifestBuilder
         return manifest;
     }
 
-    /// <summary>The server functions scripts can call by name (LuaEngine.ScriptGlobals). They are read
-    /// from LuaEngine.cs as text, because they are set up in code rather than declared as methods.</summary>
+    // The server functions scripts can call by name (LuaEngine.ScriptGlobals). They are read
+    // from LuaEngine.cs as text, because they are set up in code rather than declared as methods.
     static List<ApiGlobal> GlobalsFromEngine(string repoRoot)
     {
         var src = File.ReadAllText(Path.Combine(repoRoot, "Map Server", "Lua", "LuaEngine.cs"));
@@ -203,8 +203,8 @@ static class ManifestBuilder
         catch (ReflectionTypeLoadException e) { return e.Types.Where(t => t != null)!; }
     }
 
-    /// <summary>The same list in lua-language-server's format, so editors can autocomplete server
-    /// functions and flag misspelled ones.</summary>
+    // The same list in lua-language-server's format, so editors can autocomplete server
+    // functions and flag misspelled ones.
     public static string ToLuaLs(ApiManifest m)
     {
         var sb = new StringBuilder();

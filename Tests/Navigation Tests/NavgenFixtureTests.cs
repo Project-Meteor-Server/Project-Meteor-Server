@@ -8,11 +8,9 @@ using Xunit;
 
 namespace Meteor.Navigation.Tests
 {
-    /// <summary>
-    /// Checks against navgen's own test fixture (navgen-test --write-fixture), found in a meteor-navgen or
-    /// navgen checkout beside this repo or under $NAVGEN_FIXTURES. Passes without it, so the suite never
-    /// needs a navgen build.
-    /// </summary>
+    // Checks against navgen's own test fixture (navgen-test --write-fixture), found in a meteor-navgen or
+    // navgen checkout beside this repo or under $NAVGEN_FIXTURES. Passes without it, so the suite never
+    // needs a navgen build.
     public class NavgenFixtureTests
     {
         // the fixture's snap probes (expected.json "description")
@@ -60,7 +58,7 @@ namespace Meteor.Navigation.Tests
 
         private static NavAgent Agent(string name) => name == "mob" ? NavAgent.Mob : NavAgent.Player;
 
-        /// <summary>The rest are open.</summary>
+        // The rest are open.
         private static NavInstance With(Fixture f, JsonElement closed)
         {
             var inst = f.World.CreateInstance("fixture");

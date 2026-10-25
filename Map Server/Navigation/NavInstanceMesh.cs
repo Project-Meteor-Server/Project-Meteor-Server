@@ -28,7 +28,7 @@ using Num = System.Numerics;
 
 namespace Meteor.Map.navigation
 {
-    /// <summary>IZoneNav on an area's .nav world instance, so game code works the same on both mesh kinds.</summary>
+    // IZoneNav on an area's .nav world instance, so game code works the same on both mesh kinds.
     class NavInstanceMesh : IZoneNav
     {
         private const float SPAWN_VERTICAL_SLACK = 4.0f;
@@ -73,7 +73,7 @@ namespace Meteor.Map.navigation
             return p.Ok;
         }
 
-        /// <summary>A spawn on pruned ground (rooftops, props) snaps far below or beside it: VerticalMismatch.</summary>
+        // A spawn on pruned ground (rooftops, props) snaps far below or beside it: VerticalMismatch.
         public SpawnCheck ProjectSpawn(float x, float y, float z, out Vector3 snapped)
         {
             var p = instance.Snap(new Num.Vector3(x, y, z), OwnGround);
@@ -109,8 +109,8 @@ namespace Meteor.Map.navigation
 
         public bool HasLineOfSight(Vector3 from, Vector3 to) => instance.CanSee(N(from), N(to));
 
-        /// <summary>False when 'from' is off the mesh. Players can stand off it (closer to walls than the
-        /// mesh edge, on props), and measured from the nearest edge every ray would read as blocked.</summary>
+        // False when 'from' is off the mesh. Players can stand off it (closer to walls than the
+        // mesh edge, on props), and measured from the nearest edge every ray would read as blocked.
         public bool TryClearance(Vector3 from, float[] dirX, float[] dirZ, float[] maxDist, float[] dist)
         {
             var ground = instance.Project(N(from), NavAgent.Player, 2.0f, 2.0f);
