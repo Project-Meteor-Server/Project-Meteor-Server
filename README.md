@@ -28,7 +28,7 @@ The servers target .NET 10 and build with the `dotnet` CLI on any OS.
    It starts Map, then World, then Lobby, and stops them all on Ctrl+C.
 
 The login, version check and patch pages are not part of this repo. Run a separate web server
-for them, such as [Project-Meteor-Web](https://github.com/rubymatrix/Project-Meteor-Web).
+for them, such as [Project-Meteor-Web](https://github.com/Project-Meteor-Server/Meteor-PatchLogin-Server).
 
 The game client itself is a Windows program. Point a Windows machine or VM at the server's IP.
 
