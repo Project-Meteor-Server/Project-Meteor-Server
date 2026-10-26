@@ -87,6 +87,16 @@ namespace Meteor.Map.DataObjects
             {                
             }
 
+            public int GetMateriaType(int slot)
+            {
+                return slot >= 0 && slot < materiaType.Length ? materiaType[slot] : 0;
+            }
+
+            public int GetMateriaGrade(int slot)
+            {
+                return slot >= 0 && slot < materiaGrade.Length ? materiaGrade[slot] : 0;
+            }
+
             public ItemModifier(MySql.Data.MySqlClient.MySqlDataReader reader)
             {
                 durability = reader.GetUInt32("durability"); 

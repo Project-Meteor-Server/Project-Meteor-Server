@@ -619,12 +619,12 @@ namespace Meteor.Map.Actors
 
         public byte GetMPP()
         {
-            return (byte)((charaWork.parameterSave.mp / charaWork.parameterSave.mpMax) * 100);
+            return (byte)(charaWork.parameterSave.mpMax <= 0 ? 0 : (charaWork.parameterSave.mp / (float)charaWork.parameterSave.mpMax) * 100);
         }
 
         public byte GetTPP()
         {
-            return (byte)((tpBase / 3000) * 100);
+            return (byte)((tpBase / 3000.0f) * 100);
         }
 
         public byte GetHPP()
@@ -658,7 +658,7 @@ namespace Meteor.Map.Actors
 
         public void SetMaxMP(uint mp)
         {
-            charaWork.parameterSave.mp = (short)mp;
+            charaWork.parameterSave.mpMax = (short)mp;
             updateFlags |= ActorUpdateFlags.HpTpMp;
         }
 
@@ -765,8 +765,59 @@ namespace Meteor.Map.Actors
             // todo: recalculate stats and crap
             updateFlags |= ActorUpdateFlags.HpTpMp;
 
+            // Keep a hit count already set by the database, a status or the weapon.
+            if (GetMod((uint)Modifier.HitCount) <= 0)
+                SetMod((uint)Modifier.HitCount, 1);
+        }
 
-            SetMod((uint)Modifier.HitCount, 1);
+        // Each layer remembers what it last added to each modifier, so recalculating a layer replaces
+        // its share instead of stacking on top.
+        private Dictionary<string, Dictionary<uint, double>> statLayers = new Dictionary<string, Dictionary<uint, double>>();
+
+        public void SetStatLayer(string layer, uint modifier, double value)
+        {
+            Dictionary<uint, double> mods;
+            if (!statLayers.TryGetValue(layer, out mods))
+                statLayers[layer] = mods = new Dictionary<uint, double>();
+
+            double previous;
+            mods.TryGetValue(modifier, out previous);
+            if (value != previous)
+                AddMod(modifier, value - previous);
+            mods[modifier] = value;
+        }
+
+        // Modifiers missing from values go back to 0.
+        public void ReplaceStatLayer(string layer, Dictionary<uint, double> values)
+        {
+            Dictionary<uint, double> mods;
+            if (statLayers.TryGetValue(layer, out mods))
+            {
+                foreach (var modifier in new List<uint>(mods.Keys))
+                    if (!values.ContainsKey(modifier))
+                        SetStatLayer(layer, modifier, 0);
+            }
+            foreach (var kv in values)
+                SetStatLayer(layer, kv.Key, kv.Value);
+        }
+
+        public double GetStatLayer(string layer, uint modifier)
+        {
+            Dictionary<uint, double> mods;
+            double value;
+            if (statLayers.TryGetValue(layer, out mods) && mods.TryGetValue(modifier, out value))
+                return value;
+            return 0;
+        }
+
+        public void SetBaseStat(uint modifier, double value)
+        {
+            SetStatLayer("base", modifier, value);
+        }
+
+        public double GetBaseStat(uint modifier)
+        {
+            return GetStatLayer("base", modifier);
         }
 
         public void RecalculateStats()

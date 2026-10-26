@@ -96,11 +96,11 @@ function onTrigger(player, argc, name,  width, height, blockCount)
 	
 	if player and (modelIds[name] != nil) then
         local pos = player:GetPos();
-        local x = tonumber(pos[1]);
-        local y = tonumber(pos[2]);
-        local z = tonumber(pos[3]);
-        local rot = tonumber(pos[4]);
-        local zone = pos[5];
+        local x = tonumber(pos[0]);
+        local y = tonumber(pos[1]);
+        local z = tonumber(pos[2]);
+        local rot = tonumber(pos[3]);
+        local zone = pos[4];
         local w = tonumber(width) or 0;
 
         local h = tonumber(height) or 0;

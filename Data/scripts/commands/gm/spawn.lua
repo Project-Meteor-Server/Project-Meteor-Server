@@ -14,11 +14,11 @@ function onTrigger(player, argc, actorClassId, width, height)
 	end	
 
     local pos = player:GetPos();
-    local x = pos[1];
-    local y = pos[2];
-    local z = pos[3];
-    local rot = pos[4];
-    local zone = pos[5];
+    local x = pos[0];
+    local y = pos[1];
+    local z = pos[2];
+    local rot = pos[3];
+    local zone = pos[4];
          
 	actorClassId = tonumber(actorClassId);
 	

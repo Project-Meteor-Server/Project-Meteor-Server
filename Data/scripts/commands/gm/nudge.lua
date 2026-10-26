@@ -41,11 +41,11 @@ rotation = {
 
 function onTrigger(player, argc, arg1, arg2)
     local pos = player:GetPos();
-    local x = pos[1];
-    local y = pos[2];
-    local z = pos[3];
-    local rot = pos[4];	
-    local zone = pos[5];
+    local x = pos[0];
+    local y = pos[1];
+    local z = pos[2];
+    local rot = pos[3];	
+    local zone = pos[4];
     local angle = rot + (math.pi/2); 
     
     local worldManager = GetWorldManager();

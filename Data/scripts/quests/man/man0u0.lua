@@ -186,7 +186,7 @@ function onPush(player, quest, npc)
     elseif (sequence == SEQ_010) then
         if (classId == BLOCKER) then
 
-            posz = player:GetPos()[3];
+            posz = player:GetPos()[2];
 
             if (posz >= 71 and posz <= 95) then
                 callClientFunction(player, "delegateEvent", player, quest, "processTtrBlkNml002");

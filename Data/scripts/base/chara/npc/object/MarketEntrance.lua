@@ -95,9 +95,9 @@ function onEventStarted(player, npc, eventType, eventName)
     
     local worldMaster = GetWorldMaster(); 
     local pos = player:GetPos();
-    local currZone = pos[5];
+    local currZone = pos[4];
 	local currRegion = player.CurrentArea.RegionId;	
-	local quests = player:GetQuestsForNpc(npc);
+	local quests = arrayToTable(player:GetQuestsForNpc(npc));
     
 	-- City entrance specific stuff
     if (currRegion == 101 or currRegion == 103 or currRegion == 104) then 

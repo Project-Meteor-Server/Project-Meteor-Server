@@ -57,7 +57,15 @@ namespace Meteor.Map.utils
         {
             currentActorPropertyPacket.AddTarget();
             currentTarget = target;
-            currentActorPropertyPacket.SetTarget(target);            
+            // The target name is written when the packet closes, so leave room for it.
+            const int LARGEST_PROPERTY = 9;
+            if (currentActorPropertyPacket.RemainingBytes() < 1 + System.Text.Encoding.ASCII.GetByteCount(target) + LARGEST_PROPERTY)
+            {
+                subPackets.Add(currentActorPropertyPacket.BuildPacket(forActor.Id));
+                currentActorPropertyPacket = new SetActorPropetyPacket(target);
+            }
+            else
+                currentActorPropertyPacket.SetTarget(target);
         }
 
         public List<SubPacket> Done()

@@ -47,6 +47,7 @@ CREATE TABLE `characters` (
   `currentActiveLinkshell` varchar(32) NOT NULL DEFAULT '',
   `homepoint` int(10) unsigned NOT NULL DEFAULT '0',
   `homepointInn` tinyint(3) unsigned NOT NULL DEFAULT '0',
+  `restBonusInnSince` int(10) unsigned NOT NULL DEFAULT '0',
   `gmLevel` smallint(5) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;

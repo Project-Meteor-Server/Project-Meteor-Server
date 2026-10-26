@@ -70,7 +70,7 @@ function onEventStarted(player, actor, eventType, eventName, isTeleport)
     local baseAnimaCost = 6;
     local animaCost = 0;
     local favoredLocation = {1280003, 1280005, 1280062};
-    local currentRegion = zoneIdToRegionChoice[player:GetPos()[5]] or 0;
+    local currentRegion = zoneIdToRegionChoice[player:GetPos()[4]] or 0;
     local isCity = {[1280001] = true, [1280061] = true, [1280031] = true};
     local isFavoredDesination = false;
     local destination = 0;
