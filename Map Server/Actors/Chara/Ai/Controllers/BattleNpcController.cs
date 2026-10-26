@@ -155,8 +155,14 @@ namespace Meteor.Map.actors.chara.ai.controllers
             base.Disengage();
             // todo:
             lastActionTime = lastUpdate.AddSeconds(5);
-            owner.isMovingToSpawn = true;
-            owner.aiContainer.mover.MoveTo(new Vector3(owner.spawnX, owner.spawnY, owner.spawnZ), Mover.MOVE_STATE_RUN);
+            // A despawn clears the death state before it disengages, so HP tells a corpse apart.
+            if (owner.IsDead() || owner.GetHP() <= 0)
+                owner.aiContainer.mover.Stop();
+            else
+            {
+                owner.isMovingToSpawn = true;
+                owner.aiContainer.mover.MoveTo(new Vector3(owner.spawnX, owner.spawnY, owner.spawnZ), Mover.MOVE_STATE_RUN);
+            }
             neutralTime = lastActionTime;
             owner.hateContainer.ClearHate();
             lua.LuaEngine.CallLuaBattleFunction(owner, "onDisengage", owner, target, Utils.UnixTimeStampUTC(lastUpdate));
@@ -238,10 +244,41 @@ namespace Meteor.Map.actors.chara.ai.controllers
                 return;
             }
 
+            var myPos = owner.GetPosAsVector3();
             var targetPos = owner.target.GetPosAsVector3();
-            var distance = Utils.Distance(owner.GetPosAsVector3(), targetPos);
-            float stopDistance = Math.Max(0.0f, owner.GetAttackRange() - 0.2f);
+            var distance = Utils.Distance(myPos, targetPos);
+            float stopDistance = StopDistance(owner);
             mover.WatchChase(targetPos);
+
+            // Several mobs on one standing target: each goes to its own stop around it.
+            if (!(owner is Ally) && !mover.ChaseTargetMoving && owner.target is Character spreadTarget
+                && SpreadStop(spreadTarget, myPos, targetPos) is Vector3 stop)
+            {
+                float toStop = MoverMath.XZDistance(myPos, stop);
+                bool inRange = distance <= stopDistance;
+                if (toStop <= SPREAD_ARRIVE || (inRange && !mover.IsMoving && toStop <= SPREAD_KEEP))
+                {
+                    mover.Stop();
+                    FaceTarget();
+                    return;
+                }
+                if (inRange && !mover.IsMoving)
+                {
+                    // Stepping aside for a mob that arrived next to it: one step at a time.
+                    if ((DateTime.Now - lastSpreadStep).TotalSeconds < SPREAD_STEP_SECONDS)
+                    {
+                        mover.Stop();
+                        FaceTarget();
+                        return;
+                    }
+                    lastSpreadStep = DateTime.Now;
+                }
+                if (!mover.MoveTo(stop, Mover.MOVE_STATE_RUN, 0.0f))
+                    FaceTarget();
+                lastRoamUpdate = DateTime.Now;
+                return;
+            }
+            spreadStop = null;
 
             if (distance <= stopDistance || !CanMoveForward(distance))
             {
@@ -254,6 +291,127 @@ namespace Meteor.Map.actors.chara.ai.controllers
             if (!mover.Chase(targetPos, Mover.MOVE_STATE_RUN, stopDistance))
                 FaceTarget();
             lastRoamUpdate = DateTime.Now;
+        }
+
+        private static float StopDistance(Character mob)
+        {
+            return Math.Max(0.0f, mob.GetAttackRange() - 0.2f);
+        }
+
+        // One solution per target per tick, shared by every mob on it, so none chases another's old stop.
+        private sealed class SpreadSolution
+        {
+            public DateTime At;
+            public Dictionary<uint, MeleeSpread.Stop> Stops;
+        }
+        private static readonly Dictionary<uint, SpreadSolution> spreads = new Dictionary<uint, SpreadSolution>();
+        // Mobs this far past their stop distance from the target count as gathering on it.
+        private const float SPREAD_GROUP_RANGE = 8.0f;
+        private const double SPREAD_FRESH_SECONDS = 0.25;
+        private const float SPREAD_ARRIVE = 0.4f, SPREAD_KEEP = 0.4f;
+        private const double SPREAD_STEP_SECONDS = 2.0;
+        private const float SPREAD_TRY_STEP = 5.0f * (float)Math.PI / 180.0f;
+        private const float MOB_BODY = 0.5f;
+        private Vector3 spreadStop;
+        private DateTime lastSpreadStep = DateTime.MinValue;
+
+        // This mob's stop around a standing target, or null when it fights it alone (it stops on its
+        // approach line) or no stop near its spread bearing is usable.
+        private Vector3 SpreadStop(Character target, Vector3 myPos, Vector3 targetPos)
+        {
+            MeleeSpread.Stop mine;
+            lock (spreads)
+            {
+                DateTime now = DateTime.Now;
+                if (!spreads.TryGetValue(target.Id, out var sol) || (now - sol.At).TotalSeconds > SPREAD_FRESH_SECONDS || !sol.Stops.ContainsKey(owner.Id))
+                {
+                    sol = new SpreadSolution { At = now, Stops = new Dictionary<uint, MeleeSpread.Stop>() };
+                    var group = SpreadGroup(target);
+                    if (group.Count >= 2)
+                    {
+                        var members = new List<MeleeSpread.Member>();
+                        foreach (var bn in group)
+                            members.Add(new MeleeSpread.Member
+                            {
+                                Id = bn.Id,
+                                X = bn.positionX,
+                                Z = bn.positionZ,
+                                Radius = StopDistance(bn),
+                                MaxRadius = StopDistance(bn),
+                                Body = MOB_BODY,
+                                Standing = !bn.aiContainer.mover.IsMoving,
+                            });
+                        foreach (var st in MeleeSpread.Solve(targetPos.X, targetPos.Z, members))
+                            sol.Stops[st.Id] = st;
+                    }
+                    spreads[target.Id] = sol;
+                    if (spreads.Count > 256)
+                    {
+                        var stale = new List<uint>();
+                        foreach (var kv in spreads)
+                            if ((now - kv.Value.At).TotalSeconds > 5)
+                                stale.Add(kv.Key);
+                        foreach (var id in stale)
+                            spreads.Remove(id);
+                    }
+                }
+                if (!sol.Stops.TryGetValue(owner.Id, out mine))
+                {
+                    spreadStop = null;
+                    return null;
+                }
+            }
+
+            var stop = UsableStop(mine, myPos, targetPos);
+            if (stop == null)
+            {
+                spreadStop = null;
+                return null;
+            }
+            if (spreadStop != null && MoverMath.XZDistance(spreadStop, stop) <= SPREAD_KEEP)
+                return spreadStop;
+            spreadStop = stop;
+            return stop;
+        }
+
+        private static List<BattleNpc> SpreadGroup(Character target)
+        {
+            var group = new List<BattleNpc>();
+            if (target.CurrentArea == null)
+                return group;
+            foreach (var bn in target.CurrentArea.GetActorsAroundActor<BattleNpc>(target, 12))
+            {
+                if (bn is Ally || bn.IsDead() || bn.target != target || bn.aiContainer == null || !bn.aiContainer.IsEngaged())
+                    continue;
+                if (Utils.XZDistance(bn.positionX, bn.positionZ, target.positionX, target.positionZ) <= StopDistance(bn) + SPREAD_GROUP_RANGE)
+                    group.Add(bn);
+            }
+            return group;
+        }
+
+        // The solved stop if it is on the mesh, reachable and in clear reach of the target; else the
+        // nearest bearing back toward the approach line that is, in 5 degree steps; null when none is.
+        private Vector3 UsableStop(MeleeSpread.Stop s, Vector3 myPos, Vector3 targetPos)
+        {
+            var navMesh = NavmeshUtils.GetNavMesh(owner.CurrentArea);
+            float shift = MeleeSpread.Wrap(s.Theta - s.Theta0);
+            int steps = (int)Math.Ceiling(Math.Abs(shift) / SPREAD_TRY_STEP);
+            for (int k = 0; k <= steps; k++)
+            {
+                float theta = s.Theta0 + (steps == 0 ? 0.0f : shift * (steps - k) / steps);
+                var p = new Vector3(targetPos.X + s.Radius * (float)Math.Cos(theta), targetPos.Y, targetPos.Z + s.Radius * (float)Math.Sin(theta));
+                if (navMesh == null)
+                    return p;
+                if (!navMesh.TryProject(p, out var ground) || MoverMath.XZDistance(ground, p) > 0.3f)
+                    continue;
+                float reach = MoverMath.XZDistance(targetPos, ground);
+                if (NavmeshUtils.ClearanceTowards(owner.CurrentArea, targetPos, ground) < reach - 0.05f)
+                    continue;
+                if (!navMesh.IsReachable(myPos, ground))
+                    continue;
+                return ground;
+            }
+            return null;
         }
 
         protected void FaceTarget()

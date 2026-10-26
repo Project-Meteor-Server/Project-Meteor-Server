@@ -872,8 +872,6 @@ namespace Meteor.Map.Actors
 
             // todo: call onAttack/onDamageTaken
             //BattleUtils.DamageTarget(this, target, DamageTakenType.Attack, action);
-            AddTP(200);
-            target.AddTP(100);
         }
 
         public virtual void OnCast(State state, CommandResult[] actions, BattleCommand spell, ref CommandResult[] errors)
@@ -951,14 +949,25 @@ namespace Meteor.Map.Actors
                     break;
             }
 
-            //TP is only gained from autoattacks and abilities
-            if ((action.commandType == CommandType.AutoAttack || action.commandType == CommandType.Ability) && action.hitType != HitType.Miss)
+            // Only landed auto-attacks give TP; weaponskills, spells and abilities give none.
+            if (action.commandType == CommandType.AutoAttack && action.hitType != HitType.Miss)
             {
-                //TP gained on an attack is usually 100 * delay.
-                //Store TP seems to add .1% per point.
-                double weaponDelay = GetMod(Modifier.Delay) / 1000.0;
-                var storeTPPercent = 1 + (GetMod(Modifier.StoreTp) * 0.001);
-                AddTP((int)(weaponDelay * 100 * storeTPPercent));
+                if (IsMonster())
+                    AddTP(300);
+                else
+                {
+                    // round(100 x delay x (1 + Store TP / 1000)) per swing, split across the weapon's own
+                    // hits (fists hit twice). Extra hits beyond those add half a swing each.
+                    double weaponDelay = GetMod(Modifier.Delay) / 1000.0;
+                    var storeTPPercent = 1 + (GetMod(Modifier.StoreTp) * 0.001);
+                    int roundTP = (int)Math.Round(weaponDelay * 100 * storeTPPercent, MidpointRounding.AwayFromZero);
+                    int baseHits = Math.Max(1, this is Player player ? player.GetWeaponBaseHits() : 1);
+                    int hitNum = Math.Max(1, (int)action.hitNum);
+                    if (hitNum <= baseHits)
+                        AddTP(roundTP * hitNum / baseHits - roundTP * (hitNum - 1) / baseHits);
+                    else
+                        AddTP((int)Math.Round(roundTP * 0.5, MidpointRounding.AwayFromZero));
+                }
             }
         }
 
@@ -979,10 +988,11 @@ namespace Meteor.Map.Actors
 
             statusEffects.CallLuaFunctionByFlag((uint)StatusEffectFlags.ActivateOnDamageTaken, "onDamageTaken", attacker, this, skill, action, actionContainer);
 
-            //TP gain formula seems to be something like 5 * e ^ ( -0.667 * [defender's level] ) * damage taken, rounded up
-            //This should be completely accurate at level 50, but isn't totally accurate at lower levels.
-            //Don't know if store tp impacts this
-            double tpModifier = 5 * Math.Pow(Math.E, (-0.0667 * GetLevel()));
+            // TP from damage taken: ceil(damage x k). Players: k falls with level, 4.5 e^(-0.065 level).
+            // Monsters: k is about 1600 / max HP.
+            double tpModifier = IsMonster()
+                ? 1600.0 / Math.Max(1, (int)GetMaxHP())
+                : 4.5 * Math.Exp(-0.065 * GetLevel());
             AddTP((int)Math.Ceiling(tpModifier * action.amount));
         }
 

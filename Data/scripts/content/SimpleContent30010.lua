@@ -11,6 +11,8 @@ WOLF_MIN_LEVEL = 1;
 WOLF_MAX_LEVEL = 13;
 ALLY_DAMAGE_PERCENT = -50;
 POTENCIAL_LEVEL_HIDDEN = -1.0;
+ALLY_LEVEL_LEAD = 10;
+TANK_PULL_SECONDS = 3;
 
 ALLIES = {
     {POOL_PAPALYMO, JOB_THAUMATURGE, 365.89, 4.0943, -706.72, -0.718},
@@ -37,10 +39,14 @@ function onCreate(starterPlayer, contentArea, director)
     duty:SetAllyAggressive(false);
 
     for _, a in ipairs(ALLIES) do
-        local ally = duty:SpawnAlly(a[1], level, a[3], a[4], a[5], a[6]);
+        local ally = duty:SpawnAlly(a[1], wolfLevel + ALLY_LEVEL_LEAD, a[3], a[4], a[5], a[6]);
         if (ally ~= nil) then
             ally.charaWork.parameterSave.state_mainSkill[0] = a[2];
             ally:SetMod(modifiersGlobal.Damage, ALLY_DAMAGE_PERCENT);
+            ally:SetMod(modifiersGlobal.MinimumHpLock, 1);
+            if (a[1] == POOL_YDA) then
+                duty:SetTank(ally, TANK_PULL_SECONDS);
+            end
         end
     end
 

@@ -3275,6 +3275,8 @@ namespace Meteor.Map.Actors
         private int weaponBaseDelay = 0;
         private int weaponBaseHits = 0;
 
+        public int GetWeaponBaseHits() { return weaponBaseHits; }
+
         // Statuses like Haste also change Delay and HitCount. Overwriting them here would let a status
         // undo itself twice when it wears off, so while any status is up only the weapon's change is
         // applied.

@@ -445,6 +445,7 @@ function __BattleNpc:OnDespawn() end
 ---@param target Character
 function __BattleNpc:OnHateAdded(target) end
 function __BattleNpc:OnHateListEmptied() end
+function __BattleNpc:OnLinkHateAdded() end
 ---@param tick any
 function __BattleNpc:OnRoam(tick) end
 function __BattleNpc:OnSpawn() end
@@ -1407,6 +1408,8 @@ function __Player:GetTradeOfferings() end
 ---@param npc Npc
 ---@return Quest
 function __Player:GetTutorialQuest(npc) end
+---@return number
+function __Player:GetWeaponBaseHits() end
 ---@overload fun(self: Player, slot: number, graphicId: number): nil
 ---@overload fun(self: Player, slot: number, weapId: number, equipId: number, variantId: number, colorId: number): nil
 ---@param slot number
@@ -3541,6 +3544,8 @@ __GroundAnswer = {}
 local __HateContainer = {}
 ---@param target Character
 function __HateContainer:AddBaseHate(target) end
+---@param target Character
+function __HateContainer:AddLinkHate(target) end
 ---@param target? Character
 function __HateContainer:ClearHate(target) end
 ---@return table<Character, HateEntry>
@@ -3589,6 +3594,67 @@ function __IChordWorld:Walk(a, b, lateral) end
 
 ---@enum KnockbackType
 __KnockbackType = {}
+
+---@class MeleeSpread
+---@field BODY_GAP number
+---@field MAX_SHIFT number
+---@field RANK_STEP number
+---@field SPACING number
+---@field SPACING_MIN number
+---@field STANDING_WEIGHT number
+local __MeleeSpread = {}
+---@param s number
+---@param ra number
+---@param rb number
+---@return number
+function __MeleeSpread.AngleFor(s, ra, rb) end
+---@param tx number
+---@param tz number
+---@param id number
+---@param theta0 number
+---@param theta number
+---@param radius number
+---@param rank boolean
+---@return Stop
+function __MeleeSpread.At(tx, tz, id, theta0, theta, radius, rank) end
+---@param tx number
+---@param tz number
+---@param x number
+---@param z number
+---@return number
+function __MeleeSpread.Bearing(tx, tz, x, z) end
+---@param tx number
+---@param tz number
+---@param members Member[]
+---@return Stop[]
+function __MeleeSpread.Solve(tx, tz, members) end
+---@param bodyA number
+---@param bodyB number
+---@return number
+function __MeleeSpread.Spacing(bodyA, bodyB) end
+---@param a number
+---@return number
+function __MeleeSpread.Wrap(a) end
+
+---@class Member
+---@field Body number
+---@field Id number
+---@field MaxRadius number
+---@field Radius number
+---@field Standing boolean
+---@field X number
+---@field Z number
+local __Member = {}
+
+---@class Stop
+---@field Id number
+---@field Radius number
+---@field SecondRank boolean
+---@field Theta number
+---@field Theta0 number
+---@field X number
+---@field Z number
+local __Stop = {}
 
 ---@class MoveCadence
 ---@field ACCEL_SECONDS number
@@ -4140,6 +4206,11 @@ function __BattleNpcController:RangedAttack(target) end
 function __BattleNpcController:TryDeaggro() end
 ---@param tick any
 function __BattleNpcController:Update(tick) end
+
+---@class SpreadSolution
+---@field At any
+---@field Stops table<number, Stop>
+local __SpreadSolution = {}
 
 ---@class Controller
 ---@field canUpdate boolean
@@ -4763,6 +4834,8 @@ function __Director:StartDirector(spawnImmediate, ...) end
 ---@field ARRIVAL_GRACE_SECONDS number
 ---@field CONTENT_GROUP_CAPACITY number
 ---@field CORPSE_SECONDS number
+---@field ROSTER_RESEND_SECONDS number
+---@field TANK_PULL_ENMITY number
 ---@field T_ALL_LEFT number
 ---@field T_PARTY_DEFEATED number
 ---@field T_TIME_MINUTES number
@@ -4819,6 +4892,9 @@ function __DutyEncounter:SetEscortFollow(escort, leader, gap) end
 ---@param mob BattleNpc
 ---@param required boolean
 function __DutyEncounter:SetRequired(mob, required) end
+---@param ally BattleNpc
+---@param seconds number
+function __DutyEncounter:SetTank(ally, seconds) end
 ---@param seconds number
 function __DutyEncounter:SetTimeLimit(seconds) end
 ---@param value boolean
