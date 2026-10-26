@@ -13,8 +13,8 @@ Building and running (Windows, macOS, Linux)
 ========
 The servers target .NET 10 and build with the `dotnet` CLI on any OS.
 
-1. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download), MariaDB and PHP.
-   On macOS: `brew install --cask dotnet-sdk` and `brew install mariadb php`.
+1. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download) and MariaDB.
+   On macOS: `brew install --cask dotnet-sdk` and `brew install mariadb`.
 2. Create the database and import the schema into an empty database:
    ```bash
    mysql -u root -p -e "CREATE DATABASE ffxiv_server"
@@ -26,7 +26,9 @@ The servers target .NET 10 and build with the `dotnet` CLI on any OS.
    so set your database password in `<Server>/bin/Debug/*_config.ini`, or pass it at launch.
 4. Run all three servers: `./run-servers.sh` (or `METEOR_DB_PASSWORD=<password> ./run-servers.sh`).
    It starts Map, then World, then Lobby, and stops them all on Ctrl+C.
-5. Serve the login pages: `php -S 127.0.0.1:8000 -t Data/www`.
+
+The login, version check and patch pages are not part of this repo. Run a separate web server
+for them, such as [Project-Meteor-Web](https://github.com/Project-Meteor-Server/Meteor-PatchLogin-Server).
 
 The game client itself is a Windows program. Point a Windows machine or VM at the server's IP.
 
