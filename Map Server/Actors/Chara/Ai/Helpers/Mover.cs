@@ -29,11 +29,9 @@ using Meteor.Map.utils;
 
 namespace Meteor.Map.actors.chara.ai
 {
-    /// <summary>
-    /// Moves every server-controlled character. Controllers set a goal with MoveTo or Chase, and
-    /// AIContainer calls Update each tick. 0x00CF goes out one hop ahead along the route (MoveCadence),
-    /// and the actor walks at the client's pace so range and aggro checks match what the player sees.
-    /// </summary>
+    // Moves every server-controlled character. Controllers set a goal with MoveTo or Chase, and
+    // AIContainer calls Update each tick. 0x00CF goes out one hop ahead along the route (MoveCadence),
+    // and the actor walks at the client's pace so range and aggro checks match what the player sees.
     class Mover
     {
         // Indexes into the speed table sent in SetActorSpeedPacket.
@@ -99,7 +97,7 @@ namespace Meteor.Map.actors.chara.ai
         // Kept tick to tick so a route never starts on the floor above or below.
         private readonly Meteor.Navigation.NavFloor floor = new Meteor.Navigation.NavFloor();
 
-        /// <summary>Set by scripts. The mob ignores players until the walk ends.</summary>
+        // Set by scripts. The mob ignores players until the walk ends.
         public bool Scripted;
 
         public Outcome LastOutcome { get; private set; }
@@ -118,10 +116,8 @@ namespace Meteor.Map.actors.chara.ai
 
         #region Goals
 
-        /// <summary>
-        /// Safe to call every tick with a moving dest: the route is kept while dest stays within
-        /// repathDistance. Returns false when already there or there is no route (see LastOutcome).
-        /// </summary>
+        // Safe to call every tick with a moving dest: the route is kept while dest stays within
+        // repathDistance. Returns false when already there or there is no route (see LastOutcome).
         public bool MoveTo(Vector3 dest, ushort moveState, float stopShort = 0.0f, float repathDistance = DEFAULT_REPATH_DISTANCE,
             Action<Outcome> onDone = null, bool ignoreNav = false)
         {
@@ -155,10 +151,8 @@ namespace Meteor.Map.actors.chara.ai
             return Plan(now);
         }
 
-        /// <summary>
-        /// Call every tick with the target's position. Routes to where the target is heading, not where it
-        /// is, so hops stay long. The caller stops the mob once in range.
-        /// </summary>
+        // Call every tick with the target's position. Routes to where the target is heading, not where it
+        // is, so hops stay long. The caller stops the mob once in range.
         public bool Chase(Vector3 dest, ushort moveState, float stopShort, Func<bool> crowded = null)
         {
             if (dest == null || owner.CurrentArea == null)
@@ -169,7 +163,7 @@ namespace Meteor.Map.actors.chara.ai
 
         private Func<bool> chaseCrowded;
 
-        /// <summary>Call every tick, even while in range, so the target's speed is known when it runs off.</summary>
+        // Call every tick, even while in range, so the target's speed is known when it runs off.
         public Vector3 WatchChase(Vector3 dest)
         {
             return chaseLead.Lead(dest, Seconds(DateTime.Now), Math.Max(1.0f, EffectiveSpeed(MOVE_STATE_RUN) * 1.5f));
@@ -231,7 +225,7 @@ namespace Meteor.Map.actors.chara.ai
             EndCadence();
         }
 
-        /// <summary>Sent as 0x00CE so the client places the actor instead of running it there.</summary>
+        // Sent as 0x00CE so the client places the actor instead of running it there.
         public void Teleport(Vector3 pos, float rotation)
         {
             if (pos == null || owner.CurrentArea == null)
@@ -549,7 +543,7 @@ namespace Meteor.Map.actors.chara.ai
             stuckExpected = 0.0f;
         }
 
-        /// <summary>Under 10% of the expected progress in 2 s: plan again once, then give up as Stuck.</summary>
+        // Under 10% of the expected progress in 2 s: plan again once, then give up as Stuck.
         private void CheckStuck(DateTime tick, Vector3 next)
         {
             if (stuckPos == null)
@@ -603,7 +597,7 @@ namespace Meteor.Map.actors.chara.ai
             AfterHop(tick, hop, chord);
         }
 
-        /// <summary>A blocked hop waits a tick, then plans again, then tries a recovery hop, then gives up as Stuck.</summary>
+        // A blocked hop waits a tick, then plans again, then tries a recovery hop, then gives up as Stuck.
         private void AfterHop(DateTime tick, MoveCadence.Hop hop, Func<Vector3, Vector3, ChordResult> chord)
         {
             if (hop.Send && !hop.Checked && chord != null)
@@ -651,7 +645,7 @@ namespace Meteor.Map.actors.chara.ai
             blockedRecoveries = 0;
         }
 
-        /// <summary>A short hop out of a notch in the mesh edge, from which the walk can go on.</summary>
+        // A short hop out of a notch in the mesh edge, from which the walk can go on.
         private bool Recover(DateTime tick)
         {
             var c = owner.GetPosAsVector3();
@@ -674,7 +668,7 @@ namespace Meteor.Map.actors.chara.ai
 
         private static bool ChordEnforced => ConfigConstants.CHORD_VALIDATOR == ConfigConstants.ChordMode.On;
 
-        /// <summary>Null when chord_validator is off.</summary>
+        // Null when chord_validator is off.
         private Func<Vector3, Vector3, ChordResult> ChordCheck()
         {
             if (ConfigConstants.CHORD_VALIDATOR == ConfigConstants.ChordMode.Off || owner.CurrentArea == null)

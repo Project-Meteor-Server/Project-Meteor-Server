@@ -37,12 +37,8 @@ namespace Meteor.Map
 
         const UInt32 ITEM_GIL = 1000001;
       
-        /// <summary>
-        /// We only use the default options for SendMessagePacket.
-        /// May as well make it less unwieldly to view
-        /// </summary>
-        /// <param name="client"></param>
-        /// <param name="message"></param>
+        // We only use the default options for SendMessagePacket.
+        // May as well make it less unwieldly to view
         private void SendMessage(Session session, String message)
         {
             if (session != null)

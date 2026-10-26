@@ -65,7 +65,7 @@ namespace Meteor.Map.lua
 
         private Timer luaTimer;
 
-        /// <summary>The server functions every script can call by name.</summary>
+        // The server functions every script can call by name.
         public static readonly IReadOnlyDictionary<string, Delegate> ScriptGlobals = new Dictionary<string, Delegate>
         {
             ["GetWorldManager"] = (Func<WorldManager>)Server.GetWorldManager,
@@ -119,7 +119,7 @@ namespace Meteor.Map.lua
             }
         }
 
-        /// <summary>Takes the script that is waiting for this player's next reply, if there is one.</summary>
+        // Takes the script that is waiting for this player's next reply, if there is one.
         private LuaCoroutine TakeEventWait(Player player)
         {
             lock (waitLock)
@@ -153,8 +153,8 @@ namespace Meteor.Map.lua
             (ScriptEngine.Instance as XLuaEngine)?.Tick();
         }
 
-        /// <summary>Carries on a script whose wait is over. A script error is only logged here,
-        /// because an error escaping the timer thread would shut down the server.</summary>
+        // Carries on a script whose wait is over. A script error is only logged here,
+        // because an error escaping the timer thread would shut down the server.
         private void ResumeLogged(Player player, LuaCoroutine coroutine, params object[] args)
         {
             try
@@ -203,10 +203,8 @@ namespace Meteor.Map.lua
                 player.EndEvent();
         }
 
-        /// <summary> 
-        /// // todo: this is dumb, should probably make a function for each action with different default return values
-        /// or just make generic function and pass default value as first arg after functionName
-        /// </summary>
+        // todo: this is dumb, should probably make a function for each action with different default return values
+        // or just make generic function and pass default value as first arg after functionName
         public static bool CallLuaBattleFunction(Character actor, string functionName, params object[] args)
         {
             // todo: should use "scripts/zones/ZONE_NAME/battlenpcs/NAME.lua" instead of scripts/unique
@@ -628,8 +626,8 @@ namespace Meteor.Map.lua
             }
         }
 
-        /// <summary>When a script paused to wait (wait, waitForSignal, callClientFunction or kickEvent
-        /// in global.lua), puts it on the matching wait list so it carries on at the right time.</summary>
+        // When a script paused to wait (wait, waitForSignal, callClientFunction or kickEvent
+        // in global.lua), puts it on the matching wait list so it carries on at the right time.
         public LuaResume ResolveResume(Player player, LuaCoroutine coroutine, LuaResume value)
         {
             if (value == null || !value.Yielded || value.Count == 0 || !(value[0] is string tag))
@@ -812,8 +810,8 @@ namespace Meteor.Map.lua
             return ScriptEngine.Instance.Load(path);
         }
 
-        /// <summary>Calls a battle or status-effect script function and returns the number it returned
-        /// (0 if it returned none). Null when the script has no such function or the call failed.</summary>
+        // Calls a battle or status-effect script function and returns the number it returned
+        // (0 if it returned none). Null when the script has no such function or the call failed.
         private static int? CallForResult(LuaScript script, string functionName, object[] args)
         {
             if (script == null || !script.HasFunction(functionName))

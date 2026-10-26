@@ -26,7 +26,7 @@ using System.Threading;
 
 namespace Meteor.Navigation
 {
-    /// <summary>Gate states. A change makes a new state, so readers never lock and caches can't go stale.</summary>
+    // Gate states. A change makes a new state, so readers never lock and caches can't go stale.
     public sealed class GateState
     {
         private const int MAX_CACHED = 2048;
@@ -64,7 +64,7 @@ namespace Meteor.Navigation
             }
         }
 
-        /// <summary>Gates outside the table count as open.</summary>
+        // Gates outside the table count as open.
         public bool IsOpen(int gate) => gate < 0 || gate >= Count || (open[gate >> 6] & (1UL << (gate & 63))) != 0;
 
         internal GateState With(int gate, bool isOpen)
@@ -90,14 +90,14 @@ namespace Meteor.Navigation
         }
     }
 
-    /// <summary>One area's view of a shared NavWorld, with that area's own gates. Thread-safe.</summary>
+    // One area's view of a shared NavWorld, with that area's own gates. Thread-safe.
     public sealed class NavInstance
     {
         public readonly NavWorld World;
         public readonly string Name;
         private GateState gates;
 
-        /// <summary>Raised after the new state is visible.</summary>
+        // Raised after the new state is visible.
         public event Action<NavInstance, int, bool> GateChanged;
 
         public NavInstance(NavWorld world, string name = null)
@@ -118,7 +118,7 @@ namespace Meteor.Navigation
             return g >= 0 && Gates.IsOpen(g);
         }
 
-        /// <summary>False when there is no such gate.</summary>
+        // False when there is no such gate.
         public bool SetGate(string id, bool open)
         {
             int g = World.GateIndex(id);
@@ -154,7 +154,7 @@ namespace Meteor.Navigation
         public NavPoint Project(Vector3 p, NavAgent agent, float maxVertical = 4.0f, float searchRadius = 4.0f) =>
             World.Project(p, agent, Gates, maxVertical, searchRadius);
 
-        /// <summary>Y = 0 means the height is unknown: takes the highest ground there.</summary>
+        // Y = 0 means the height is unknown: takes the highest ground there.
         public NavPoint Snap(Vector3 p, NavAgent agent) => World.Snap(p, agent, Gates);
 
         public NavRoute PlanRoute(Vector3 from, Vector3 to, NavAgent agent, RouteOpts opts = null) =>
@@ -166,7 +166,7 @@ namespace Meteor.Navigation
         public RayHit Walk(Vector3 from, Vector3 to, NavAgent agent, float maxVertical = 2.0f) =>
             World.Walk(from, to, agent, Gates, maxVertical);
 
-        /// <summary>Closed gates block sight.</summary>
+        // Closed gates block sight.
         public bool CanSee(Vector3 eye, Vector3 target) => World.CanSee(eye, target, Gates);
 
         public NavPoint RandomPoint(Vector3 center, float rMin, float rMax, NavAgent agent) =>

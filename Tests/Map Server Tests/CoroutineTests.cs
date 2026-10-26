@@ -6,8 +6,8 @@ using Xunit;
 
 namespace Meteor.Map.Tests
 {
-    /// <summary>Checks that scripts can pause and carry on (how wait(), waitForSignal() and NPC
-    /// dialogue work), that script errors are reported, and that waiting scripts wake up on time.</summary>
+    // Checks that scripts can pause and carry on (how wait(), waitForSignal() and NPC
+    // dialogue work), that script errors are reported, and that waiting scripts wake up on time.
     [Collection("engines")]
     public sealed class CoroutineTests
     {
@@ -79,11 +79,9 @@ namespace Meteor.Map.Tests
             Assert.InRange(elapsed, 195, 1000);
         }
 
-        /// <summary>
-        /// One thread holds the zone lock and runs a script (as the zone update does for mobs) while
-        /// another thread's script asks the world for a zone (which takes the zone lock). Both must
-        /// finish; with separate zone and script locks the two threads would wait on each other.
-        /// </summary>
+        // One thread holds the zone lock and runs a script (as the zone update does for mobs) while
+        // another thread's script asks the world for a zone (which takes the zone lock). Both must
+        // finish; with separate zone and script locks the two threads would wait on each other.
         [Fact]
         public void ZoneUpdateAndScriptDoNotDeadlock()
         {

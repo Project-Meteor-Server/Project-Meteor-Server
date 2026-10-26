@@ -25,8 +25,8 @@ using Meteor.Common;
 
 namespace Meteor.Map.actors.chara.ai
 {
-    /// <summary>A route is a list of ground points starting where the walk started; the index is the
-    /// point being walked toward.</summary>
+    // A route is a list of ground points starting where the walk started; the index is the
+    // point being walked toward.
     static class MoverMath
     {
         public static float XZDistance(Vector3 a, Vector3 b)
@@ -40,8 +40,8 @@ namespace Meteor.Map.actors.chara.ai
             return speed <= 0.0f || dt <= 0.0 ? 0.0f : (float)(speed * dt);
         }
 
-        /// <summary>Walks budget yalms along the route. Height comes from the route so the actor follows
-        /// slopes. index ends on the next point ahead (points.Count when done).</summary>
+        // Walks budget yalms along the route. Height comes from the route so the actor follows
+        // slopes. index ends on the next point ahead (points.Count when done).
         public static Vector3 Advance(Vector3 pos, IList<Vector3> points, ref int index, float budget, out float travelled)
         {
             travelled = 0.0f;
@@ -81,8 +81,8 @@ namespace Meteor.Map.actors.chara.ai
             return length;
         }
 
-        /// <summary>Measured along the route, so a chase stops in range without cutting through walls.
-        /// Never removes the start.</summary>
+        // Measured along the route, so a chase stops in range without cutting through walls.
+        // Never removes the start.
         public static void TrimEnd(List<Vector3> points, float cut)
         {
             while (cut > 0.0f && points.Count > 1)
@@ -102,7 +102,7 @@ namespace Meteor.Map.actors.chara.ai
             }
         }
 
-        /// <summary>Spreads points evenly by area across the ring.</summary>
+        // Spreads points evenly by area across the ring.
         public static double RingRadius(double u, float min, float max)
         {
             if (max <= min)

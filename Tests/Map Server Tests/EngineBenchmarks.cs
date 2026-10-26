@@ -6,9 +6,9 @@ using Xunit.Abstractions;
 
 namespace Meteor.Map.Tests
 {
-    /// <summary>Times common script work and prints the results, so a slowdown shows up in the CI
-    /// log. It only fails if a script gives the wrong answer. Run with
-    /// dotnet test --filter Category=Benchmark --logger "console;verbosity=detailed".</summary>
+    // Times common script work and prints the results, so a slowdown shows up in the CI
+    // log. It only fails if a script gives the wrong answer. Run with
+    // dotnet test --filter Category=Benchmark --logger "console;verbosity=detailed".
     [Collection("engines")]
     [Trait("Category", "Benchmark")]
     public sealed class EngineBenchmarks

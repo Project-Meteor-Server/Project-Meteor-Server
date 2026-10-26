@@ -25,18 +25,18 @@ using Meteor.Navigation;
 
 namespace Meteor.Map.actors.chara.ai
 {
-    /// <summary>Unknown: no client collision is loaded there.</summary>
+    // Unknown: no client collision is loaded there.
     enum GroundAnswer { Hit, Miss, Unknown }
 
     interface IChordWorld
     {
-        /// <summary>Fraction of a → b that is walkable: 1 = clear, NaN when a is off the mesh.</summary>
+        // Fraction of a → b that is walkable: 1 = clear, NaN when a is off the mesh.
         float Walk(Vector3 a, Vector3 b, float lateral);
-        /// <summary>The highest surface with bottom &lt; y &lt;= top.</summary>
+        // The highest surface with bottom < y <= top.
         GroundAnswer RayDown(float x, float z, float top, float bottom, out float y);
-        /// <summary>under: the mesh is right under the point, not just near it.</summary>
+        // Under: the mesh is right under the point, not just near it.
         bool NavHeight(float x, float yNear, float z, out float y, out bool under);
-        /// <summary>PositiveInfinity when further than max.</summary>
+        // PositiveInfinity when further than max.
         float MeshDistance(Vector3 p, float max);
     }
 
@@ -45,7 +45,7 @@ namespace Meteor.Map.actors.chara.ai
         public enum Why { Ok, TooShort, Wall, NoGround, FloorMismatch, Step, Overhang }
 
         public readonly Why Reason;
-        /// <summary>How far along the line it failed.</summary>
+        // How far along the line it failed.
         public readonly float S;
         public readonly float Length;
 
@@ -60,40 +60,38 @@ namespace Meteor.Map.actors.chara.ai
         public override string ToString() => Ok ? "ok" : $"{Reason} at {S:F2}/{Length:F2}";
     }
 
-    /// <summary>
-    /// Checks the straight line the client will walk an actor along after a 0x00CF. The client doesn't
-    /// test walls and takes the height from its own ground probe each frame. So the navmesh must be
-    /// clear along the line, the probe must find the same floor as the navmesh, and nothing may hang low
-    /// enough over the floor for the probe to take it as ground and lift the actor into it.
-    /// </summary>
+    // Checks the straight line the client will walk an actor along after a 0x00CF. The client doesn't
+    // test walls and takes the height from its own ground probe each frame. So the navmesh must be
+    // clear along the line, the probe must find the same floor as the navmesh, and nothing may hang low
+    // enough over the floor for the probe to take it as ground and lift the actor into it.
     static class ChordValidator
     {
-        /// <summary>How far to either side of the expected spot the client may really be.</summary>
+        // How far to either side of the expected spot the client may really be.
         public const float MARGIN = 0.4f;
         public const float FLOOR_TOLERANCE = 0.3f;
-        /// <summary>The client ignores a target this close to the last one.</summary>
+        // The client ignores a target this close to the last one.
         public const float MIN_MOVE = 0.1f;
         public const float SIDE_RADIUS = 0.5f, SIDE_SLOPE = 0.75f;
         private const float MARGIN_SLACK = 0.05f;
-        /// <summary>A start right on the mesh edge reads as leaving the mesh at once, so the line is tried
-        /// again from this far along. Shorter than the gap around any obstacle, so it can't skip one.</summary>
+        // A start right on the mesh edge reads as leaving the mesh at once, so the line is tried
+        // again from this far along. Shorter than the gap around any obstacle, so it can't skip one.
         public const float START_SLOP = 0.5f;
         private const float MIN_STEP = 0.1f, MAX_STEP = 0.5f;
-        /// <summary>A larger gap between the probe's floor and the navmesh at the start means the actor is
-        /// already on the wrong surface.</summary>
+        // A larger gap between the probe's floor and the navmesh at the start means the actor is
+        // already on the wrong surface.
         public const float MAX_BIAS = 1.0f;
 
-        /// <summary>The mesh stops 0.6 short of walls, so a line this far past its edge is still clear of them.
-        /// Narrow tunnels need it: their routes hug the edge.</summary>
+        // The mesh stops 0.6 short of walls, so a line this far past its edge is still clear of them.
+        // Narrow tunnels need it: their routes hug the edge.
         public const float EDGE_TOLERANCE = 0.4f;
         private const float EDGE_STEP = 0.25f;
 
         public static float FloorTolerance = FLOOR_TOLERANCE;
-        /// <summary>How far the probe's floor may sit above or below the navmesh before it counts as a
-        /// different surface. The mesh is smoother than the ground, more so on slopes.</summary>
+        // How far the probe's floor may sit above or below the navmesh before it counts as a
+        // different surface. The mesh is smoother than the ground, more so on slopes.
         public const float ABOVE_MESH = 0.45f, BELOW_MESH = 0.75f;
 
-        /// <summary>c is where the client draws the actor, hover included. Samples one point per client frame.</summary>
+        // c is where the client draws the actor, hover included. Samples one point per client frame.
         public static ChordResult Check(IChordWorld world, Vector3 c, Vector3 t, float speed, float hover, Vector3? lastTarget = null)
         {
             float dx = t.X - c.X, dz = t.Z - c.Z;
@@ -196,10 +194,8 @@ namespace Meteor.Map.actors.chara.ai
         private static readonly float[] RECOVER_RINGS = { 0.5f, 1.0f, 1.5f, 2.0f, 3.0f };
         private const int RECOVER_DIRECTIONS = 16;
 
-        /// <summary>
-        /// For an actor stuck in a notch of the mesh edge, where every line toward t fails at once. Finds a
-        /// short hop nearby that passes, preferring one from which t can then be reached.
-        /// </summary>
+        // For an actor stuck in a notch of the mesh edge, where every line toward t fails at once. Finds a
+        // short hop nearby that passes, preferring one from which t can then be reached.
         public static bool Recover(IChordWorld world, Vector3 c, Vector3 t, float speed, float hover, out Vector3 hop)
         {
             hop = default;
@@ -234,15 +230,15 @@ namespace Meteor.Map.actors.chara.ai
             return found;
         }
 
-        /// <summary>How far past an edge the mesh may carry on lower down (a ledge the client walks off).</summary>
+        // How far past an edge the mesh may carry on lower down (a ledge the client walks off).
         public const float LEDGE_GAP = 2.5f;
-        /// <summary>Only drops count: a higher floor past an edge is a rock shelf.</summary>
+        // Only drops count: a higher floor past an edge is a rock shelf.
         public const float LEDGE_DROP = 0.5f;
         private const int MAX_LEDGES = 2;
         private const float LEDGE_LANDING = 0.25f;
 
-        /// <summary>Like IChordWorld.Walk, but a line that only grazes the mesh edge passes, and one that walks off a
-        /// ledge carries on below (the ground checks judge the drop).</summary>
+        // Like IChordWorld.Walk, but a line that only grazes the mesh edge passes, and one that walks off a
+        // ledge carries on below (the ground checks judge the drop).
         private static float Pass(IChordWorld world, Vector3 a, Vector3 b)
         {
             float len = XZ(b - a);

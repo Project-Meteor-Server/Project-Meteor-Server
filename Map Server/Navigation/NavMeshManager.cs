@@ -31,8 +31,8 @@ using Meteor.Navigation;
 
 namespace Meteor.Map.navigation
 {
-    /// <summary>Zones listed in manifest.json get a .nav world; the rest fall back to "zoneName.bin".
-    /// Zones that share a file share one copy.</summary>
+    // Zones listed in manifest.json get a .nav world; the rest fall back to "zoneName.bin".
+    // Zones that share a file share one copy.
     static class NavMeshManager
     {
         public const string MANIFEST = "manifest.json";
@@ -175,7 +175,7 @@ namespace Meteor.Map.navigation
             return result;
         }
 
-        /// <summary>Variant zones ("sea0Field01a") use the base zone's file.</summary>
+        // Variant zones ("sea0Field01a") use the base zone's file.
         private static string ResolveFile(string dir, string zoneName)
         {
             if (string.IsNullOrEmpty(zoneName))

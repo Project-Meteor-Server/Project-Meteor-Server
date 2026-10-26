@@ -36,9 +36,9 @@ namespace Meteor.Navigation
         public string Suffix;
         public int Kind;
         public string Primitive;
-        /// <summary>A door, quest wall or gate.</summary>
+        // A door, quest wall or gate.
         public bool Dynamic;
-        /// <summary>"on", "off" or "unknown"; null for groups that never switch.</summary>
+        // "on", "off" or "unknown"; null for groups that never switch.
         public string Initial;
     }
 
@@ -56,14 +56,14 @@ namespace Meteor.Navigation
         public int TriangleCount => Group.Length;
     }
 
-    /// <summary>Collision export files are built from game data and never committed.</summary>
+    // Collision export files are built from game data and never committed.
     public static class XcolReader
     {
         public const uint MAGIC = 0x4C4F4358; // 'XCOL'
         public const int VERSION = 1;
         private const int HEADER_SIZE = 56;
 
-        /// <summary>groups.json may be missing.</summary>
+        // groups.json may be missing.
         public static XcolFile LoadZone(string dir)
         {
             var x = Read(Path.Combine(dir, "static.xcol"));
@@ -73,7 +73,7 @@ namespace Meteor.Navigation
             return x;
         }
 
-        /// <summary>Zones without a static.xcol are left out. Names are case-insensitive.</summary>
+        // Zones without a static.xcol are left out. Names are case-insensitive.
         public static Dictionary<string, string> ResolveZones(string root)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -101,7 +101,7 @@ namespace Meteor.Navigation
             return result;
         }
 
-        /// <summary>Reads the header only.</summary>
+        // Reads the header only.
         public static (Vector3 min, Vector3 max) ReadBounds(string path)
         {
             var d = new byte[HEADER_SIZE];

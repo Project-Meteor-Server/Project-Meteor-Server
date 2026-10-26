@@ -336,8 +336,8 @@ namespace Meteor.Map
             writer.Write((Byte)0xF);
         }
 
-        /// <summary>Turns what a script function returned into the values sent with an event.
-        /// Null (the call failed) gives an empty list.</summary>
+        // Turns what a script function returned into the values sent with an event.
+        // Null (the call failed) gives an empty list.
         public static List<LuaParam> CreateLuaParamListFromScript(object[] fromScript)
         {
             List<LuaParam> luaParams = new List<LuaParam>();

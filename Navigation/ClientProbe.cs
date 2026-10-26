@@ -21,18 +21,16 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 
 namespace Meteor.Navigation
 {
-    /// <summary>
-    /// The client places actors it doesn't control on the ground with one ray straight down from above
-    /// their drawn height; the nearest hit wins, either side up. That is all the collision they have.
-    /// </summary>
+    // The client places actors it doesn't control on the ground with one ray straight down from above
+    // their drawn height; the nearest hit wins, either side up. That is all the collision they have.
     public static class ClientProbe
     {
-        /// <summary>Retail uses 2. At 1, a cave ceiling 1-2 above the floor isn't taken for ground.</summary>
+        // Retail uses 2. At 1, a cave ceiling 1-2 above the floor isn't taken for ground.
         public const float RayUp = 1.0f;
         public const float RayDown = 10.0f;
 
-        /// <summary>The probe skips water, sea planes and some cave ceilings (material bit 2), and only
-        /// sees collision kinds 1 and 16.</summary>
+        // The probe skips water, sea planes and some cave ceilings (material bit 2), and only
+        // sees collision kinds 1 and 16.
         public static bool IsVisible(int material, int kind) => (material & 2) == 0 && (kind == 1 || kind == 16);
     }
 }

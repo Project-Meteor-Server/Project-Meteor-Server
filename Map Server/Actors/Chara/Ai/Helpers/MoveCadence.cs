@@ -25,35 +25,33 @@ using Meteor.Common;
 
 namespace Meteor.Map.actors.chara.ai
 {
-    /// <summary>
-    /// Decides when the Mover sends a 0x00CF. The client walks an actor straight toward the last 0x00CF
-    /// target. Near that target it starts its stop and ignores new targets until it has stopped, so a
-    /// target only one tick ahead makes it stop and go. Retail sends a target well ahead and the next one
-    /// before the actor gets near it: one per straight stretch when roaming, about every 2 s when chasing.
-    ///
-    /// It also tracks where the client draws the actor, including its speed-up from standstill, so range
-    /// and aggro checks see what the player sees.
-    /// </summary>
+    // Decides when the Mover sends a 0x00CF. The client walks an actor straight toward the last 0x00CF
+    // target. Near that target it starts its stop and ignores new targets until it has stopped, so a
+    // target only one tick ahead makes it stop and go. Retail sends a target well ahead and the next one
+    // before the actor gets near it: one per straight stretch when roaming, about every 2 s when chasing.
+    //
+    // It also tracks where the client draws the actor, including its speed-up from standstill, so range
+    // and aggro checks see what the player sees.
     class MoveCadence
     {
-        /// <summary>Hop length in seconds of travel. With LEAD_SECONDS this gives about retail's 1.8 s between chase hops.</summary>
+        // Hop length in seconds of travel. With LEAD_SECONDS this gives about retail's 1.8 s between chase hops.
         public const double HOP_SECONDS = 2.4;
-        /// <summary>The next hop goes out while the client still has this long to walk, before it starts
-        /// stopping and would ignore it.</summary>
+        // The next hop goes out while the client still has this long to walk, before it starts
+        // stopping and would ignore it.
         public const double LEAD_SECONDS = 0.6;
-        /// <summary>The client warps an actor to a 0x00CF more than 30 yalms away.</summary>
+        // The client warps an actor to a 0x00CF more than 30 yalms away.
         public const float MAX_HOP = 20.0f;
         public const float MIN_HOP = 2.0f;
-        /// <summary>A sharper turn ends the hop, since the client walks straight and cutting a corner goes through walls.</summary>
+        // A sharper turn ends the hop, since the client walks straight and cutting a corner goes through walls.
         public const float CORNER_DEGREES = 12.0f;
-        /// <summary>The route changed under the hop when the server is this far from where the client draws
-        /// the actor: send again.</summary>
+        // The route changed under the hop when the server is this far from where the client draws
+        // the actor: send again.
         public const float DRIFT = 2.0f;
-        /// <summary>Send again when the target is this far off the current route.</summary>
+        // Send again when the target is this far off the current route.
         public const float RETARGET = 1.0f;
-        /// <summary>Retail sends the stop a moment after the actor arrives.</summary>
+        // Retail sends the stop a moment after the actor arrives.
         public const double STOP_DELAY = 0.5;
-        /// <summary>How long the client takes to reach full speed from standstill.</summary>
+        // How long the client takes to reach full speed from standstill.
         public const double ACCEL_SECONDS = 1.0;
 
         public bool Active { get; private set; }
@@ -96,7 +94,7 @@ namespace Meteor.Map.actors.chara.ai
             Corner = false;
         }
 
-        /// <summary>Distance walked t seconds after starting from standstill, on the client's speed curve.</summary>
+        // Distance walked t seconds after starting from standstill, on the client's speed curve.
         public static float Ramp(float speed, double t)
         {
             if (speed <= 0.0f || t <= 0.0)
@@ -173,7 +171,7 @@ namespace Meteor.Map.actors.chara.ai
             public Reason Why;
             public Vector3 Target;
             public bool Final;
-            /// <summary>A hop was due but every line failed ChordValidator, so nothing was sent.</summary>
+            // A hop was due but every line failed ChordValidator, so nothing was sent.
             public bool Blocked;
             public ChordResult Check;
             public bool Checked;
@@ -183,8 +181,8 @@ namespace Meteor.Map.actors.chara.ai
 
         public const float SHORTEN_BACK = 0.5f;
 
-        /// <summary>Pulls the hop's end back to just before each failure until the line passes. Blocked when
-        /// nothing is left of it.</summary>
+        // Pulls the hop's end back to just before each failure until the line passes. Blocked when
+        // nothing is left of it.
         public static bool Shorten(ref Hop hop, Vector3 c, float length, Func<float, Vector3> pointAt, Func<Vector3, Vector3, ChordResult> chord)
         {
             hop.Checked = true;
@@ -228,7 +226,7 @@ namespace Meteor.Map.actors.chara.ai
             return new Vector3(a.X + (b.X - a.X) * k, a.Y + (b.Y - a.Y) * k, a.Z + (b.Z - a.Z) * k);
         }
 
-        /// <summary>A walk sends one hop per straight stretch; a run goes about HOP_SECONDS ahead.</summary>
+        // A walk sends one hop per straight stretch; a run goes about HOP_SECONDS ahead.
         public static float MaxHop(float speed, bool walk)
         {
             if (walk)
@@ -236,12 +234,10 @@ namespace Meteor.Map.actors.chara.ai
             return Math.Min(MAX_HOP, Math.Max(MIN_HOP, MoverMath.Budget(speed, HOP_SECONDS)));
         }
 
-        /// <summary>
-        /// This tick's hop decision. done: the walk ends at pos. truncated: the route is one part of a longer
-        /// trip. maxDy: how much the ground may rise or fall along a hop (NaN: any). A hop past a corner goes
-        /// out early only when lineClear says the client can cut it. A hop that fails chord is pulled back,
-        /// and one that can't pass comes back Blocked.
-        /// </summary>
+        // This tick's hop decision. done: the walk ends at pos. truncated: the route is one part of a longer
+        // trip. maxDy: how much the ground may rise or fall along a hop (NaN: any). A hop past a corner goes
+        // out early only when lineClear says the client can cut it. A hop that fails chord is pulled back,
+        // and one that can't pass comes back Blocked.
         public Hop Plan(double now, Vector3 pos, IList<Vector3> points, int index, bool done, bool truncated,
             float speed, ushort state, bool walk, double tickDt, float maxDy = float.NaN, Func<Vector3, Vector3, bool> lineClear = null,
             double minResend = 0.0, Func<Vector3, Vector3, ChordResult> chord = null, Vector3 clientAt = null)
@@ -379,7 +375,7 @@ namespace Meteor.Map.actors.chara.ai
 
         public const double HOLD_START = 0.7;
 
-        /// <summary>True holds back the next hop (a chaser crowding the one ahead).</summary>
+        // True holds back the next hop (a chaser crowding the one ahead).
         public Func<bool> HoldHop;
 
         public const double HOLD_TICKS = 1.5;
@@ -389,7 +385,7 @@ namespace Meteor.Map.actors.chara.ai
         public const float BEHIND_SLACK = 0.5f;
 
         public const float THROUGH_GAIN = 0.5f;
-        /// <summary>The route keeps large bodies off walls at bends, so a hop through them stays this close to it.</summary>
+        // The route keeps large bodies off walls at bends, so a hop through them stays this close to it.
         public const float THROUGH_LANE = 0.5f;
 
         private static bool InLane(Vector3 c, Vector3 origin, Vector3 t, IList<Vector3> points, int index, float routeLength)
@@ -410,8 +406,8 @@ namespace Meteor.Map.actors.chara.ai
             return true;
         }
 
-        /// <summary>Extends a hop that would stop at a corner on past it while the straight line stays safe.
-        /// True when that gains at least THROUGH_GAIN.</summary>
+        // Extends a hop that would stop at a corner on past it while the straight line stays safe.
+        // True when that gains at least THROUGH_GAIN.
         public static bool ThroughCorners(ref Hop hop, Vector3 c, Vector3 origin, IList<Vector3> points, int index, float maxLength,
             float maxDy, Func<Vector3, Vector3, ChordResult> chord, out bool routeEnd)
         {
@@ -446,7 +442,7 @@ namespace Meteor.Map.actors.chara.ai
             return -1;
         }
 
-        /// <summary>Avoids leaving a tiny hop after this one.</summary>
+        // Avoids leaving a tiny hop after this one.
         public static Vector3 NextHopOrEnd(Vector3 pos, IList<Vector3> points, int index, float maxLength, float maxDy, out HopEnd end)
         {
             Vector3 longer = NextHop(pos, points, index, maxLength + MIN_HOP, maxDy, out end);
@@ -459,7 +455,7 @@ namespace Meteor.Map.actors.chara.ai
 
         public enum HopEnd { Length, RouteEnd, Corner, Height }
 
-        /// <summary>Ends at maxLength, a corner, or where the ground rises or falls more than maxDy.</summary>
+        // Ends at maxLength, a corner, or where the ground rises or falls more than maxDy.
         public static Vector3 NextHop(Vector3 pos, IList<Vector3> points, int index, float maxLength, float maxDy, out HopEnd end, bool corners = true)
         {
             end = HopEnd.Length;
@@ -585,17 +581,15 @@ namespace Meteor.Map.actors.chara.ai
             return (float)Math.Sqrt(x * x + z * z);
         }
 
-        /// <summary>
-        /// A chased target's velocity. Routing to where the target is now gives tiny hops when it runs as
-        /// fast as the mob; routing to where it will be in HOP_SECONDS gives retail's long hops.
-        /// </summary>
+        // A chased target's velocity. Routing to where the target is now gives tiny hops when it runs as
+        // fast as the mob; routing to where it will be in HOP_SECONDS gives retail's long hops.
         public class GoalTracker
         {
             private readonly double span;
             private Vector3 prev;
             private double prevAt;
 
-            /// <summary>A player's position updates come in bursts, so one tick can see two or none.</summary>
+            // A player's position updates come in bursts, so one tick can see two or none.
             public GoalTracker(double span = 0.25)
             {
                 this.span = span;
@@ -606,7 +600,7 @@ namespace Meteor.Map.actors.chara.ai
             public bool Moving => VelX * VelX + VelZ * VelZ > MOVING_SPEED * MOVING_SPEED;
             public const float MOVING_SPEED = 0.5f;
 
-            /// <summary>Faster than maxSpeed is a warp, not a velocity.</summary>
+            // Faster than maxSpeed is a warp, not a velocity.
             public void Track(Vector3 p, double now, float maxSpeed)
             {
                 if (prev == null || now - prevAt > 1.5 || now < prevAt)
@@ -640,10 +634,8 @@ namespace Meteor.Map.actors.chara.ai
             }
         }
 
-        /// <summary>
-        /// Where a chased target will be in HOP_SECONDS. Never steps back while the target keeps its heading:
-        /// measured from single ticks, the goal jumped back and forth and every tick re-sent.
-        /// </summary>
+        // Where a chased target will be in HOP_SECONDS. Never steps back while the target keeps its heading:
+        // measured from single ticks, the goal jumped back and forth and every tick re-sent.
         public class ChaseLead
         {
             private readonly GoalTracker track = new GoalTracker(FOLLOW_SPAN);
@@ -686,13 +678,13 @@ namespace Meteor.Map.actors.chara.ai
                 last = null;
             }
 
-            /// <summary>cos 45°</summary>
+            // cos 45°
             private const float TURN_COS = 0.7071f;
         }
 
         public const double FOLLOW_SPAN = 0.6;
 
-        /// <summary>Retail re-sends at turns 0.4-1 s apart.</summary>
+        // Retail re-sends at turns 0.4-1 s apart.
         public const double FOLLOW_RESEND = 0.9;
 
         public static float Behind(Vector3 p, Vector3 c, Vector3 a, Vector3 b)

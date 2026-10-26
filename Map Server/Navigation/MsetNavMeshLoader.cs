@@ -27,10 +27,8 @@ using DotRecast.Detour.Io;
 
 namespace Meteor.Map.navigation
 {
-    /// <summary>
-    /// Reads RecastDemo "MSET" navmesh files. DotRecast's DtMeshSetReader stops at the first tile
-    /// saved with ref 0, and these files save 0 for every tile, so each tile is added here with a new ref.
-    /// </summary>
+    // Reads RecastDemo "MSET" navmesh files. DotRecast's DtMeshSetReader stops at the first tile
+    // saved with ref 0, and these files save 0 for every tile, so each tile is added here with a new ref.
     static class MsetNavMeshLoader
     {
         private const int MSET_MAGIC = 'M' << 24 | 'S' << 16 | 'E' << 8 | 'T';

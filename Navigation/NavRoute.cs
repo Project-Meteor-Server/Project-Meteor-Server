@@ -24,10 +24,8 @@ using System.Numerics;
 
 namespace Meteor.Navigation
 {
-    /// <summary>
-    /// A route planned one part at a time. Points hold the current part; while Complete is false, call
-    /// Advance near its end. One per mover; not thread-safe.
-    /// </summary>
+    // A route planned one part at a time. Points hold the current part; while Complete is false, call
+    // Advance near its end. One per mover; not thread-safe.
     public sealed class NavRoute
     {
         public enum StretchKind { None, Straight, Local, Window }
@@ -68,7 +66,7 @@ namespace Meteor.Navigation
             GateVersion = gateVersion;
         }
 
-        /// <summary>False when there is nothing left to plan or planning failed (see Reason).</summary>
+        // False when there is nothing left to plan or planning failed (see Reason).
         public bool Advance(Vector3 pos)
         {
             if (Complete && !Stale)

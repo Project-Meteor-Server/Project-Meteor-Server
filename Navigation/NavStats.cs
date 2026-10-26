@@ -30,7 +30,7 @@ namespace Meteor.Navigation
 
     public sealed class NavStats
     {
-        /// <summary>Microseconds. The last bucket takes everything above.</summary>
+        // Microseconds. The last bucket takes everything above.
         public static readonly double[] BucketLimitsUs = { 10, 50, 100, 500, 1000, 5000, 20000 };
         private static readonly int ReasonCount = Enum.GetValues(typeof(NavReason)).Length;
         private static readonly int OpCount = Enum.GetValues(typeof(NavOp)).Length;

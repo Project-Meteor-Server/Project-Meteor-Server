@@ -39,12 +39,12 @@ using Meteor.Map.actors.chara.npc;
 
 namespace Meteor.Map.Actors
 {
-    /// <summary> Which Character types am I friendly with </summary>
+    // Which Character types am I friendly with
     enum CharacterTargetingAllegiance
     {
-        /// <summary> Friendly to BattleNpcs </summary>
+        // Friendly to BattleNpcs
         BattleNpcs,
-        /// <summary> Friendly to Players </summary>
+        // Friendly to Players
         Player
     }
 
@@ -302,13 +302,13 @@ namespace Meteor.Map.Actors
         }
 
         #region ai stuff
-        /// <summary>stepSize and maxPath are unused; kept so old scripts still run. Stops polyRadius short.</summary>
+        // stepSize and maxPath are unused; kept so old scripts still run. Stops polyRadius short.
         public void PathTo(float x, float y, float z, float stepSize = 0.70f, int maxPath = 40, float polyRadius = 0.0f)
         {
             aiContainer?.mover?.MoveTo(new Vector3(x, y, z), DefaultMoveState(), polyRadius);
         }
 
-        /// <summary>Call every tick to keep following. stepSize and maxPath are unused.</summary>
+        // Call every tick to keep following. stepSize and maxPath are unused.
         public void FollowTarget(Actor target, float stepSize = 1.2f, int maxPath = 25, float radius = 0.0f)
         {
             if (target != null)
