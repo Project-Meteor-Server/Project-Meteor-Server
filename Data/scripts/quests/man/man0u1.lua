@@ -162,7 +162,6 @@ MADDENED_STEP  = 2;           -- Beckon
 
 MOMODI_DISPLAY_ID = 1500014;
 TEXT_KEY_ITEM_OBTAINED = 25117;
-TEXT_UNBOUND_FROM_DUTY = 50012;
 
 -- Lines the escort duty sends (QuestDirectorMan0u102)
 TEXT_ESCORT_DANGERS_AHEAD  = 365;
@@ -827,7 +826,6 @@ function startContent(player, zoneId, contentName, directorName, x, y, z, rot)
 end
 
 function endContent(player, duty, contentArea)
-	player:SendGameMessage(GetWorldMaster(), TEXT_UNBOUND_FROM_DUTY, 0x20);
 	player:SetMod(modifiersGlobal.MinimumHpLock, 0);
 	player:EndEvent();
 	if (duty ~= nil) then

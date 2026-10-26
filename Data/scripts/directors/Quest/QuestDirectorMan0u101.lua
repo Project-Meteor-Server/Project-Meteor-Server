@@ -2,7 +2,6 @@ require ("global")
 require ("modifiers")
 require ("quests/man/man0u1")
 
-TEXT_BOUND_BY_DUTY = 50011;
 
 POOL_TOURNEY_GLADIATOR = 8280157;
 GLADIATOR_LEVEL        = 5;
@@ -37,7 +36,6 @@ function onEventStarted(player, director, triggerName)
 		gladiator:SetMod(modifiersGlobal.MinimumHpLock, 1);
 	end
 	player:SetMod(modifiersGlobal.MinimumHpLock, 1);
-	player:SendGameMessage(GetWorldMaster(), TEXT_BOUND_BY_DUTY, 0x20);
 	duty:Start();
 	if (gladiator ~= nil) then
 		gladiator.hateContainer:AddBaseHate(player);
