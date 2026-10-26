@@ -380,6 +380,8 @@ namespace Meteor.Map.actors.chara.ai.controllers
                     player.QueuePacket(owner.GetHateTypePacket(player));
 
                 base.ChangeTarget(target);
+
+                owner.UpdateEnmityIndicator(target);
             }
         }
     }

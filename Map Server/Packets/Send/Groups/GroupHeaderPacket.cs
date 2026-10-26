@@ -75,5 +75,32 @@ namespace Meteor.Map.packets.send.group
 
             return new SubPacket(OPCODE, playerActorID, data);
         }
+            // The header retail sends for a MonsterParty (type 10002): +0x00 zone id, +0x08 sequence,
+        // +0x28 group id, +0x30 type, +0x40 localizedName 0xFFFFFFFF, +0x74 member count, rest zero.
+        public static SubPacket buildMonsterPartyPacket(uint playerActorID, uint locationCode, ulong sequenceId, Group group)
+        {
+            byte[] data = new byte[PACKET_SIZE - 0x20];
+
+            using (MemoryStream mem = new MemoryStream(data))
+            {
+                using (BinaryWriter binWriter = new BinaryWriter(mem))
+                {
+                    binWriter.Write((UInt64)locationCode);
+                    binWriter.Write((UInt64)sequenceId);
+
+                    binWriter.Seek(0x28, SeekOrigin.Begin);
+                    binWriter.Write((UInt64)group.groupIndex);
+                    binWriter.Write((UInt32)group.GetTypeId());
+
+                    binWriter.Seek(0x40, SeekOrigin.Begin);
+                    binWriter.Write((UInt32)0xFFFFFFFF);
+
+                    binWriter.Seek(0x74, SeekOrigin.Begin);
+                    binWriter.Write((UInt32)group.GetMemberCount());
+                }
+            }
+
+            return new SubPacket(OPCODE, playerActorID, data);
+        }
     }
 }

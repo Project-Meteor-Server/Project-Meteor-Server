@@ -63,6 +63,11 @@ namespace Meteor.Map.actors.area
             return false;
         }
 
+        protected override bool ActorIdTakenOutside(uint id)
+        {
+            return ParentZone.HasActorId(id);
+        }
+
         public Zone GetParentZone()
         {
             return ParentZone;

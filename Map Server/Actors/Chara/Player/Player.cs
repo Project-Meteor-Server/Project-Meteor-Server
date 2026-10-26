@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using Meteor.Map.DataObjects;
 using Meteor.Map.DataObjects.chara;
 using Meteor.Map.lua;
+using Meteor.Map.packets.send.groups;
 using Meteor.Map.packets.WorldPackets.Send.Group;
 using Meteor.Map.utils;
 using Meteor.Map.actors.group;
@@ -682,6 +683,7 @@ namespace Meteor.Map.Actors
 
             if (currentParty != null)
                 currentParty.SendGroupPackets(playerSession);
+            SendOwnPartyOccupancy();
 
             SendInstanceUpdate();
         }
@@ -815,6 +817,7 @@ namespace Meteor.Map.Actors
 
         public void CleanupAndSave()
         {
+            LuaEngine.GetInstance().CancelPlayerEvent(this);
             playerSession.LockUpdates(true);
 
             Database.SetRestInnLogoutTime(this, CurrentArea != null && CurrentArea.isInn ? Utils.UnixTimeStampUTC() : 0);
@@ -844,6 +847,7 @@ namespace Meteor.Map.Actors
 
         public void CleanupAndSave(uint destinationZone, ushort spawnType, float destinationX, float destinationY, float destinationZ, float destinationRot)
         {
+            LuaEngine.GetInstance().CancelPlayerEvent(this);
             playerSession.LockUpdates(true);
 
             //Remove actor from zone and main server list
@@ -1102,7 +1106,14 @@ namespace Meteor.Map.Actors
                 }
 
                 //Handle offhand
-                if (slot == MAINHAND && item is WeaponItem)
+                if (slot == MAINHAND && item is WeaponItem nails && nails.IsNailWeapon())
+                {
+                    appearanceIds[SetActorAppearancePacket.OFFHAND] =
+                            ((nails.graphicsWeaponId + 1) & 0x3FF) << 20 |
+                            (nails.graphicsEquipmentId & 0x3FF) << 10 |
+                            (nails.graphicsVariantId & 0x3FF);
+                }
+                else if (slot == MAINHAND && item is WeaponItem)
                 {
                     WeaponItem wpItem = (WeaponItem)item;
 
@@ -1586,6 +1597,7 @@ namespace Meteor.Map.Actors
                 {
                     SendQuestClientUpdate(i);
                     oldQuestInstance.OnComplete();
+                    playerWork.questScenarioComplete[oldQuestInstance.GetQuestId() - 110001] = true;
                     Database.SaveCompletedQuests(playerSession.GetActor());
                     questStateManager.UpdateQuestCompleted(oldQuestInstance);
                     Quest newQuestInstance = questStateManager.GetActiveQuest(((Quest)Server.GetStaticActors(questName)).GetQuestId());
@@ -1985,6 +1997,9 @@ namespace Meteor.Map.Actors
                     break;
             }
 
+            if (npc.CurrentArea is actors.area.PrivateArea pa && pa.GetPrivateAreaName() == "PrivateAreaMasterPast")
+                return null;
+
             if (defaultTalk != null && defaultTalk.IsQuestENPCByScript(this, npc))
                 return defaultTalk;
 
@@ -2006,6 +2021,19 @@ namespace Meteor.Map.Actors
                 }
             }
             return null;
+        }
+
+        public Quest GetQuestDeclaring(string globalName)
+        {
+            Quest found = null;
+            foreach (Quest quest in questScenario)
+            {
+                if (quest == null || (found != null && quest.GetQuestId() > found.GetQuestId()))
+                    continue;
+                if (LuaEngine.GetInstance().ScriptDeclares(quest, globalName))
+                    found = quest;
+            }
+            return found;
         }
 
         public Quest[] GetQuestsForNpc(Npc npc)
@@ -2170,6 +2198,8 @@ namespace Meteor.Map.Actors
             {
                 QueuePacket(RemoveActorPacket.BuildPacket(director.Id));
                 ownedDirectors.Remove(director);
+                if (loginInitDirector == director)
+                    loginInitDirector = null;
                 director.RemoveMember(this);
             }
         }
@@ -2366,7 +2396,15 @@ namespace Meteor.Map.Actors
             {
                 RemoveFromCurrentPartyAndCleanup();
                 currentParty = group;
+                SendOwnPartyOccupancy();
             }
+        }
+
+        public void SendOwnPartyOccupancy()
+        {
+            if (playerSession == null || !(currentParty is Party party))
+                return;
+            QueuePacket(SetOccupancyGroupPacket.BuildPacket(Id, party.groupIndex, Group.PlayerPartyGroup, 0));
         }
 
         //Removes the player from the party and cleans it up if needed
@@ -2819,8 +2857,11 @@ namespace Meteor.Map.Actors
                                 }
                             }
                         }
+
+                        if (!partyEngaged && target is BattleNpc && ((BattleNpc)target).IsEngagedWithSideOf(this))
+                            partyEngaged = true;
                     }
-                    else if (target.currentLockedTarget == Id)
+                    else if (target.currentLockedTarget == Id || (target is BattleNpc && ((BattleNpc)target).IsEngagedWithSideOf(this)))
                     {
                         partyEngaged = true;
                     }
@@ -2862,6 +2903,20 @@ namespace Meteor.Map.Actors
         }
 
         //Do we need separate functions? they check the same things
+        public override uint GetAttackRange()
+        {
+            if (GetMod((uint)Modifier.AttackRange) > 3)
+                return (uint)GetMod((uint)Modifier.AttackRange);
+            switch (GetClass())
+            {
+                case CLASSID_LNC:
+                case CLASSID_THM:
+                    return 8;
+                default:
+                    return 5;
+            }
+        }
+
         public override bool CanUse(Character target, BattleCommand skill, CommandResult error = null)
         {
             if (!skill.IsValidMainTarget(this, target, error) || !IsValidTarget(target, skill.mainTarget))
@@ -3365,7 +3420,7 @@ namespace Meteor.Map.Actors
 
         public static int BonusPointCap(int level)
         {
-            return level < 10 ? 0 : 3 + (level - 10) / 2;
+            return level < 10 ? 0 : 3 + (level - 9) / 2;
         }
 
         public bool HasBonusAllotment(byte classId)

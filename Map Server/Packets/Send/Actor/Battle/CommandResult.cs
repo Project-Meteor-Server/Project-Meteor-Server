@@ -329,6 +329,13 @@ namespace Meteor.Map.packets.send.actor.battle
         public double blockRate = 0.0;
         public double resistRate = 0.0;
         public double hitRate = 0.0;
+
+        // Set by battle Lua that works out its own numbers; zero or false keeps the C# defaults.
+        public bool ratesFromScript = false;
+        public bool mitigationFromScript = false;
+        public double critMultiplier = 0.0;
+        public double blockReduction = 0.0;
+        public double parryReduction = 0.0;
         public double critRate = 0.0;
 
         public CommandResult(uint targetId, ushort worldMasterTextId, uint effectId, ushort amount = 0, byte param = 0, byte hitNum = 1)
@@ -370,7 +377,8 @@ namespace Meteor.Map.packets.send.actor.battle
         public void DoAction(Character caster, Character target, BattleCommand skill, CommandResultContainer results)
         {
             //First calculate rates for hit/block/etc
-            CalcRates(caster, target, skill);
+            if (!ratesFromScript)
+                CalcRates(caster, target, skill);
 
             //Next, modify those rates based on preaction buffs
             //Still not sure how we shouldh andle these

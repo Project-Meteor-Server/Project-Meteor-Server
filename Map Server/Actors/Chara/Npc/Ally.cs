@@ -37,5 +37,21 @@ namespace Meteor.Map.actors.chara.npc
             this.isAutoAttackEnabled = true;
             this.isMovingToSpawn = false;
         }
+
+        public bool followLeader;
+
+        public bool passive;
+        public Character escortFollow;
+        public float escortFollowGap = 3f;
+
+        public void SetFollowLeader(bool value)
+        {
+            followLeader = value;
+        }
+
+        public Player GetLeader()
+        {
+            return aiContainer.GetController<AllyController>()?.GetLeader();
+        }
     }
 }

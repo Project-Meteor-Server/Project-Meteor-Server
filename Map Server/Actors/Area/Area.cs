@@ -515,6 +515,44 @@ namespace Meteor.Map.Actors
             }
         }
 
+        // The counter only moves forward, so a despawned actor's number isn't reused while clients may
+        // still hold it. A private area shares its parent zone's ids, so it also skips the parent's.
+        private int nextActorNumber = 1;
+        private const int ACTOR_NUMBER_LAST = (1 << 19) - 6;
+
+        public int AllocateActorNumber()
+        {
+            lock (mActorList)
+            {
+                for (int tries = 0; tries < ACTOR_NUMBER_LAST; tries++)
+                {
+                    int n = nextActorNumber++;
+                    if (nextActorNumber > ACTOR_NUMBER_LAST)
+                        nextActorNumber = 1;
+                    uint id = NpcActorId(n);
+                    if (!mActorList.ContainsKey(id) && !ActorIdTakenOutside(id))
+                        return n;
+                }
+                throw new InvalidOperationException(String.Format("Area {0}: no free actor numbers.", ZoneId));
+            }
+        }
+
+        protected virtual bool ActorIdTakenOutside(uint id)
+        {
+            return false;
+        }
+
+        public bool HasActorId(uint id)
+        {
+            lock (mActorList)
+                return mActorList.ContainsKey(id);
+        }
+
+        private uint NpcActorId(int actorNumber)
+        {
+            return (uint)(4 << 28 | ZoneId << 19 | ((uint)actorNumber + 5));
+        }
+
         public int GetActorCount()
         {
             lock (mActorList)
@@ -598,11 +636,24 @@ namespace Meteor.Map.Actors
                 if (actorClass == null)
                     return;
 
-                Npc npc = new Npc(mActorList.Count + 1, actorClass, location.uniqueId, this, location.x, location.y, location.z, location.rot, 0, location.motionPack, null, location.mapObjLayoutId, location.mapObjInstanceId);
+                Npc npc = new Npc(AllocateActorNumber(), actorClass, location.uniqueId, this, location.x, location.y, location.z, location.rot, 0, location.motionPack, null, location.mapObjLayoutId, location.mapObjInstanceId);
 
                 npc.LoadEventConditions(actorClass.eventConditions);
 
                 AddActorToZone(npc);
+            }
+        }
+
+        public BattleNpc SpawnDutyBattleNpc(uint poolId, int level, float x, float y, float z, float rot, bool ally, DutyEncounter duty)
+        {
+            lock (mActorList)
+            {
+                BattleNpc bnpc = Server.GetWorldManager().CreateBattleNpcFromPool(poolId, this, x, y, z, rot, level, ally);
+                if (bnpc == null)
+                    return null;
+                bnpc.duty = duty;
+                AddActorToZone(bnpc);
+                return bnpc;
             }
         }
 
@@ -617,9 +668,9 @@ namespace Meteor.Map.Actors
 
                 Npc npc;
                 if (isMob)
-                    npc = new BattleNpc(mActorList.Count + 1, actorClass, uniqueId, this, x, y, z, rot, state, animId, null);
+                    npc = new BattleNpc(AllocateActorNumber(), actorClass, uniqueId, this, x, y, z, rot, state, animId, null);
                 else
-                    npc = new Npc(mActorList.Count + 1, actorClass, uniqueId, this, x, y, z, rot, state, animId, null);
+                    npc = new Npc(AllocateActorNumber(), actorClass, uniqueId, this, x, y, z, rot, state, animId, null);
 
                 npc.LoadEventConditions(actorClass.eventConditions);
                 npc.SetMaxHP(100);
@@ -641,7 +692,7 @@ namespace Meteor.Map.Actors
                 if (actorClass == null)
                     return null;
 
-                Npc npc = new Npc(mActorList.Count + 1, actorClass, uniqueId, this, x, y, z, 0, regionId, layoutId);
+                Npc npc = new Npc(AllocateActorNumber(), actorClass, uniqueId, this, x, y, z, 0, regionId, layoutId);
 
                 npc.LoadEventConditions(actorClass.eventConditions);
 
@@ -790,6 +841,26 @@ namespace Meteor.Map.Actors
                 {
                     //LuaEngine.GetInstance().CallLuaFunctionForReturn(LuaEngine.GetScriptPath(this), "onUpdate", true, this, tick);
                     lastUpdateScript = tick;
+                }
+            }
+
+            UpdateDuties(tick);
+        }
+
+        private void UpdateDuties(DateTime tick)
+        {
+            List<Director> withDuty;
+            lock (directorLock)
+                withDuty = currentDirectors.Values.Where(d => d.GetDuty() != null).ToList();
+            foreach (Director d in withDuty)
+            {
+                try
+                {
+                    d.GetDuty().Tick(tick);
+                }
+                catch (Exception e)
+                {
+                    Program.Log.Error("Duty tick for {0} failed: {1}", d.GetScriptPath(), e);
                 }
             }
         }

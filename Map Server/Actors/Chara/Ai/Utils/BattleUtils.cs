@@ -205,6 +205,8 @@ namespace Meteor.Map.actors.chara.ai.utils
             //Aegis boon forces a full block
             if (defender.statusEffects.HasStatusEffect(StatusEffectId.AegisBoon))
                 percentBlocked = 1.0;
+            else if (action.blockReduction > 0)
+                percentBlocked = action.blockReduction;
             else
             {
                 //Is this a case where VIT gives Block?
@@ -230,12 +232,16 @@ namespace Meteor.Map.actors.chara.ai.utils
             //bonus -= attacker.GetMod((uint)Modifier.CriticalResilience) * potencyModifier;
 
             //need to add something for bonus potency as a part of skill (ie thundara, which breaks the cap)
-            action.amount = (ushort)(action.amount * bonus.Clamp(1.15, 1.75));//min bonus of 115, max bonus of 175
+            if (action.critMultiplier > 0)
+                bonus = action.critMultiplier;
+            else
+                bonus = bonus.Clamp(1.15, 1.75);//min bonus of 115, max bonus of 175
+            action.amount = (ushort)(action.amount * bonus);
         }
 
         public static void CalculateParryDamage(Character attacker, Character defender, BattleCommand skill, CommandResult action)
         {
-            double percentParry = 0.75;
+            double percentParry = action.parryReduction > 0 ? 1.0 - action.parryReduction : 0.75;
 
             action.amountMitigated = (ushort)(action.amount * (1 - percentParry));
             action.amount = (ushort)(action.amount * percentParry);
@@ -276,21 +282,16 @@ namespace Meteor.Map.actors.chara.ai.utils
                         bnpc.lastAttacker = attacker;
                 }
 
-                defender.DelHP((short)action.amount, actionContainer);
-                attacker.OnDamageDealt(defender, skill, action, actionContainer);
-                defender.OnDamageTaken(attacker, skill, action, actionContainer);
-
-                // todo: other stuff too
-                if (defender is BattleNpc)
+                if (defender is BattleNpc && defender.IsAlive())
                 {
                     var bnpc = defender as BattleNpc;
-                    if (!bnpc.hateContainer.HasHateForTarget(attacker))
-                    {
-                        bnpc.hateContainer.AddBaseHate(attacker);
-                    }
                     bnpc.hateContainer.UpdateHate(attacker, action.enmity);
                     bnpc.lastAttacker = attacker;
                 }
+
+                defender.DelHP((short)action.amount, actionContainer);
+                attacker.OnDamageDealt(defender, skill, action, actionContainer);
+                defender.OnDamageTaken(attacker, skill, action, actionContainer);
             }
         }
 
@@ -455,7 +456,7 @@ namespace Meteor.Map.actors.chara.ai.utils
         //TryMiss instead of tryHit because hits are the default and don't change damage
         public static bool TryMiss(Character attacker, Character defender, BattleCommand skill, CommandResult action)
         {
-            if ((Program.Random.NextDouble() * 100) >= GetHitRate(attacker, defender, skill, action))
+            if ((Program.Random.NextDouble() * 100) >= action.hitRate)
             {
                 action.hitType = (ushort)HitType.Miss;
                 //On misses, the entire amount is considered mitigated
@@ -531,7 +532,8 @@ namespace Meteor.Map.actors.chara.ai.utils
             SetHitEffectPhysical(attacker, defender, skill, action, actionContainer);
 
             //Modify damage based on defender's stats
-            CalculatePhysicalDamageTaken(attacker, defender, skill, action);
+            if (!action.mitigationFromScript)
+                CalculatePhysicalDamageTaken(attacker, defender, skill, action);
 
             actionContainer.AddAction(action);
             action.enmity = (ushort)(action.enmity * (skill != null ? skill.enmityModifier : 1));
@@ -562,7 +564,8 @@ namespace Meteor.Map.actors.chara.ai.utils
 
             HandleStoneskin(defender, action);
 
-            CalculateSpellDamageTaken(attacker, defender, skill, action);
+            if (!action.mitigationFromScript)
+                CalculateSpellDamageTaken(attacker, defender, skill, action);
 
             actionContainer.AddAction(action);
 
@@ -609,6 +612,10 @@ namespace Meteor.Map.actors.chara.ai.utils
             }
 
             hitEffect |= HitTypeEffectsPhysical[hitType];
+
+            ushort property = (ushort)action.actionProperty;
+            if (property >= (ushort)ActionProperty.Slashing && property <= (ushort)ActionProperty.Projectile)
+                hitEffect |= (HitEffect)(property << 2);
 
             //For combos that land, add the combo effect
             if (skill != null && skill.isCombo && action.ActionLanded() && !skill.comboEffectAdded)

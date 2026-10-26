@@ -77,7 +77,17 @@ namespace Meteor.Map
             GamedataGuildleves = Database.GetGuildleveGamedata();
             Program.Log.Info("Loaded {0} guildleves.", GamedataGuildleves.Count);
             GamedataQuests = Database.GetQuestGamedata();
-            Program.Log.Info("Loaded {0} quests.", GamedataQuests.Count);
+            int scripted = 0;
+            foreach (QuestGameData quest in GamedataQuests.Values)
+            {
+                if (quest.ClassName.Length < 3)
+                    continue;
+                string path = ConfigConstants.OPTIONS_SCRIPTPATH + String.Format(lua.LuaEngine.FILEPATH_QUEST, quest.ClassName.Substring(0, 3), quest.ClassName);
+                quest.HasScript = System.IO.File.Exists(path);
+                if (quest.HasScript)
+                    scripted++;
+            }
+            Program.Log.Info("Loaded {0} quests ({1} with scripts).", GamedataQuests.Count, scripted);
             GamedataRecipeResolver = RecipeResolver.Init();
             Program.Log.Info("Loaded {0} crafting recipes.", GamedataRecipeResolver.GetNumRecipes());
 

@@ -164,7 +164,7 @@ end
 -- Core Event Functions
 function kickEventContinue(player, actor, trigger, ...)
 	player:KickEvent(actor, trigger, ...);
-	return coroutine.yield("_WAIT_EVENT", player);
+	return coroutine.yield("_WAIT_EVENT", player, actor.Id, trigger);
 end
 
 function callClientFunction(player, functionName, ...)
@@ -176,7 +176,10 @@ function wait(seconds)
 	return coroutine.yield("_WAIT_TIME", seconds);
 end
 
-function waitForSignal(signal)
+function waitForSignal(signal, timeoutSeconds)
+	if (timeoutSeconds ~= nil) then
+		return coroutine.yield("_WAIT_SIGNAL", signal, timeoutSeconds);
+	end
 	return coroutine.yield("_WAIT_SIGNAL", signal);
 end
 
@@ -192,6 +195,7 @@ function printf(s, ...)
     end;
 end;
 function arrayToTable(array)
+	if (type(array) == "table") then return array; end
 	local t = {};
 	if (array ~= nil) then
 		for i = 0, array.Length - 1 do
@@ -200,3 +204,5 @@ function arrayToTable(array)
 	end
 	return t;
 end
+
+toLuaTable = arrayToTable;

@@ -51,7 +51,10 @@ namespace Meteor.World
         //Session Management
         private List<ClientConnection> mConnectionList = new List<ClientConnection>();
         private Dictionary<uint, Session> mZoneSessionList = new Dictionary<uint, Session>();
-        private Dictionary<uint, Session> mChatSessionList = new Dictionary<uint, Session>();        
+        private Dictionary<uint, Session> mChatSessionList = new Dictionary<uint, Session>();
+        // Sessions ended on the map server because the client's connection dropped. Their end confirm
+        // must not remove anything: the session is already gone here, and the id may be a new login.
+        private HashSet<uint> mDisconnectEndsPending = new HashSet<uint>();        
 
         public Server()
         {
@@ -136,22 +139,69 @@ namespace Meteor.World
             switch (type)
             {
                 case Session.Channel.ZONE:
+                    // Unlist before disconnecting: the socket close comes back through OnClientDisconnected,
+                    // which must not take this for a client drop.
                     if (mZoneSessionList.ContainsKey(id))
                     {
-                        mZoneSessionList[id].clientConnection.Disconnect();
-                        mConnectionList.Remove(mZoneSessionList[id].clientConnection);
+                        Session session = mZoneSessionList[id];
                         mZoneSessionList.Remove(id);
+                        mConnectionList.Remove(session.clientConnection);
+                        session.clientConnection.Disconnect();
                     }
                     break;
                 case Session.Channel.CHAT:
                     if (mChatSessionList.ContainsKey(id))
                     {
-                        mChatSessionList[id].clientConnection.Disconnect();
-                        mConnectionList.Remove(mChatSessionList[id].clientConnection);
+                        Session session = mChatSessionList[id];
                         mChatSessionList.Remove(id);
+                        mConnectionList.Remove(session.clientConnection);
+                        session.clientConnection.Disconnect();
                     }
                     break;
             }
+        }
+
+        // The client's socket closed (crash, quit, network loss): end its map session so the player is
+        // saved. A re-login replaces the connection, so only this session's own one counts.
+        private void OnClientDisconnected(ClientConnection conn)
+        {
+            lock (mConnectionList)
+            {
+                mConnectionList.Remove(conn);
+            }
+
+            Session session = conn.owner;
+            if (session == null)
+                return;
+
+            if (session.type == Session.Channel.ZONE)
+            {
+                Session current;
+                if (!mZoneSessionList.TryGetValue(session.sessionId, out current) || current != session)
+                    return;
+
+                mZoneSessionList.Remove(session.sessionId);
+                Program.Log.Info("Session {0} ({1}) disconnected; ending its map session.", session.sessionId, session.characterName);
+
+                if (session.routing1 != null)
+                {
+                    lock (mDisconnectEndsPending)
+                        mDisconnectEndsPending.Add(session.sessionId);
+                    session.routing1.SendSessionEnd(session);
+                }
+            }
+            else
+            {
+                Session current;
+                if (mChatSessionList.TryGetValue(session.sessionId, out current) && current == session)
+                    mChatSessionList.Remove(session.sessionId);
+            }
+        }
+
+        public bool ConsumeDisconnectEnd(uint sessionId)
+        {
+            lock (mDisconnectEndsPending)
+                return mDisconnectEndsPending.Remove(sessionId);
         }
 
         public Session GetSession(uint targetSession, Session.Channel type = Session.Channel.ZONE)
@@ -219,7 +269,7 @@ namespace Meteor.World
                                 session.routing1 = Server.GetServer().GetWorldManager().GetZoneServer(endConfirmPacket.destinationZone);
                                 session.routing1.SendSessionStart(session);
                             }
-                            else
+                            else if (!ConsumeDisconnectEnd(endConfirmPacket.sessionId))
                             {
                                 RemoveSession(Session.Channel.ZONE, endConfirmPacket.sessionId);
                                 RemoveSession(Session.Channel.CHAT, endConfirmPacket.sessionId);
@@ -442,17 +492,20 @@ namespace Meteor.World
             //Check if disconnected
             if ((conn.socket.Poll(1, SelectMode.SelectRead) && conn.socket.Available == 0))
             {
-                lock (mConnectionList)
-                {
-                    mConnectionList.Remove(conn);
-                }
-
+                OnClientDisconnected(conn);
                 return;
             }
 
             try
             {
                 int bytesRead = conn.socket.EndReceive(result);
+
+                //Orderly shutdown by the client
+                if (bytesRead == 0)
+                {
+                    OnClientDisconnected(conn);
+                    return;
+                }
 
                 bytesRead += conn.lastPartialSize;
 
@@ -493,23 +546,17 @@ namespace Meteor.World
                 }
                 else
                 {
-
-                    lock (mConnectionList)
-                    {
-                        mConnectionList.Remove(conn);
-                    }
+                    OnClientDisconnected(conn);
                 }
             }
             catch (SocketException)
             {
                 if (conn.socket != null)
-                {
-
-                    lock (mConnectionList)
-                    {
-                        mConnectionList.Remove(conn);
-                    }
-                }
+                    OnClientDisconnected(conn);
+            }
+            catch (ObjectDisposedException)
+            {
+                OnClientDisconnected(conn);
             }
         }
 

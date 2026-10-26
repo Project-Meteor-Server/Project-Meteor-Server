@@ -114,8 +114,7 @@ namespace Meteor.Map.DataObjects
             if (isUpdatesLocked && !force)
                 return;
 
-            //Remove missing actors
-            for (int i = 0; i < actorInstanceList.Count; i++)
+            for (int i = actorInstanceList.Count - 1; i >= 0; i--)
             {
                 //Retainer Instance
                 if (actorInstanceList[i] is Retainer && playerActor.currentSpawnedRetainer == null)

@@ -22,6 +22,8 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 using System;
 using Meteor.Common;
 using Meteor.Map.Actors;
+using Meteor.Map.DataObjects;
+using Meteor.Map.actors.chara.npc;
 using Meteor.Map.packets.send.actor;
 using Meteor.Map.packets.send.actor.battle;
 namespace Meteor.Map.actors.chara.ai.state
@@ -29,6 +31,10 @@ namespace Meteor.Map.actors.chara.ai.state
     class AttackState : State
     {
         private DateTime attackTime;
+        private const int RETRY_MS = 500;
+        private const float HEIGHT_LIMIT = 5.0f;
+        private const double RANGE_MESSAGE_SECONDS = 3.0;
+        private DateTime lastRangeMessage = DateTime.MinValue;
 
         public AttackState(Character owner, Character target) :
             base(owner, target)
@@ -78,7 +84,8 @@ namespace Meteor.Map.actors.chara.ai.state
                     }
                     else
                     {
-                        // todo: handle interrupt/paralyze etc
+                        attackTime = DateTime.Now.AddMilliseconds(RETRY_MS);
+                        return false;
                     }
                     attackTime = DateTime.Now.AddMilliseconds(owner.GetAttackDelayMs());
                 }
@@ -126,7 +133,7 @@ namespace Meteor.Map.actors.chara.ai.state
             //Some mobs have multiple unique auto attacks that they switch between as well as ranged auto attacks, so we'll need a way to handle that
             //For now, just use a temporary hardcoded BattleCommand that's the same for everyone.
             BattleCommand attackCommand = new BattleCommand(22104, "Attack");
-            attackCommand.range = 5;
+            attackCommand.range = owner.GetAttackRange();
             attackCommand.rangeHeight = 10;
             attackCommand.worldMasterTextId = 0x765D;
             attackCommand.mainTarget = (ValidTarget)768;
@@ -134,13 +141,13 @@ namespace Meteor.Map.actors.chara.ai.state
             attackCommand.commandType = CommandType.AutoAttack;
             attackCommand.numHits = (byte)owner.GetMod(Modifier.HitCount);
             attackCommand.basePotency = 100;
-            ActionProperty property = (owner.GetMod(Modifier.AttackType) != 0) ? (ActionProperty)owner.GetMod(Modifier.AttackType) : ActionProperty.Slashing;
+            ActionProperty property = (owner.GetMod(Modifier.AttackType) != 0) ? (ActionProperty)owner.GetMod(Modifier.AttackType) : WeaponProperty(owner);
             attackCommand.actionProperty = property;
             attackCommand.actionType = ActionType.Physical;
 
             uint anim = (17 << 24 | 1 << 12);
 
-            if (owner is Player)
+            if (owner is Player || owner is Ally)
                 anim = (25 << 24 | 1 << 12);
 
             attackCommand.battleAnimation = anim;
@@ -170,6 +177,17 @@ namespace Meteor.Map.actors.chara.ai.state
             interrupt = !CanAttack();
         }
 
+        private static ActionProperty WeaponProperty(Character owner)
+        {
+            if (owner is Player player)
+            {
+                var item = player.GetEquipment()?.GetItemAtSlot(Player.SLOT_MAINHAND);
+                if (item != null && Server.GetItemGamedata(item.itemId) is WeaponItem weapon && weapon.damageAttributeType1 > 0)
+                    return (ActionProperty)weapon.damageAttributeType1;
+            }
+            return ActionProperty.Slashing;
+        }
+
         private bool IsAttackReady()
         {
             // todo: this enforced delay should really be changed if it's not retail..
@@ -188,7 +206,8 @@ namespace Meteor.Map.actors.chara.ai.state
                 return false;
             }
 
-            if (!owner.IsFacing(target))
+            if (owner is Ally ally && target is BattleNpc foe && !(foe is Ally) && ally.GetLeader() is Player leader
+                && !foe.hateContainer.HasHateForTarget(leader))
             {
                 return false;
             }
@@ -206,10 +225,12 @@ namespace Meteor.Map.actors.chara.ai.state
                 return false;
             }
             // todo: use a mod for melee range
-            else if (Utils.Distance(owner.positionX, owner.positionY, owner.positionZ, target.positionX, target.positionY, target.positionZ) > owner.GetAttackRange())
+            else if (Utils.XZDistance(owner.positionX, owner.positionZ, target.positionX, target.positionZ) > owner.GetAttackRange()
+                || Math.Abs(owner.positionY - target.positionY) > HEIGHT_LIMIT)
             {
-                if (owner is Player)
+                if (owner is Player && (DateTime.Now - lastRangeMessage).TotalSeconds >= RANGE_MESSAGE_SECONDS)
                 {
+                    lastRangeMessage = DateTime.Now;
                     //The target is too far away
                     ((Player)owner).SendGameMessage(Server.GetWorldManager().GetActor(), 32537, 0x20);
                 }

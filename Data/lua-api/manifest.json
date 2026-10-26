@@ -898,6 +898,11 @@
           ]
         },
         {
+          "name": "AllocateActorNumber",
+          "returns": "number",
+          "params": []
+        },
+        {
           "name": "BroadcastPacketAroundActor",
           "returns": "nil",
           "params": [
@@ -1266,6 +1271,16 @@
           "params": []
         },
         {
+          "name": "HasActorId",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "id",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "IsGateOpen",
           "returns": "boolean?",
           "params": [
@@ -1440,6 +1455,44 @@
           ]
         },
         {
+          "name": "SpawnDutyBattleNpc",
+          "returns": "BattleNpc",
+          "params": [
+            {
+              "name": "poolId",
+              "type": "number"
+            },
+            {
+              "name": "level",
+              "type": "number"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "rot",
+              "type": "number"
+            },
+            {
+              "name": "ally",
+              "type": "boolean"
+            },
+            {
+              "name": "duty",
+              "type": "DutyEncounter"
+            }
+          ]
+        },
+        {
           "name": "Update",
           "returns": "nil",
           "params": [
@@ -1474,6 +1527,11 @@
         {
           "name": "dropListId",
           "type": "number",
+          "writable": true
+        },
+        {
+          "name": "duty",
+          "type": "DutyEncounter",
           "writable": true
         },
         {
@@ -1573,6 +1631,11 @@
           ]
         },
         {
+          "name": "ClearEnmityIndicator",
+          "returns": "nil",
+          "params": []
+        },
+        {
           "name": "Despawn",
           "returns": "nil",
           "params": [
@@ -1598,6 +1661,11 @@
           ]
         },
         {
+          "name": "FlushPendingEnmityClear",
+          "returns": "nil",
+          "params": []
+        },
+        {
           "name": "ForceRespawn",
           "returns": "nil",
           "params": []
@@ -1608,6 +1676,33 @@
           "params": []
         },
         {
+          "name": "GetClaimPartyGroupId",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "GetClaimPartyGroupId",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "chara",
+              "type": "Character"
+            }
+          ]
+        },
+        {
+          "name": "GetCreditOwner",
+          "static": true,
+          "returns": "Character",
+          "params": [
+            {
+              "name": "chara",
+              "type": "Character"
+            }
+          ]
+        },
+        {
           "name": "GetDespawnTime",
           "returns": "number",
           "params": []
@@ -1616,6 +1711,16 @@
           "name": "GetDetectionType",
           "returns": "number",
           "params": []
+        },
+        {
+          "name": "GetEnmityIndicatorPacket",
+          "returns": "any",
+          "params": [
+            {
+              "name": "viewer",
+              "type": "Player"
+            }
+          ]
         },
         {
           "name": "GetHateTypePacket",
@@ -1648,6 +1753,11 @@
           ]
         },
         {
+          "name": "GetMonsterParty",
+          "returns": "MonsterParty",
+          "params": []
+        },
+        {
           "name": "GetRespawnTime",
           "returns": "number",
           "params": []
@@ -1667,9 +1777,24 @@
           ]
         },
         {
+          "name": "HasMonsterParty",
+          "returns": "boolean",
+          "params": []
+        },
+        {
           "name": "IsCloseToSpawn",
           "returns": "boolean",
           "params": []
+        },
+        {
+          "name": "IsEngagedWithSideOf",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "viewer",
+              "type": "Player"
+            }
+          ]
         },
         {
           "name": "OnAbility",
@@ -1777,6 +1902,21 @@
           "params": []
         },
         {
+          "name": "OnHateAdded",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "target",
+              "type": "Character"
+            }
+          ]
+        },
+        {
+          "name": "OnHateListEmptied",
+          "returns": "nil",
+          "params": []
+        },
+        {
           "name": "OnRoam",
           "returns": "nil",
           "params": [
@@ -1825,6 +1965,16 @@
               "name": "packets",
               "type": "any[]",
               "optional": true
+            }
+          ]
+        },
+        {
+          "name": "ReleaseClaim",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "hateType",
+              "type": "number"
             }
           ]
         },
@@ -1899,6 +2049,16 @@
             {
               "name": "tick",
               "type": "any"
+            }
+          ]
+        },
+        {
+          "name": "UpdateEnmityIndicator",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "newTarget",
+              "type": "Character"
             }
           ]
         }
@@ -2351,22 +2511,24 @@
       "fullName": "Meteor.Map.Actors.Chara.NpcWork",
       "members": [
         {
+          "name": "HATE_TYPE_CLAIMED",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "HATE_TYPE_DEAD",
+          "type": "number",
+          "static": true
+        },
+        {
           "name": "HATE_TYPE_ENGAGED",
           "type": "number",
-          "static": true,
-          "writable": true
+          "static": true
         },
         {
-          "name": "HATE_TYPE_ENGAGED_PARTY",
+          "name": "HATE_TYPE_UNCLAIMED",
           "type": "number",
-          "static": true,
-          "writable": true
-        },
-        {
-          "name": "HATE_TYPE_NONE",
-          "type": "number",
-          "static": true,
-          "writable": true
+          "static": true
         },
         {
           "name": "hateType",
@@ -5791,6 +5953,11 @@
           ]
         },
         {
+          "name": "GetAttackRange",
+          "returns": "number",
+          "params": []
+        },
+        {
           "name": "GetAwardedRecipes",
           "returns": "Recipe[]",
           "params": []
@@ -5951,6 +6118,16 @@
             {
               "name": "id",
               "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetQuestDeclaring",
+          "returns": "Quest",
+          "params": [
+            {
+              "name": "globalName",
+              "type": "string"
             }
           ]
         },
@@ -6895,6 +7072,11 @@
         },
         {
           "name": "SendMountAppearance",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "SendOwnPartyOccupancy",
           "returns": "nil",
           "params": []
         },
@@ -9501,6 +9683,11 @@
           "type": "string"
         },
         {
+          "name": "HasScript",
+          "type": "boolean",
+          "writable": true
+        },
+        {
           "name": "Id",
           "type": "number"
         },
@@ -11898,6 +12085,44 @@
           ]
         },
         {
+          "name": "CreateBattleNpcFromPool",
+          "returns": "BattleNpc",
+          "params": [
+            {
+              "name": "poolId",
+              "type": "number"
+            },
+            {
+              "name": "area",
+              "type": "Area"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "rot",
+              "type": "number"
+            },
+            {
+              "name": "level",
+              "type": "number"
+            },
+            {
+              "name": "ally",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
           "name": "CreateContentGroup",
           "returns": "ContentGroup",
           "params": [
@@ -12344,6 +12569,16 @@
           "params": [
             {
               "name": "actorId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetZone",
+          "returns": "Zone",
+          "params": [
+            {
+              "name": "zoneId",
               "type": "number"
             }
           ]
@@ -17676,7 +17911,28 @@
       "fullName": "Meteor.Map.actors.chara.ai.controllers.AllyController",
       "base": "BattleNpcController",
       "members": [],
-      "methods": []
+      "methods": [
+        {
+          "name": "Disengage",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "GetLeader",
+          "returns": "Player",
+          "params": []
+        },
+        {
+          "name": "Update",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "tick",
+              "type": "any"
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "BattleNpcController",
@@ -19587,8 +19843,45 @@
       "name": "Ally",
       "fullName": "Meteor.Map.actors.chara.npc.Ally",
       "base": "BattleNpc",
-      "members": [],
-      "methods": []
+      "members": [
+        {
+          "name": "escortFollow",
+          "type": "Character",
+          "writable": true
+        },
+        {
+          "name": "escortFollowGap",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "followLeader",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "passive",
+          "type": "boolean",
+          "writable": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "GetLeader",
+          "returns": "Player",
+          "params": []
+        },
+        {
+          "name": "SetFollowLeader",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "value",
+              "type": "boolean"
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "MobModifier",
@@ -20255,6 +20548,16 @@
           ]
         },
         {
+          "name": "CreateDuty",
+          "returns": "DutyEncounter",
+          "params": [
+            {
+              "name": "contentArea",
+              "type": "Area"
+            }
+          ]
+        },
+        {
           "name": "CreateScriptBindPacket",
           "returns": "any",
           "params": []
@@ -20277,6 +20580,11 @@
         {
           "name": "GetContentGroup",
           "returns": "ContentGroup",
+          "params": []
+        },
+        {
+          "name": "GetDuty",
+          "returns": "DutyEncounter",
           "params": []
         },
         {
@@ -20403,6 +20711,447 @@
           ]
         }
       ]
+    },
+    {
+      "name": "DutyEncounter",
+      "fullName": "Meteor.Map.actors.director.DutyEncounter",
+      "members": [
+        {
+          "name": "ALLY_ASSIST_RANGE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "ARRIVAL_GRACE_SECONDS",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "CONTENT_GROUP_CAPACITY",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "CORPSE_SECONDS",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "T_ALL_LEFT",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "T_PARTY_DEFEATED",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "T_TIME_MINUTES",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "T_TIME_SECONDS",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "WAVE_DELAY_SECONDS",
+          "type": "number",
+          "static": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "AddDirectorPlayers",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "AddPlayer",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            }
+          ]
+        },
+        {
+          "name": "AddWaveEnemy",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "wave",
+              "type": "number"
+            },
+            {
+              "name": "poolId",
+              "type": "number"
+            },
+            {
+              "name": "level",
+              "type": "number"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "rot",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "End",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "Fail",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "reason",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "name": "GetAllies",
+          "returns": "BattleNpc[]",
+          "params": []
+        },
+        {
+          "name": "GetArea",
+          "returns": "Area",
+          "params": []
+        },
+        {
+          "name": "GetDirector",
+          "returns": "Director",
+          "params": []
+        },
+        {
+          "name": "GetEnemies",
+          "returns": "BattleNpc[]",
+          "params": []
+        },
+        {
+          "name": "GetEnemiesLeft",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "GetPlayers",
+          "returns": "Player[]",
+          "params": []
+        },
+        {
+          "name": "GetResult",
+          "returns": "string",
+          "params": []
+        },
+        {
+          "name": "GetSecondsLeft",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "GetWave",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "IsOver",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsRunning",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "IsSuccess",
+          "returns": "boolean",
+          "params": []
+        },
+        {
+          "name": "OnMobDeath",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "npc",
+              "type": "BattleNpc"
+            },
+            {
+              "name": "killer",
+              "type": "Character"
+            }
+          ]
+        },
+        {
+          "name": "SetAllyAggressive",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "value",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "SetEscortFollow",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "escort",
+              "type": "BattleNpc"
+            },
+            {
+              "name": "leader",
+              "type": "Character"
+            },
+            {
+              "name": "gap",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetRequired",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "mob",
+              "type": "BattleNpc"
+            },
+            {
+              "name": "required",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "SetTimeLimit",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "seconds",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetWinOnClear",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "value",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "SpawnAlly",
+          "returns": "BattleNpc",
+          "params": [
+            {
+              "name": "poolId",
+              "type": "number"
+            },
+            {
+              "name": "level",
+              "type": "number"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "rot",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SpawnEnemy",
+          "returns": "BattleNpc",
+          "params": [
+            {
+              "name": "poolId",
+              "type": "number"
+            },
+            {
+              "name": "level",
+              "type": "number"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "rot",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SpawnEscort",
+          "returns": "BattleNpc",
+          "params": [
+            {
+              "name": "poolId",
+              "type": "number"
+            },
+            {
+              "name": "level",
+              "type": "number"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            },
+            {
+              "name": "rot",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Start",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "Succeed",
+          "returns": "nil",
+          "params": []
+        },
+        {
+          "name": "Tick",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "tick",
+              "type": "any"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DutyState",
+      "fullName": "Meteor.Map.actors.director.DutyEncounter.DutyState",
+      "enum": true,
+      "enumValues": [
+        "Setup",
+        "Running",
+        "Succeeded",
+        "Failed",
+        "Ended"
+      ],
+      "members": [],
+      "methods": []
+    },
+    {
+      "name": "Meteor.Map.actors.director.DutyEncounter.Entry",
+      "fullName": "Meteor.Map.actors.director.DutyEncounter.Entry",
+      "members": [
+        {
+          "name": "ally",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "escort",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "npc",
+          "type": "BattleNpc",
+          "writable": true
+        },
+        {
+          "name": "required",
+          "type": "boolean",
+          "writable": true
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "Pending",
+      "fullName": "Meteor.Map.actors.director.DutyEncounter.Pending",
+      "members": [
+        {
+          "name": "level",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "poolId",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "rot",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "x",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "y",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "z",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": []
     },
     {
       "name": "GuildleveDirector",
@@ -21005,14 +21754,30 @@
       "name": "MonsterParty",
       "fullName": "Meteor.Map.actors.group.MonsterParty",
       "base": "Group",
-      "members": [],
+      "members": [
+        {
+          "name": "GROUP_ID_BASE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "occupancyGroupId",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "partyGroupWork",
+          "type": "PartyWork",
+          "writable": true
+        }
+      ],
       "methods": [
         {
-          "name": "AddMember",
-          "returns": "nil",
+          "name": "BuildDeletePacket",
+          "returns": "any",
           "params": [
             {
-              "name": "memberId",
+              "name": "playerActorId",
               "type": "number"
             }
           ]
@@ -21028,17 +21793,77 @@
           ]
         },
         {
+          "name": "BuildOccupancyPacket",
+          "returns": "any",
+          "params": [
+            {
+              "name": "playerActorId",
+              "type": "number"
+            },
+            {
+              "name": "occupyingGroupId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "BuildSpawnPackets",
+          "returns": "any[]",
+          "params": [
+            {
+              "name": "playerActorId",
+              "type": "number"
+            },
+            {
+              "name": "locationCode",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Create",
+          "static": true,
+          "returns": "MonsterParty",
+          "params": [
+            {
+              "name": "monsterActorId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Find",
+          "static": true,
+          "returns": "MonsterParty",
+          "params": [
+            {
+              "name": "groupId",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "GetMemberCount",
+          "returns": "number",
+          "params": []
+        },
+        {
+          "name": "GetMembers",
+          "returns": "number[]",
+          "params": []
+        },
+        {
           "name": "GetTypeId",
           "returns": "number",
           "params": []
         },
         {
-          "name": "RemoveMember",
+          "name": "SendGroupPackets",
           "returns": "nil",
           "params": [
             {
-              "name": "memberId",
-              "type": "number"
+              "name": "session",
+              "type": "Session"
             }
           ]
         },
@@ -21049,6 +21874,17 @@
             {
               "name": "session",
               "type": "Session"
+            }
+          ]
+        },
+        {
+          "name": "Unregister",
+          "static": true,
+          "returns": "nil",
+          "params": [
+            {
+              "name": "group",
+              "type": "MonsterParty"
             }
           ]
         }
@@ -21062,6 +21898,11 @@
         {
           "name": "members",
           "type": "number[]",
+          "writable": true
+        },
+        {
+          "name": "npcMembers",
+          "type": "Character[]",
           "writable": true
         },
         {
@@ -21137,12 +21978,32 @@
           ]
         },
         {
+          "name": "SendGroupPackets",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "session",
+              "type": "Session"
+            }
+          ]
+        },
+        {
           "name": "SetLeader",
           "returns": "nil",
           "params": [
             {
               "name": "actorId",
               "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "SetNpcMembers",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "npcs",
+              "type": "Character[]"
             }
           ]
         }
@@ -21518,6 +22379,28 @@
           ]
         },
         {
+          "name": "AddWaitKickCoroutine",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            },
+            {
+              "name": "coroutine",
+              "type": "any"
+            },
+            {
+              "name": "ownerId",
+              "type": "number"
+            },
+            {
+              "name": "eventName",
+              "type": "string"
+            }
+          ]
+        },
+        {
           "name": "AddWaitSignalCoroutine",
           "returns": "nil",
           "params": [
@@ -21528,6 +22411,11 @@
             {
               "name": "signal",
               "type": "string"
+            },
+            {
+              "name": "timeoutSeconds",
+              "type": "number",
+              "optional": true
             }
           ]
         },
@@ -21725,6 +22613,16 @@
           ]
         },
         {
+          "name": "CancelPlayerEvent",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            }
+          ]
+        },
+        {
           "name": "EventStarted",
           "returns": "nil",
           "params": [
@@ -21882,6 +22780,20 @@
           ]
         },
         {
+          "name": "ScriptDeclares",
+          "returns": "boolean",
+          "params": [
+            {
+              "name": "target",
+              "type": "Actor"
+            },
+            {
+              "name": "globalName",
+              "type": "string"
+            }
+          ]
+        },
+        {
           "name": "SendError",
           "static": true,
           "returns": "nil",
@@ -21897,6 +22809,28 @@
           ]
         }
       ]
+    },
+    {
+      "name": "KickWait",
+      "fullName": "Meteor.Map.lua.LuaEngine.KickWait",
+      "members": [
+        {
+          "name": "coroutine",
+          "type": "any",
+          "writable": true
+        },
+        {
+          "name": "eventName",
+          "type": "string",
+          "writable": true
+        },
+        {
+          "name": "ownerId",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": []
     },
     {
       "name": "LuaParam",
@@ -22017,7 +22951,7 @@
         },
         {
           "name": "Entries",
-          "type": "Entry[]",
+          "type": "Meteor.Map.navigation.CollisionManager.Entry[]",
           "static": true
         },
         {
@@ -22146,14 +23080,14 @@
           "params": [
             {
               "name": "e",
-              "type": "Entry"
+              "type": "Meteor.Map.navigation.CollisionManager.Entry"
             }
           ]
         }
       ]
     },
     {
-      "name": "Entry",
+      "name": "Meteor.Map.navigation.CollisionManager.Entry",
       "fullName": "Meteor.Map.navigation.CollisionManager.Entry",
       "members": [
         {
@@ -27019,8 +27953,18 @@
           "writable": true
         },
         {
+          "name": "blockReduction",
+          "type": "number",
+          "writable": true
+        },
+        {
           "name": "commandType",
           "type": "CommandType",
+          "writable": true
+        },
+        {
+          "name": "critMultiplier",
+          "type": "number",
           "writable": true
         },
         {
@@ -27054,6 +27998,11 @@
           "writable": true
         },
         {
+          "name": "mitigationFromScript",
+          "type": "boolean",
+          "writable": true
+        },
+        {
           "name": "param",
           "type": "number",
           "writable": true
@@ -27061,6 +28010,16 @@
         {
           "name": "parryRate",
           "type": "number",
+          "writable": true
+        },
+        {
+          "name": "parryReduction",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "ratesFromScript",
+          "type": "boolean",
           "writable": true
         },
         {
@@ -27757,6 +28716,62 @@
       ],
       "members": [],
       "methods": []
+    },
+    {
+      "name": "SetEnmityIndicatorPacket",
+      "fullName": "Meteor.Map.packets.send.actor.battle.SetEnmityIndicatorPacket",
+      "members": [
+        {
+          "name": "FLAG_ENGAGED",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "FLAG_NONE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "NO_TARGET",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "OPCODE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "PACKET_SIZE",
+          "type": "number",
+          "static": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "BuildPacket",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "monsterActorId",
+              "type": "number"
+            },
+            {
+              "name": "playerActorId",
+              "type": "number"
+            },
+            {
+              "name": "targetActorId",
+              "type": "number"
+            },
+            {
+              "name": "flag",
+              "type": "number"
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "SetEmoteEventCondition",
@@ -28915,6 +29930,33 @@
       ],
       "methods": [
         {
+          "name": "buildCompactPacket",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "playerActorID",
+              "type": "number"
+            },
+            {
+              "name": "locationCode",
+              "type": "number"
+            },
+            {
+              "name": "sequenceId",
+              "type": "number"
+            },
+            {
+              "name": "actorIds",
+              "type": "number[]"
+            },
+            {
+              "name": "unknown",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "buildPacket",
           "static": true,
           "returns": "any",
@@ -29179,6 +30221,29 @@
         }
       ],
       "methods": [
+        {
+          "name": "buildMonsterPartyPacket",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "playerActorID",
+              "type": "number"
+            },
+            {
+              "name": "locationCode",
+              "type": "number"
+            },
+            {
+              "name": "sequenceId",
+              "type": "number"
+            },
+            {
+              "name": "group",
+              "type": "Group"
+            }
+          ]
+        },
         {
           "name": "buildPacket",
           "static": true,
@@ -29520,6 +30585,21 @@
       ],
       "methods": [
         {
+          "name": "buildMonsterGroupPacket",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "playerActorID",
+              "type": "number"
+            },
+            {
+              "name": "groupId",
+              "type": "number"
+            }
+          ]
+        },
+        {
           "name": "buildPacket",
           "static": true,
           "returns": "any",
@@ -29545,6 +30625,100 @@
             },
             {
               "name": "groupId",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SetGroupLayoutIdPacket",
+      "fullName": "Meteor.Map.packets.send.groups.SetGroupLayoutIdPacket",
+      "members": [
+        {
+          "name": "OPCODE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "PACKET_SIZE",
+          "type": "number",
+          "static": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "BuildPacket",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "playerActorId",
+              "type": "number"
+            },
+            {
+              "name": "groupId",
+              "type": "number"
+            },
+            {
+              "name": "memberActorId",
+              "type": "number"
+            },
+            {
+              "name": "displayNameId",
+              "type": "number"
+            },
+            {
+              "name": "layoutId",
+              "type": "number"
+            },
+            {
+              "name": "flag1",
+              "type": "boolean"
+            },
+            {
+              "name": "name",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SetOccupancyGroupPacket",
+      "fullName": "Meteor.Map.packets.send.groups.SetOccupancyGroupPacket",
+      "members": [
+        {
+          "name": "OPCODE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "PACKET_SIZE",
+          "type": "number",
+          "static": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "BuildPacket",
+          "static": true,
+          "returns": "any",
+          "params": [
+            {
+              "name": "playerActorId",
+              "type": "number"
+            },
+            {
+              "name": "occupiedGroupId",
+              "type": "number"
+            },
+            {
+              "name": "occupiedGroupType",
+              "type": "number"
+            },
+            {
+              "name": "occupyingGroupId",
               "type": "number"
             }
           ]

@@ -298,14 +298,14 @@ namespace Meteor.Map.actors.chara.ai
             }
 
             //This skill can't be used on party members and target is a party member
-            if ((mainTarget & ValidTarget.Party) == 0 && target.currentParty == user.currentParty)
+            if ((mainTarget & ValidTarget.Party) == 0 && user.currentParty != null && target.currentParty == user.currentParty)
             {
                 error?.SetTextId(32548);
                 return false;
             }
 
             //This skill must be used on party members and target is not a party member
-            if ((mainTarget & ValidTarget.PartyOnly) != 0 && target.currentParty != user.currentParty)
+            if ((mainTarget & ValidTarget.PartyOnly) != 0 && (user.currentParty == null || target.currentParty != user.currentParty))
             {
                 error?.SetTextId(32547);
                 return false;

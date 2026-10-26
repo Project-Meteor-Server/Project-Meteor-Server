@@ -42,51 +42,39 @@ function onBeginLogin(player)
 		player:SetLoginDreamCode(dreamCode);
 	end
 
-	-- For Opening. Set Director and reset position incase d/c
-	if (player:HasQuest(110001) == true and player.CurrentArea.ZoneId == 193) then
-		director = player.CurrentArea:CreateDirector("OpeningDirector", false);		
-		player:AddDirector(director);
-		director:StartDirector(true);
-		player:SetLoginDirector(director);		
-		player:KickEvent(director, "noticeEvent", true);
-				
-		player.positionX = 0.016;
-		player.positionY = 10.35;
-		player.positionZ = -36.91;
-		player.rotation = 0.025;
-		player:GetQuest(110001):GetData():ClearData();
-	elseif (player:HasQuest(110005) == true and player.CurrentArea.ZoneId == 166) then 
-		director = player.CurrentArea:CreateDirector("OpeningDirector", false);		
-		player:AddDirector(director);
-		director:StartDirector(false);		
-		player:SetLoginDirector(director);		
-		player:KickEvent(director, "noticeEvent", true);
-		
-		player.positionX = 369.5434;
-		player.positionY = 4.21;
-		player.positionZ = -706.1074;
-		player.rotation = -1.26721;
-		player:GetQuest(110005):GetData():ClearData();
-	elseif (player:HasQuest(110009) == true and player.CurrentArea.ZoneId == 184) then
-		director = player.CurrentArea:CreateDirector("OpeningDirector", false);		
-		player:AddDirector(director);
-		director:StartDirector(true);
-		player:SetLoginDirector(director);		
-		player:KickEvent(director, "noticeEvent", true);
-		
-		player.positionX = 5.364327;
-		player.positionY = 196.0;
-		player.positionZ = 133.6561;
-		player.rotation = -2.849384;
-		player:GetQuest(110009):GetData():ClearData();
-	end	
+	local openings = {
+		{ quest = 110001, zone = 193, startNow = true,  x = 0.016,    y = 10.35, z = -36.91,    rot = 0.025 },
+		{ quest = 110005, zone = 166, startNow = false, x = 369.5434, y = 4.21,  z = -706.1074, rot = -1.26721 },
+		{ quest = 110009, zone = 184, startNow = true,  x = 5.364327, y = 196.0, z = 133.6561,  rot = -2.849384 },
+	};
+	for _, o in ipairs(openings) do
+		if (player:HasQuest(o.quest) == true and player.CurrentArea.ZoneId == o.zone) then
+			local quest = player:GetQuest(o.quest);
+			if (quest:GetSequence() == 5) then
+				quest:StartSequenceForNpcLs(0);
+			end
+
+			local director = player.CurrentArea:CreateDirector("OpeningDirector", false);
+			player:AddDirector(director);
+			director:StartDirector(o.startNow);
+			player:SetLoginDirector(director);
+			player:KickEvent(director, "noticeEvent", true);
+
+			player.positionX = o.x;
+			player.positionY = o.y;
+			player.positionZ = o.z;
+			player.rotation = o.rot;
+			quest:GetData():ClearData();
+			quest:GetData():Save();
+			quest:UpdateENPCs();
+			break;
+		end
+	end
 end
 
 function onLogin(player)
 
 	if (player:GetPlayTime(false) == 0) then
-		player:SendMessage(0x1D,"",">PlayTime == 0, new player!");
-		
 		initClassItems(player);
 		initRaceItems(player);	
 

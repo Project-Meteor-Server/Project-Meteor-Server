@@ -14,6 +14,7 @@ namespace Meteor.Map.DataObjects
         public uint PrerequisiteQuest { get; }
         public int MinLevel { get; }
         public int MinGCRank { get; }
+        public bool HasScript { get; set; }
 
         public QuestGameData(uint id, string className, string name, uint prereq, int minLv, int minGcRank)
         {

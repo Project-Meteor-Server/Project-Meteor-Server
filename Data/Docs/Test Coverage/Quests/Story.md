@@ -19,8 +19,8 @@ A quest passes when you can pick it up, play every step, and get the reward.
 
 | ID | Quest | Lv | Starts with | Status | Notes |
 |---|---|---|---|---|---|
-| STORY-05 | Sundered Skies | 1 | Opening | ⬜ |  |
-| STORY-06 | Souls Gone Wild | 1 | Miounne | ⬜ |  |
+| STORY-05 | Sundered Skies | 1 | Opening | ✅ |  |
+| STORY-06 | Souls Gone Wild | 1 | Miounne | ✅ |  |
 | STORY-07 | Whispers in the Wood | 8 | Miounne | ⬜ |  |
 | STORY-08 | Beckon of the Elementals | 13 | Miounne | ⬜ |  |
 

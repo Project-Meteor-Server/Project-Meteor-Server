@@ -7,7 +7,7 @@ Melee fighter with fist weapons. Monk needs Pugilist 30 and Lancer 15, the job q
 ## Basics
 | ID | Feature | What it should do | Status | Notes |
 |---|---|---|---|---|
-| PGL-01 | Become a Pugilist | Equipping fist weapons switches you to Pugilist. | ⬜ | |
+| PGL-01 | Become a Pugilist | Equipping fist weapons switches you to Pugilist. | ✅ | |
 | PGL-02 | Pugilists' Guild | Guild in Ul'dah; class quests start with Gagaruna. | ⬜ | |
 | PGL-03 | Class quests | Quests at Lv20, 30, 36 and 40. | ⬜ | Missing: only Lv20 quest exists |
 | PGL-04 | Monk unlock | Job quest offered at Pugilist 30 with Lancer 15. | ⬜ | Missing: no job quests |
@@ -25,7 +25,7 @@ Melee fighter with fist weapons. Monk needs Pugilist 30 and Lancer 15, the job q
 ## Class actions
 | ID | Action | Lv | Type | What it does | Status | Notes |
 |---|---|---|---|---|---|---|
-| PGL-15 | Pummel | 1 | Weaponskill | Hit, stronger from the front. 1000 TP, 10 s. | ⬜ | Bug: flat damage |
+| PGL-15 | Pummel | 1 | Weaponskill | Hit, stronger from the front. 1000 TP, 10 s. | ⚠️ | Confirm visual effect |
 | PGL-16 | Featherfoot | 2 | Ability | Big evasion up; MP back on first evade. 30 s, 60 s recast. | ⬜ | Wrong: MP should be about 140 |
 | PGL-17 | Pounce | 4 | Weaponskill | Hit; stuns 10 s from behind. 1500 TP, 20 s. | ⬜ | Bug: flat damage |
 | PGL-18 | Second Wind | 6 | Ability | Heal self, about 580 at Lv50, more with INT. 45 s. | ⬜ | Wrong: heals too much at Lv50 |

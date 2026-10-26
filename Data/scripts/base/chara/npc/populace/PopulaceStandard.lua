@@ -24,6 +24,12 @@ end
 function onEventStarted(player, npc, eventType, eventName)
 	local chosenQuest = nil;
 
+	if (eventName == "talkDefault" and eventType ~= ETYPE_TALK) then
+		printf("PopulaceStandard: talkDefault on %s arrived with event type %s; closed without a scene.", tostring(npc:GetActorClassId()), tostring(eventType));
+		player:EndEvent();
+		return;
+	end
+
 	if (eventType == 1) then
 		local defaultTalk = player:GetDefaultTalkQuest(npc);
 		local tutorialTalk = player:GetTutorialQuest(npc);
@@ -44,7 +50,9 @@ function onEventStarted(player, npc, eventType, eventName)
 		end
 		
 		-- Either let the player choose the quest or start it if it's the only one.
-		if (#possibleQuests > 1) then
+		if (#activeQuests > 0 and npc.CurrentArea:IsPrivate()) then
+			chosenQuest = activeQuests[1];
+		elseif (#possibleQuests > 1) then
 			local currentPage = 0;
 			local numPages = math.floor((#possibleQuests-1)/4) + 1;
 			

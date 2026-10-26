@@ -43,12 +43,12 @@ Menus, windows, HUD and everything outside class actions. Class actions are in [
 |---|---|---|---|---|
 | HUD-01 | HP/MP/TP gauges | Own gauges update live on damage, heal, regen, TP gain | ✅ |  |
 | HUD-02 | Target bar | Name, HP%, claim colour, level difficulty | ⚠️ | Doesn't handle different states properly yet |
-| HUD-04 | Nameplates | Names above players/NPCs/mobs; claim and aggro colours; party colour | ❌ |  |
+| HUD-04 | Nameplates | Names above players/NPCs/mobs; claim and aggro colours; party colour | ✅ |  |
 | HUD-05 | Status icons | Self, target and party status icons with timers; tooltip | ⚠️ | acquisition of statuses works |
 | HUD-06 | Remove own buff | Right-click own buff to remove it | ⬜ |  |
 | HUD-07 | Cast bar | Own and target cast bars, interrupt shown | ⬜ |  |
-| HUD-08 | Flytext | Damage, heal, miss, evade, parry, block, crit numbers | ⬜ |  |
-| HUD-09 | Battle log | Combat lines with actor, action, amount | ⚠️ |  |
+| HUD-08 | Flytext | Damage, heal, miss, evade, parry, block, crit numbers | ✅ |  |
+| HUD-09 | Battle log | Combat lines with actor, action, amount | ✅ |  |
 | HUD-10 | EXP bar | Class EXP bar; level-up effect and message | ✅ |  |
 | HUD-11 | Eorzea clock | Eorzea time and earth time | ✅ |  |
 | HUD-12 | Compass / minimap | Position, facing, aetheryte and NPC markers; party markers | ⚠️ | needs additional verification |
@@ -61,8 +61,8 @@ Menus, windows, HUD and everything outside class actions. Class actions are in [
 
 | ID | Feature | What it should do | Status | Notes |
 |---|---|---|---|---|
-| ACT-01 | Class hotbar | Bar shows actions of current class; changes with class | ⬜ |  |
-| ACT-02 | Action list | Actions window lists learned actions by class and level | ⬜ |  |
+| ACT-01 | Class hotbar | Bar shows actions of current class; changes with class | ✅ |  |
+| ACT-02 | Action list | Actions window lists learned actions by class and level | ✅ |  |
 | ACT-03 | Equip actions | Drag actions onto bar slots; saved server-side | ⬜ |  |
 | ACT-04 | Cross-class actions | Actions from other classes equippable within slot limits and level rules | ⬜ |  |
 | ACT-05 | Job mode bar | Job mode limits cross-class choices to the job's allowed set | ⬜ |  |
@@ -80,16 +80,16 @@ Menus, windows, HUD and everything outside class actions. Class actions are in [
 
 | ID | Feature | What it should do | Status | Notes |
 |---|---|---|---|---|
-| ATT-01 | Character window | Name, race, clan, guardian, nameday, city, GC and rank, physical level | ⬜ |  |
-| ATT-02 | Physical level | Physical level separate from class rank; gives attribute points | ⬜ |  |
-| ATT-03 | Class ranks | Every class rank shown (DoW, DoM, DoH, DoL) | ⬜ |  |
-| ATT-04 | Attributes | STR VIT DEX INT MND PIE base + gear | ⬜ |  |
+| ATT-01 | Character window | Name, race, clan, guardian, nameday, city, GC and rank, physical level | ✅ |  |
+| ATT-02 | Physical level | Physical level separate from class rank; gives attribute points | ✅ |  |
+| ATT-03 | Class ranks | Every class rank shown (DoW, DoM, DoH, DoL) | ✅ |  |
+| ATT-04 | Attributes | STR VIT DEX INT MND PIE base + gear | ✅ |  |
 | ATT-05 | Elemental resistances | Fire Ice Wind Earth Lightning Water | ⬜ |  |
 | ATT-06 | Derived stats | Attack, defense, accuracy, evasion, magic potency/accuracy, crafting and gathering stats | ⬜ |  |
-| ATT-07 | Point allotment | Allocate bonus points to attributes and resistances; confirm | ⬜ |  |
+| ATT-07 | Point allotment | Allocate bonus points to attributes and resistances; confirm | ✅ |  |
 | ATT-08 | Point reset | Reset allotment (rules and limits per 1.23b) | ⬜ | Not sure it was in 1.23b |
 | ATT-09 | Stat refresh | Stats update on gear change and level-up without relog | ⬜ |  |
-| ATT-10 | HP/MP by class | Max HP/MP follow class and level | ⬜ |  |
+| ATT-10 | HP/MP by class | Max HP/MP follow class and level | ✅ |  |
 | ATT-11 | Titles | Titles from achievements selectable | ⬜ | Not sure it was in 1.23b |
 
 ## Equipment and armoury

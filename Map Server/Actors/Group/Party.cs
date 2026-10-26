@@ -19,8 +19,12 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 ===========================================================================
 */
 
+using Meteor.Map.Actors;
 using Meteor.Map.actors.group.Work;
+using Meteor.Map.DataObjects;
 using Meteor.Map.packets.send.group;
+using Meteor.Map.packets.send.groups;
+using Meteor.Map.utils;
 using System.Collections.Generic;
 
 namespace Meteor.Map.actors.group
@@ -29,6 +33,7 @@ namespace Meteor.Map.actors.group
     {
         public PartyWork partyGroupWork = new PartyWork();
         public List<uint> members = new List<uint>();
+        public List<Character> npcMembers = new List<Character>();
 
         public Party(ulong groupId, uint leaderCharaId) : base(groupId)
         {
@@ -65,7 +70,7 @@ namespace Meteor.Map.actors.group
 
         public override int GetMemberCount()
         {
-            return members.Count;
+            return members.Count + npcMembers.Count;
         }
 
         public override uint GetTypeId()
@@ -83,7 +88,30 @@ namespace Meteor.Map.actors.group
                 if (charaId != id && chara != null)
                     groupMembers.Add(new GroupMember(charaId, -1, 0, false, true, chara.DisplayName));
             }
+            foreach (Character npc in npcMembers)
+                groupMembers.Add(new GroupMember(npc.Id, (int)npc.LocalizedDisplayName, 0x12D, false, true, ""));
             return groupMembers;
+        }
+
+        public void SetNpcMembers(List<Character> npcs)
+        {
+            npcMembers = new List<Character>(npcs);
+            SendGroupPacketsAll(members);
+        }
+
+        public override void SendGroupPackets(Session session)
+        {
+            base.SendGroupPackets(session);
+            foreach (Character npc in npcMembers)
+            {
+                session.QueuePacket(SetGroupLayoutIdPacket.BuildPacket(session.id, groupIndex, npc.Id, (uint)npc.LocalizedDisplayName, 0x12D, false, ""));
+                var state = new ActorPropertyPacketUtil("charaWork/stateAtQuicklyForAll", npc);
+                state.AddProperty("charaWork.parameterSave.hp[0]");
+                state.AddProperty("charaWork.parameterSave.hpMax[0]");
+                state.AddProperty("charaWork.parameterSave.mp");
+                state.AddProperty("charaWork.parameterSave.mpMax");
+                session.QueuePacket(state.Done());
+            }
         }
 
         public void AddMember(uint memberId)

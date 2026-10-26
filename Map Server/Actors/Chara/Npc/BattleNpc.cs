@@ -32,6 +32,7 @@ using Meteor.Map.packets.send.actor.battle;
 using Meteor.Map.actors.chara.ai.utils;
 using Meteor.Map.actors.group;
 using Meteor.Map.Actors.Chara;
+using Meteor.Map.actors.director;
 
 namespace Meteor.Map.Actors
 {
@@ -79,11 +80,14 @@ namespace Meteor.Map.Actors
         public Dictionary<uint, BattleCommand> spellList = new Dictionary<uint, BattleCommand>();
 
         public uint poolId, genusId;
+        public DutyEncounter duty;
         public ModifierList poolMods;
         public ModifierList genusMods;
         public ModifierList spawnMods;
 
         protected Dictionary<MobModifier, Int64> mobModifiers = new Dictionary<MobModifier, Int64>();
+
+        private MonsterParty monsterParty;
 
         public BattleNpc(int actorNumber, ActorClass actorClass, string uniqueId, Area spawnedArea, float posX, float posY, float posZ, float rot,
             ushort actorState, uint animationId, string customDisplayName)
@@ -127,6 +131,8 @@ namespace Meteor.Map.Actors
                 subpackets.Add(CreateAppearancePacket());
 
                 subpackets.Add(CreateNamePacket());
+                if (player != null && HasMonsterParty() && CurrentArea != null)
+                    subpackets.AddRange(GetMonsterParty().BuildSpawnPackets(player.Id, CurrentArea.ZoneId));
                 subpackets.Add(CreateStatePacket());
                 subpackets.Add(CreateSubStatePacket());
                 subpackets.Add(CreateInitStatusPacket());
@@ -134,40 +140,270 @@ namespace Meteor.Map.Actors
                 subpackets.Add(CreateIsZoneingPacket());
                 subpackets.Add(CreateScriptBindPacket(player));
                 subpackets.Add(GetHateTypePacket(player));
+                if (player != null)
+                    subpackets.Add(GetEnmityIndicatorPacket(player));
             }
             return subpackets;
         }
 
-        //This might need more work
-        //I think there migh be something that ties mobs to parties 
-        //and the client checks if any mobs are tied to the current party
-        //and bases the color on that. Adding mob to party obviously doesn't work
-        //Based on depictionjudge script:
-        //HATE_TYPE_NONE is for passive
-        //HATE_TYPE_ENGAGED is for aggroed mobs
-        //HATE_TYPE_ENGAGED_PARTY is for claimed mobs, client uses occupancy group to determine if mob is claimed by player's party
-        //for now i'm just going to assume that occupancygroup will be BattleNpc's currentparties when they're in combat, 
-        //so if party isn't null, they're claimed.
         public SubPacket GetHateTypePacket(Player player)
         {
-            npcWork.hateType = NpcWork.HATE_TYPE_NONE;
-            if (player != null)
-            {
-                if (aiContainer.IsEngaged())
-                {
-                    npcWork.hateType = NpcWork.HATE_TYPE_ENGAGED;
-
-                    if (this.currentParty != null)
-                    {
-                        npcWork.hateType = NpcWork.HATE_TYPE_ENGAGED_PARTY;
-                    }
-                }
-            }
-            npcWork.hateType = 3;
             var propPacketUtil = new ActorPropertyPacketUtil("npcWork/hate", this);
             propPacketUtil.AddProperty("npcWork.hateType");
             return propPacketUtil.Done()[0];
         }
+
+        #region Claim (nameplate colour)
+
+        public bool HasMonsterParty()
+        {
+            return !(this is Ally) && !(this is Pet);
+        }
+
+        public MonsterParty GetMonsterParty()
+        {
+            if (monsterParty == null && HasMonsterParty())
+                monsterParty = MonsterParty.Create(Id);
+            return monsterParty;
+        }
+
+        public ulong GetClaimPartyGroupId()
+        {
+            return monsterParty != null ? monsterParty.occupancyGroupId : 0;
+        }
+
+        public static ulong GetClaimPartyGroupId(Character chara)
+        {
+            Character owner = GetCreditOwner(chara);
+            if (owner is Player && owner.currentParty is Party party)
+                return party.groupIndex;
+            return 0;
+        }
+
+        public static Character GetCreditOwner(Character chara)
+        {
+            if (chara is Pet)
+            {
+                PetController petController = chara.aiContainer.GetController<PetController>();
+                if (petController != null && petController.GetPetMaster() != null)
+                    return petController.GetPetMaster();
+            }
+            else if (chara is Ally ally)
+            {
+                Player leader = ally.GetLeader();
+                if (leader != null)
+                    return leader;
+            }
+            return chara;
+        }
+
+        public bool IsEngagedWithSideOf(Player viewer)
+        {
+            ulong viewerParty = GetClaimPartyGroupId(viewer);
+            ulong claim = GetClaimPartyGroupId();
+            if (claim != 0 && claim == viewerParty)
+                return true;
+            if (currentLockedTarget == viewer.Id)
+                return true;
+            Character locked = target as Character;
+            if (locked == null || locked.Id != currentLockedTarget)
+                locked = CurrentArea?.FindActorInArea<Character>(currentLockedTarget);
+            if (locked == null)
+                return false;
+            Character owner = GetCreditOwner(locked);
+            if (owner == viewer)
+                return true;
+            return viewerParty != 0 && GetClaimPartyGroupId(owner) == viewerParty;
+        }
+
+        public void OnHateAdded(Character target)
+        {
+            if (!HasMonsterParty() || !IsAlive() || target == null)
+                return;
+
+            MonsterParty group = GetMonsterParty();
+            if (group.occupancyGroupId != 0)
+                return;
+
+            ulong partyGroupId = GetClaimPartyGroupId(target);
+            if (partyGroupId == 0)
+            {
+                if (npcWork.hateType == NpcWork.HATE_TYPE_UNCLAIMED)
+                    SetHateType(NpcWork.HATE_TYPE_ENGAGED);
+                return;
+            }
+
+            group.occupancyGroupId = partyGroupId;
+            foreach (Player viewer in GetGroupViewers())
+            {
+                viewer.QueuePacket(group.BuildOccupancyPacket(viewer.Id, 0));
+                viewer.QueuePacket(group.BuildOccupancyPacket(viewer.Id, partyGroupId));
+            }
+            SetHateType(NpcWork.HATE_TYPE_CLAIMED);
+        }
+
+        public void OnHateListEmptied()
+        {
+            if (!HasMonsterParty() || enmityClearPending)
+                return;
+            if (!IsAlive())
+                SetHateType(NpcWork.HATE_TYPE_DEAD);
+            else
+                ReleaseClaim(NpcWork.HATE_TYPE_UNCLAIMED);
+        }
+
+        public void ReleaseClaim(byte hateType)
+        {
+            if (monsterParty != null && monsterParty.occupancyGroupId != 0)
+            {
+                monsterParty.occupancyGroupId = 0;
+                foreach (Player viewer in GetGroupViewers())
+                    viewer.QueuePacket(monsterParty.BuildOccupancyPacket(viewer.Id, 0));
+            }
+            SetHateType(hateType);
+        }
+
+        private void SetHateType(byte hateType)
+        {
+            if (npcWork.hateType == hateType)
+                return;
+            npcWork.hateType = hateType;
+
+            SubPacket packet = GetHateTypePacket(null);
+            foreach (Player viewer in GetGroupViewers())
+                viewer.QueuePacket(new SubPacket(packet, viewer.Id));
+        }
+
+        #region Enmity indicator (0x0195)
+
+        private uint enmityIndicatorTarget;
+        private readonly HashSet<uint> enmityIndicatorViewers = new HashSet<uint>();
+        private readonly Dictionary<uint, ushort> enmityIndicatorSent = new Dictionary<uint, ushort>();
+        private DateTime nextEnmityIndicatorRefresh = DateTime.MinValue;
+        private bool enmityClearPending;
+
+        public void FlushPendingEnmityClear()
+        {
+            if (!enmityClearPending)
+                return;
+            enmityClearPending = false;
+            ClearEnmityIndicator();
+            SetHateType(NpcWork.HATE_TYPE_DEAD);
+        }
+
+        public SubPacket GetEnmityIndicatorPacket(Player viewer)
+        {
+            if (IsAlive() && enmityIndicatorTarget != 0 && IsEnmityIndicatorRecipient(viewer))
+            {
+                enmityIndicatorViewers.Add(viewer.Id);
+                ushort flag = GetEnmityIndicatorFlag(viewer);
+                enmityIndicatorSent[viewer.Id] = flag;
+                return SetEnmityIndicatorPacket.BuildPacket(Id, viewer.Id, enmityIndicatorTarget, flag);
+            }
+            return SetEnmityIndicatorPacket.BuildPacket(Id, viewer.Id, SetEnmityIndicatorPacket.NO_TARGET, SetEnmityIndicatorPacket.FLAG_NONE);
+        }
+
+        public void UpdateEnmityIndicator(Character newTarget)
+        {
+            if (newTarget == null || !IsAlive())
+            {
+                if (enmityClearPending)
+                    return;
+                ClearEnmityIndicator();
+                return;
+            }
+
+            bool engaging = enmityIndicatorTarget == 0;
+            enmityIndicatorTarget = newTarget.Id;
+            foreach (Player viewer in GetGroupViewers())
+            {
+                if (!IsEnmityIndicatorRecipient(viewer))
+                    continue;
+                ushort flag = GetEnmityIndicatorFlag(viewer);
+                if (engaging || !enmityIndicatorViewers.Contains(viewer.Id))
+                    viewer.QueuePacket(SetEnmityIndicatorPacket.BuildPacket(Id, viewer.Id, SetEnmityIndicatorPacket.NO_TARGET, flag));
+                viewer.QueuePacket(SetEnmityIndicatorPacket.BuildPacket(Id, viewer.Id, enmityIndicatorTarget, flag));
+                enmityIndicatorViewers.Add(viewer.Id);
+                enmityIndicatorSent[viewer.Id] = flag;
+            }
+        }
+
+        private ushort GetEnmityIndicatorFlag(Player viewer)
+        {
+            if (hateContainer == null || !hateContainer.HasHateForTarget(viewer))
+                return SetEnmityIndicatorPacket.FLAG_NONE;
+            if (viewer.Id == enmityIndicatorTarget)
+                return SetEnmityIndicatorPacket.FLAG_ENGAGED;
+            var list = hateContainer.GetHateList();
+            uint mine = list[viewer].cumulativeEnmity, top = 0;
+            foreach (var entry in list.Values)
+                if (entry.actor != null && entry.actor.Id == enmityIndicatorTarget)
+                    top = entry.cumulativeEnmity;
+            if (top == 0 || mine >= top)
+                return SetEnmityIndicatorPacket.FLAG_ENGAGED;
+            return (ushort)Math.Max(1, (int)(100L * mine / top));
+        }
+
+        private void RefreshEnmityIndicator(DateTime tick)
+        {
+            if (enmityIndicatorTarget == 0 || enmityClearPending || !IsAlive() || tick < nextEnmityIndicatorRefresh)
+                return;
+            nextEnmityIndicatorRefresh = tick.AddSeconds(1);
+            foreach (Player viewer in GetGroupViewers())
+            {
+                if (!IsEnmityIndicatorRecipient(viewer))
+                    continue;
+                ushort flag = GetEnmityIndicatorFlag(viewer);
+                if (enmityIndicatorSent.TryGetValue(viewer.Id, out ushort last) && last == flag)
+                    continue;
+                viewer.QueuePacket(SetEnmityIndicatorPacket.BuildPacket(Id, viewer.Id, enmityIndicatorTarget, flag));
+                enmityIndicatorViewers.Add(viewer.Id);
+                enmityIndicatorSent[viewer.Id] = flag;
+            }
+        }
+
+        public void ClearEnmityIndicator()
+        {
+            uint lastTarget = enmityIndicatorTarget != 0 ? enmityIndicatorTarget : SetEnmityIndicatorPacket.NO_TARGET;
+            enmityIndicatorTarget = 0;
+            enmityIndicatorSent.Clear();
+            if (enmityIndicatorViewers.Count == 0)
+                return;
+
+            foreach (Player viewer in GetGroupViewers())
+            {
+                if (!enmityIndicatorViewers.Contains(viewer.Id))
+                    continue;
+                viewer.QueuePacket(SetEnmityIndicatorPacket.BuildPacket(Id, viewer.Id, lastTarget, SetEnmityIndicatorPacket.FLAG_NONE));
+                viewer.QueuePacket(SetEnmityIndicatorPacket.BuildPacket(Id, viewer.Id, SetEnmityIndicatorPacket.NO_TARGET, SetEnmityIndicatorPacket.FLAG_NONE));
+            }
+            enmityIndicatorViewers.Clear();
+        }
+
+        private bool IsEnmityIndicatorRecipient(Player viewer)
+        {
+            if (hateContainer != null && hateContainer.HasHateForTarget(viewer))
+                return true;
+            ulong claim = GetClaimPartyGroupId();
+            return claim != 0 && GetClaimPartyGroupId(viewer) == claim;
+        }
+
+        #endregion
+
+        private List<Player> GetGroupViewers()
+        {
+            List<Player> viewers = new List<Player>();
+            if (CurrentArea == null)
+                return viewers;
+            foreach (Player player in CurrentArea.GetPlayers())
+            {
+                if (player.playerSession != null && player.playerSession.actorInstanceList.Contains(this))
+                    viewers.Add(player);
+            }
+            return viewers;
+        }
+
+        #endregion
 
         public uint GetDetectionType()
         {
@@ -181,6 +417,8 @@ namespace Meteor.Map.Actors
 
         public override void Update(DateTime tick)
         {
+            FlushPendingEnmityClear();
+            RefreshEnmityIndicator(tick);
             this.aiContainer.Update(tick);
             this.statusEffects.Update(tick);
         }
@@ -269,12 +507,25 @@ namespace Meteor.Map.Actors
 
             this.isMovingToSpawn = false;
             this.hateContainer.ClearHate();
-            CurrentArea.BroadcastPacketsAroundActor(this, GetSpawnPackets(null, 0x01));
-            CurrentArea.BroadcastPacketsAroundActor(this, GetInitPackets());
+            if (monsterParty != null)
+                monsterParty.occupancyGroupId = 0;
+            npcWork.hateType = NpcWork.HATE_TYPE_UNCLAIMED;
+            SendRespawnPackets();
             RecalculateStats();
 
             OnSpawn();
             updateFlags |= ActorUpdateFlags.AllNpc;
+        }
+
+        private void SendRespawnPackets()
+        {
+            foreach (Player player in CurrentArea.GetPlayers())
+            {
+                if (player.playerSession == null || !player.playerSession.actorInstanceList.Contains(this))
+                    continue;
+                player.QueuePackets(GetSpawnPackets(player, 0x01));
+                player.QueuePackets(GetInitPackets());
+            }
         }
 
         public override void Die(DateTime tick, CommandResultContainer actionContainer = null)
@@ -319,6 +570,17 @@ namespace Meteor.Map.Actors
                         try { member.HandleBNpcKill(GetActorClassId()); }
                         catch (Exception e) { Program.Log.Error("Quest kill hook failed: {0}", e); }
                     }
+                }
+
+                if (actionContainer != null)
+                    enmityClearPending = true;
+                else
+                    ClearEnmityIndicator();
+
+                if (duty != null)
+                {
+                    try { duty.OnMobDeath(this, lastAttacker); }
+                    catch (Exception e) { Program.Log.Error("Duty death hook failed: {0}", e); }
                 }
 
                 if (positionUpdates != null)
@@ -433,6 +695,9 @@ namespace Meteor.Map.Actors
 
         public override void OnDespawn()
         {
+            if (monsterParty != null)
+                foreach (Player viewer in GetGroupViewers())
+                    viewer.QueuePacket(monsterParty.BuildDeletePacket(viewer.Id));
             base.OnDespawn();
         }
 

@@ -1,3 +1,4 @@
+require("global");
 --[[
 
 RequestQuestJournalCommand Script
@@ -18,11 +19,11 @@ function onEventStarted(player, command, eventType, eventName, questId, mapCode)
 		if (mapCode == nil) then
 			-- Get Quest Journal Data
 			local journalInfo = quest:GetJournalInformation();
-			player:SendDataPacket("requestedData", "qtdata", quest:GetQuestId(), quest:GetSequence(), unpack(journalInfo));
+			player:SendDataPacket("requestedData", "qtdata", quest:GetQuestId(), quest:GetSequence(), unpack(arrayToTable(journalInfo)));
 		else
 			-- Get Quest Map Data
 			local mapMarkers = quest:GetJournalMapMarkerList();
-			player:SendDataPacket("requestedData", "qtmap", quest:GetQuestId(), unpack(mapMarkers));
+			player:SendDataPacket("requestedData", "qtmap", quest:GetQuestId(), unpack(arrayToTable(mapMarkers)));
 		end
 	end
 	
