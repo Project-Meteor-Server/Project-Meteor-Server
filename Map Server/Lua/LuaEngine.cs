@@ -202,7 +202,7 @@ namespace Meteor.Map.lua
                 player.EndEvent();
         }
 
-        // // todo: this is dumb, should probably make a function for each action with different default return values
+        // todo: this is dumb, should probably make a function for each action with different default return values
         // or just make generic function and pass default value as first arg after functionName
         public static void CallLuaBattleFunction(Character actor, string functionName, params object[] args)
         {

@@ -180,9 +180,6 @@ namespace Meteor.Common
         }
 
         // Builds a packet from the incoming buffer + offset. If a packet can be built, it is returned else null.
-        // offset: Current offset in buffer.
-        // buffer: Incoming buffer.
-        // Returns either a BasePacket or null if not enough data.
         public static SubPacket CreatePacket(ref int offset, byte[] buffer, int bytesRead)
         {
             SubPacket newPacket = null;

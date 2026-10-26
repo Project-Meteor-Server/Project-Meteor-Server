@@ -34,7 +34,7 @@ namespace Meteor.Map.actors.chara.ai
         float Walk(Vector3 a, Vector3 b, float lateral);
         // The highest surface with bottom < y <= top.
         GroundAnswer RayDown(float x, float z, float top, float bottom, out float y);
-        // under: the mesh is right under the point, not just near it.
+        // Under: the mesh is right under the point, not just near it.
         bool NavHeight(float x, float yNear, float z, out float y, out bool under);
         // PositiveInfinity when further than max.
         float MeshDistance(Vector3 p, float max);
