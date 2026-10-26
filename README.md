@@ -13,8 +13,8 @@ Building and running (Windows, macOS, Linux)
 ========
 The servers target .NET 10 and build with the `dotnet` CLI on any OS.
 
-1. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download), MariaDB and PHP.
-   On macOS: `brew install --cask dotnet-sdk` and `brew install mariadb php`.
+1. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download) and MariaDB.
+   On macOS: `brew install --cask dotnet-sdk` and `brew install mariadb`.
 2. Create the database and import the schema into an empty database:
    ```bash
    mysql -u root -p -e "CREATE DATABASE ffxiv_server"
@@ -26,9 +26,25 @@ The servers target .NET 10 and build with the `dotnet` CLI on any OS.
    so set your database password in `<Server>/bin/Debug/*_config.ini`, or pass it at launch.
 4. Run all three servers: `./run-servers.sh` (or `METEOR_DB_PASSWORD=<password> ./run-servers.sh`).
    It starts Map, then World, then Lobby, and stops them all on Ctrl+C.
-5. Serve the login pages: `php -S 127.0.0.1:8000 -t Data/www`.
+
+The login, version check and patch pages are not part of this repo. Run a separate web server
+for them, such as [Project-Meteor-Web](https://github.com/Project-Meteor-Server/Meteor-PatchLogin-Server).
 
 The game client itself is a Windows program. Point a Windows machine or VM at the server's IP.
+
+Navigation
+========
+`Navigation/` (`Meteor.Navigation`) loads navmeshes (`.nav`) and collision (`.xcol`) built by
+[meteor-navgen](https://github.com/rubymatrix/meteor-navgen), a separate C++ tool. The file formats are in
+navgen's [docs/FORMATS.md](https://github.com/rubymatrix/meteor-navgen/blob/main/docs/FORMATS.md).
+Meshes and collision come from game data, so they stay local and are never committed.
+Tests: `dotnet test "Tests/Navigation Tests"`.
+
+The Map server paths monsters, allies, pets and npcs on them. Put navgen's output (`*.nav` plus
+`manifest.json`) in `Data/navmesh/` and the collision export (`zones.json`, `<zone>/static.xcol`)
+in `Data/collision/`; the build copies them to `navmesh/` and `collision/` next to the server.
+Both paths are set in `map_config.ini` (`[Navigation]`). A zone with no mesh still works: its
+actors walk in straight lines.
 
 Pull Requests
 ========

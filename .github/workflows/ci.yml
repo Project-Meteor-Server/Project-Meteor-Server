@@ -101,5 +101,9 @@ jobs:
       - name: Engine tests
         run: dotnet test "Tests/Map Server Tests" --no-build --filter "Category!=Benchmark" --logger "console;verbosity=normal"
 
+      # Navmesh, collision and pathing on synthetic scenes; needs no game data or navgen build.
+      - name: Navigation tests
+        run: dotnet test "Tests/Navigation Tests" --no-build --logger "console;verbosity=normal"
+
       - name: Engine benchmarks
         run: dotnet test "Tests/Map Server Tests" --no-build --filter "Category=Benchmark" --logger "console;verbosity=detailed"

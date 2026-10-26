@@ -40,6 +40,7 @@ using Meteor.Map.actors.chara.ai;
 using Meteor.Map.actors.chara;
 using Meteor.Map.actors.chara.player;
 using Meteor.Map.packets.send.actor.inventory;
+using Meteor.Map.navigation;
 
 namespace Meteor.Map
 {
@@ -513,6 +514,13 @@ namespace Meteor.Map
             Program.Log.Info("Spawning actors...");
             foreach (Zone z in zoneList.Values)
                 z.SpawnAllActors(true);
+        }
+
+        /// <summary>Call after LoadZoneList.</summary>
+        public void LoadNavMeshes()
+        {
+            NavMeshManager.LoadForZones(zoneList.Values);
+            CollisionManager.FindForZones(zoneList.Values);
         }
 
         public BattleNpc SpawnBattleNpcById(uint id, Area area = null)

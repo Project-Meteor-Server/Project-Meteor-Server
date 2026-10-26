@@ -905,7 +905,8 @@ namespace Meteor.Map
                     currentPrivateAreaType,
                     homepoint,
                     homepointInn,
-                    restBonusInnSince
+                    restBonusInnSince,
+                    gmLevel
                     FROM characters WHERE id = @charId";
 
                     cmd = new MySqlCommand(query, conn);
@@ -944,6 +945,7 @@ namespace Meteor.Map
                             player.playTime = reader.GetUInt32(19);
                             player.homepoint = reader.GetUInt32("homepoint");
                             player.homepointInn = reader.GetByte("homepointInn");
+                            player.gmLevel = reader.GetUInt16("gmLevel");
                             player.destinationZone = reader.GetUInt32("destinationZoneId");
                             player.destinationSpawnType = reader.GetByte("destinationSpawnType");
 
@@ -2882,6 +2884,25 @@ namespace Meteor.Map
                 finally
                 {
                     conn.Dispose();
+                }
+            }
+        }
+
+        public static void SetGmLevel(Player player, ushort gmLevel)
+        {
+            using (MySqlConnection conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
+            {
+                try
+                {
+                    conn.Open();
+                    MySqlCommand cmd = new MySqlCommand("UPDATE characters SET gmLevel = @level WHERE id = @charId", conn);
+                    cmd.Parameters.AddWithValue("@charId", player.Id);
+                    cmd.Parameters.AddWithValue("@level", gmLevel);
+                    cmd.ExecuteNonQuery();
+                }
+                catch (MySqlException e)
+                {
+                    Program.Log.Error(e.ToString());
                 }
             }
         }

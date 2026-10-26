@@ -116,7 +116,8 @@ namespace Meteor.Map.Actors
         public uint currentTitle;
         public uint playTime;
         public uint lastPlayTimeUpdate;
-        public bool isGM = false;
+        public ushort gmLevel = 0;
+        public bool isGM => gmLevel > 0;
         public bool isZoneChanging = true;
         public byte LoginDreamCode = 0;
 
@@ -1499,6 +1500,18 @@ namespace Meteor.Map.Actors
         {
             homepointInn = townId;
             Database.SavePlayerHomePoints(this);
+        }
+
+        public ushort GetGMLevel()
+        {
+            return gmLevel;
+        }
+
+        public void SetGMLevel(ushort level)
+        {
+            gmLevel = level;
+            Database.SetGmLevel(this, level);
+            SetDCFlag(false); // re-sends the GM icon
         }
 
         public bool HasAetheryteNodeUnlocked(uint aetheryteId)

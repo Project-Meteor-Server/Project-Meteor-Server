@@ -39,7 +39,7 @@ namespace Meteor.Map.actors.chara.ai.state
             owner.ChangeState(SetActorStatePacket.MAIN_STATE_ACTIVE);
             ChangeTarget(target);
             attackTime = startTime;
-            owner.aiContainer.pathFind?.Clear();
+            owner.aiContainer.mover?.Stop();
         }
 
         public override void OnStart()

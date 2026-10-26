@@ -19,263 +19,119 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 ===========================================================================
 */
 
-using System;
 using System.Collections.Generic;
-using SharpNav;
-using SharpNav.Pathfinding;
 using Meteor.Common;
+using Meteor.Map.Actors;
+using Meteor.Map.actors.area;
+using Meteor.Map.actors.chara.npc;
+using Meteor.Map.navigation;
+using NavAgent = Meteor.Navigation.NavAgent;
+using NavInstance = Meteor.Navigation.NavInstance;
 
 namespace Meteor.Map.utils
 {
+    /// <summary>Every call also works on zones without a navmesh, as straight lines.</summary>
     class NavmeshUtils
     {
-
-        // navmesh
-        public static bool CanSee(actors.area.Zone zone, float x1, float y1, float z1, float x2, float y2, float z2)
+        public static IZoneNav GetNavMesh(Area area)
         {
-            // todo: prolly shouldnt raycast
-            var navMesh = zone.tiledNavMesh;
-            if (navMesh != null)
-            {
-                var navMeshQuery = zone.navMeshQuery;
-
-                NavPoint startPt, endPt;
-                SharpNav.Pathfinding.Path path = new SharpNav.Pathfinding.Path();
-
-                RaycastHit hit = new RaycastHit();
-
-                SharpNav.Geometry.Vector3 c = new SharpNav.Geometry.Vector3(x1, y1, z1);
-                SharpNav.Geometry.Vector3 ep = new SharpNav.Geometry.Vector3(x2, y2, z2);
-
-                SharpNav.Geometry.Vector3 e = new SharpNav.Geometry.Vector3(5, 5, 5);
-                navMeshQuery.FindNearestPoly(ref c, ref e, out startPt);
-                navMeshQuery.FindNearestPoly(ref ep, ref e, out endPt);
-
-
-                if (navMeshQuery.Raycast(ref startPt, ref ep, RaycastOptions.None, out hit, path))
-                {
-                    return true;
-                }
-                return false;
-            }
-            return true;
+            if (area == null)
+                return null;
+            var instanceMesh = area.GetNavInstanceMesh();
+            if (instanceMesh != null)
+                return instanceMesh;
+            if (area is PrivateArea privateArea)
+                return privateArea.GetParentZone()?.navMesh;
+            return (area as Zone)?.navMesh;
         }
 
-        public static SharpNav.TiledNavMesh LoadNavmesh(TiledNavMesh navmesh, string filePath)
-        {
-            SharpNav.IO.NavMeshSerializer serializer;
-            if (System.IO.Path.GetExtension(filePath) == ".snb")
-                serializer = new SharpNav.IO.Binary.NavMeshBinarySerializer();
-            else
-                serializer = new SharpNav.IO.Json.NavMeshJsonSerializer();
+        public static NavInstance GetNavInstance(Area area) => area?.GetNavInstance();
 
-            return serializer.Deserialize(System.IO.Path.Combine("../../navmesh/", filePath));
-            //return navmesh = new SharpNav.IO.Json.NavMeshJsonSerializer().Deserialize(filePath);
+        /// <summary>Which ground an actor may walk: monsters stay off lifts and player-only ground,
+        /// escorted npcs don't take drops, allies and pets go where the party goes.</summary>
+        public static NavAgent AgentFor(Character chara)
+        {
+            if (chara is Player)
+                return NavAgent.Player;
+            if (chara is Ally || chara is Pet)
+                return NavAgent.Ally;
+            if (chara is BattleNpc)
+                return NavAgent.Mob;
+            if (chara is Npc)
+                return NavAgent.Escort;
+            return NavAgent.Mob;
         }
 
-        public static List<Vector3> GetPath(actors.area.Zone zone, float x, float y, float z, float targetX, float targetY, float targetZ, float stepSize = 0.70f, int pathSize = 45, float polyRadius = 0.0f, bool skipToTarget = false)
+        public static bool CanSee(Area area, float x1, float y1, float z1, float x2, float y2, float z2)
         {
-            return GetPath(zone, new Vector3(x, y, z), new Vector3(targetX, targetY, targetZ), stepSize, pathSize, polyRadius, skipToTarget);
+            var navMesh = GetNavMesh(area);
+            return navMesh == null || navMesh.HasLineOfSight(new Vector3(x1, y1, z1), new Vector3(x2, y2, z2));
         }
 
-        #region sharpnav stuff
-        // Copyright (c) 2013-2016 Robert Rouhani <robert.rouhani@gmail.com> and other contributors (see CONTRIBUTORS file).
-        // Licensed under the MIT License - https://raw.github.com/Robmaister/SharpNav/master/LICENSE
-
-        public static List<Vector3> GetPath(actors.area.Zone zone, Vector3 startVec, Vector3 endVec, float stepSize = 0.70f, int pathSize = 45, float polyRadius = 0.0f, bool skipToTarget = false)
+        /// <summary>Without a navmesh, or off it, every direction is fully clear.</summary>
+        public static void Clearance(Area area, Vector3 from, float[] dirX, float[] dirZ, float[] maxDist, float[] dist)
         {
-            var navMesh = zone.tiledNavMesh;
-            var navMeshQuery = zone.navMeshQuery;
+            var navMesh = GetNavMesh(area);
+            if (navMesh == null || !navMesh.TryClearance(from, dirX, dirZ, maxDist, dist))
+                System.Array.Copy(maxDist, dist, maxDist.Length);
+        }
 
-            // no navmesh loaded, run straight to player
+        public static float ClearanceTowards(Area area, Vector3 from, Vector3 to)
+        {
+            float dx = to.X - from.X, dz = to.Z - from.Z;
+            float len = (float)System.Math.Sqrt(dx * dx + dz * dz);
+            if (len < 0.01f)
+                return len;
+            float[] dist = new float[1];
+            Clearance(area, from, new[] { dx / len }, new[] { dz / len }, new[] { len }, dist);
+            return dist[0];
+        }
+
+        /// <summary>Returns the position unchanged when there is no ground near it.</summary>
+        public static Vector3 SnapToGround(Area area, float x, float y, float z)
+        {
+            var navMesh = GetNavMesh(area);
+            if (navMesh != null && navMesh.TrySnapToGround(x, y, z, out var snapped))
+                return snapped;
+            return new Vector3(x, y, z);
+        }
+
+        public static List<Vector3> GetPath(Area area, float x, float y, float z, float targetX, float targetY, float targetZ, float stepSize = 0.70f, int pathSize = 45, float polyRadius = 0.0f, bool skipToTarget = false)
+        {
+            return GetPath(area, new Vector3(x, y, z), new Vector3(targetX, targetY, targetZ), stepSize, pathSize, polyRadius, skipToTarget);
+        }
+
+        /// <summary>Null when the end can't be reached or is the start. Without a navmesh, just the end.</summary>
+        public static List<Vector3> GetPath(Area area, Vector3 startVec, Vector3 endVec, float stepSize = 0.70f, int pathSize = 45, float polyRadius = 0.0f, bool skipToTarget = false)
+        {
+            return GetPath(area, startVec, endVec, out _, stepSize, pathSize, polyRadius, skipToTarget);
+        }
+
+        public static List<Vector3> GetPath(Area area, Vector3 startVec, Vector3 endVec, out PathResult result, float stepSize = 0.70f, int pathSize = 45, float polyRadius = 0.0f, bool skipToTarget = false)
+        {
+            var navMesh = GetNavMesh(area);
+
             if (navMesh == null)
             {
+                result = PathResult.NoMesh;
+                NavStats.Record(null, result, 0);
                 return new List<Vector3>() { endVec };
             }
 
-            // no need to waste cycles finding path to same point
             if (startVec.X == endVec.X && startVec.Y == endVec.Y && startVec.Z == endVec.Z && polyRadius == 0.0f)
             {
+                result = PathResult.SamePoint;
+                NavStats.Record(navMesh.Name, result, 0);
                 return null;
             }
 
-            var smoothPath = new List<Vector3>(pathSize) { };
+            var path = new List<Vector3>(pathSize);
+            if (!navMesh.TryFindPath(startVec, endVec, stepSize, pathSize, polyRadius, path, out result))
+                return null;
 
-            NavQueryFilter filter = new NavQueryFilter();
-
-            NavPoint startPt, endPt;
-
-            try
-            {
-                SharpNav.Geometry.Vector3 c = new SharpNav.Geometry.Vector3(startVec.X, startVec.Y, startVec.Z);
-                SharpNav.Geometry.Vector3 ep = new SharpNav.Geometry.Vector3(endVec.X, endVec.Y, endVec.Z);
-
-                SharpNav.Geometry.Vector3 e = new SharpNav.Geometry.Vector3(5, 5, 5);
-                navMeshQuery.FindNearestPoly(ref c, ref e, out startPt);
-                navMeshQuery.FindNearestPoly(ref ep, ref e, out endPt);
-                
-                //calculate the overall path, which contains an array of polygon references
-                int MAX_POLYS = 256;
-                var path = new SharpNav.Pathfinding.Path();
-
-                navMeshQuery.FindPath(ref startPt, ref endPt, filter, path);
-
-                //find a smooth path over the mesh surface
-                int npolys = path.Count;
-                SharpNav.Geometry.Vector3 iterPos = new SharpNav.Geometry.Vector3();
-                SharpNav.Geometry.Vector3 targetPos = new SharpNav.Geometry.Vector3();
-                navMeshQuery.ClosestPointOnPoly(startPt.Polygon, startPt.Position, ref iterPos);
-                navMeshQuery.ClosestPointOnPoly(path[npolys - 1], endPt.Position, ref targetPos);
-
-                // set target to random point at end of path
-                if (polyRadius != 0.0f)
-                {
-                    var randPoly = navMeshQuery.FindRandomPointAroundCircle(endPt, polyRadius);
-                    targetPos = randPoly.Position;
-                }
-
-                if (skipToTarget)
-                {
-                    return new List<Vector3>() { new Vector3(targetPos.X, targetPos.Y, targetPos.Z) };
-                }
-                smoothPath.Add(new Vector3(iterPos.X, iterPos.Y, iterPos.Z));
-
-                //float STEP_SIZE = 0.70f;
-                float SLOP = 0.15f;
-                while (npolys > 0 && smoothPath.Count < smoothPath.Capacity)
-                {
-                    //find location to steer towards
-                    SharpNav.Geometry.Vector3 steerPos = new SharpNav.Geometry.Vector3();
-                    StraightPathFlags steerPosFlag = 0;
-                    NavPolyId steerPosRef = NavPolyId.Null;
-
-                    if (!GetSteerTarget(navMeshQuery, iterPos, targetPos, SLOP, path, ref steerPos, ref steerPosFlag, ref steerPosRef))
-                        break;
-
-                    bool endOfPath = (steerPosFlag & StraightPathFlags.End) != 0 ? true : false;
-                    bool offMeshConnection = (steerPosFlag & StraightPathFlags.OffMeshConnection) != 0 ? true : false;
-
-                    //find movement delta
-                    SharpNav.Geometry.Vector3 delta = steerPos - iterPos;
-                    float len = (float)Math.Sqrt(SharpNav.Geometry.Vector3.Dot(delta, delta));
-
-                    //if steer target is at end of path or off-mesh link
-                    //don't move past location
-                    if ((endOfPath || offMeshConnection) && len < stepSize)
-                        len = 1;
-                    else
-                        len = stepSize / len;
-
-                    SharpNav.Geometry.Vector3 moveTgt = new SharpNav.Geometry.Vector3();
-                    VMad(ref moveTgt, iterPos, delta, len);
-
-                    //move
-                    SharpNav.Geometry.Vector3 result = new SharpNav.Geometry.Vector3();
-                    List<NavPolyId> visited = new List<NavPolyId>(pathSize);
-                    NavPoint startPoint = new NavPoint(path[0], iterPos);
-                    navMeshQuery.MoveAlongSurface(ref startPoint, ref moveTgt, out result, visited);
-                    path.FixupCorridor(visited);
-                    npolys = path.Count;
-                    float h = 0;
-                    navMeshQuery.GetPolyHeight(path[0], result, ref h);
-                    result.Y = h;
-                    iterPos = result;
-
-                    //handle end of path when close enough
-                    if (endOfPath && InRange(iterPos, steerPos, SLOP, 1000.0f))
-                    {
-                        //reached end of path
-                        iterPos = targetPos;
-                        if (smoothPath.Count < smoothPath.Capacity)
-                        {
-                            smoothPath.Add(new Vector3(iterPos.X, iterPos.Y, iterPos.Z));
-                        }
-                        break;
-                    }
-
-                    //store results
-                    if (smoothPath.Count < smoothPath.Capacity)
-                    {
-                        smoothPath.Add(new Vector3(iterPos.X, iterPos.Y, iterPos.Z));
-                    }
-                }
-            }
-            catch(Exception e)
-            {
-                Program.Log.Error(e.Message);
-                Program.Log.Error("Start pos {0} {1} {2} end pos {3} {4} {5}", startVec.X, startVec.Y, startVec.Z, endVec.X, endVec.Y, endVec.Z);
-                // todo: probably log this
-                return new List<Vector3>() { endVec };
-            }
-            return smoothPath;
+            if (skipToTarget)
+                return new List<Vector3>() { path[path.Count - 1] };
+            return path;
         }
-
-        /// <summary>
-		/// Scaled vector addition
-		/// </summary>
-		/// <param name="dest">Result</param>
-		/// <param name="v1">Vector 1</param>
-		/// <param name="v2">Vector 2</param>
-		/// <param name="s">Scalar</param>
-		private static void VMad(ref SharpNav.Geometry.Vector3 dest, SharpNav.Geometry.Vector3 v1, SharpNav.Geometry.Vector3 v2, float s)
-        {
-            dest.X = v1.X + v2.X * s;
-            dest.Y = v1.Y + v2.Y * s;
-            dest.Z = v1.Z + v2.Z * s;
-        }
-
-        private static bool GetSteerTarget(NavMeshQuery navMeshQuery, SharpNav.Geometry.Vector3 startPos, SharpNav.Geometry.Vector3 endPos, float minTargetDist, SharpNav.Pathfinding.Path path,
-            ref SharpNav.Geometry.Vector3 steerPos, ref StraightPathFlags steerPosFlag, ref NavPolyId steerPosRef)
-        {
-            StraightPath steerPath = new StraightPath();
-            navMeshQuery.FindStraightPath(startPos, endPos, path, steerPath, 0);
-            int nsteerPath = steerPath.Count;
-            if (nsteerPath == 0)
-                return false;
-
-            //find vertex far enough to steer to
-            int ns = 0;
-            while (ns < nsteerPath)
-            {
-                if ((steerPath[ns].Flags & StraightPathFlags.OffMeshConnection) != 0 ||
-                    !InRange(steerPath[ns].Point.Position, startPos, minTargetDist, 1000.0f))
-                    break;
-
-                ns++;
-            }
-
-            //failed to find good point to steer to
-            if (ns >= nsteerPath)
-                return false;
-
-            steerPos = steerPath[ns].Point.Position;
-            steerPos.Y = startPos.Y;
-            steerPosFlag = steerPath[ns].Flags;
-            if (steerPosFlag == StraightPathFlags.None && ns == (nsteerPath - 1))
-                steerPosFlag = StraightPathFlags.End; // otherwise seeks path infinitely!!!
-            steerPosRef = steerPath[ns].Point.Polygon;
-
-            return true;
-        }
-
-        private static bool InRange(SharpNav.Geometry.Vector3 v1, SharpNav.Geometry.Vector3 v2, float r, float h)
-        {
-            float dx = v2.X - v1.X;
-            float dy = v2.Y - v1.Y;
-            float dz = v2.Z - v1.Z;
-            return (dx * dx + dz * dz) < (r * r) && Math.Abs(dy) < h;
-        }
-        #endregion
-
-        public static Vector3 GamePosToNavmeshPos(float x, float y, float z)
-        {
-            return new Vector3(x, -z, y);
-        }
-
-        public static Vector3 NavmeshPosToGamePos(float x, float y, float z)
-        {
-            return new Vector3(x, z, -y);
-        }
-        
     }
 }

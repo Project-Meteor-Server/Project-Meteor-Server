@@ -40,6 +40,9 @@ function GetWorldMaster() end
 ---@field Id number
 ---@field LocalizedDisplayName number
 ---@field Name string
+---@field cadenceHold boolean
+---@field cadenceRot number
+---@field cadenceTarget any
 ---@field className string
 ---@field classParams LuaParam[]
 ---@field classPath string
@@ -200,6 +203,7 @@ __ActorUpdateFlags = {}
 ---@field weatherCommon number
 ---@field weatherNormal number
 ---@field weatherRare number
+---@field HasCollision boolean
 ---@field RegionId number
 ---@field ZoneId number
 ---@field ZoneName string
@@ -237,6 +241,13 @@ function __Area:CreateGuildleveDirector(glid, difficulty, owner, ...) end
 function __Area:CreateScriptBindPacket() end
 ---@param id number
 function __Area:DeleteDirector(id) end
+---@return string
+function __Area:DescribeGates() end
+---@param x number
+---@param y number
+---@param z number
+---@return string
+function __Area:DescribeNavMesh(x, y, z) end
 ---@overload fun(self: Area, uniqueId: string): nil
 ---@param actor Actor
 function __Area:DespawnActor(actor) end
@@ -272,11 +283,15 @@ function __Area:GetAllies() end
 ---@param id number
 ---@return BattleNpc
 function __Area:GetBattleNpcById(id) end
+---@return any
+function __Area:GetCollision() end
 ---@param id number
 ---@return Director
 function __Area:GetDirectorById(id) end
 ---@return BattleNpc[]
 function __Area:GetMonsters() end
+---@return any
+function __Area:GetNavInstance() end
 ---@return Player[]
 function __Area:GetPlayers() end
 ---@return string
@@ -287,12 +302,30 @@ function __Area:GetPrivateAreaType() end
 function __Area:GetSpawnPackets() end
 ---@return Director
 function __Area:GetWeatherDirector() end
+---@param gateId string
+---@return boolean?
+function __Area:IsGateOpen(gateId) end
 ---@return boolean
 function __Area:IsPrivate() end
 ---@return boolean
 function __Area:IsPublic() end
+---@param x number
+---@param y number
+---@param z number
+---@param ground any
+---@return string
+function __Area:ProjectToGround(x, y, z, ground) end
 ---@param actor Actor
 function __Area:RemoveActorFromZone(actor) end
+---@param gateId string
+---@param open boolean
+---@return boolean
+function __Area:SetGate(gateId, open) end
+---@param x number
+---@param y number
+---@param z number
+---@return any
+function __Area:SnapToGround(x, y, z) end
 ---@overload fun(self: Area, classId: number, uniqueId: string, x: number, y: number, z: number, regionId: number, layoutId: number): Npc
 ---@overload fun(self: Area, classId: number, uniqueId: string, x: number, y: number, z: number, rot?: number, state?: number, animId?: number, isMob?: boolean): Npc
 ---@param location SpawnLocation
@@ -1084,11 +1117,11 @@ local __Pet = {}
 ---@field gcRankGridania number
 ---@field gcRankLimsa number
 ---@field gcRankUldah number
+---@field gmLevel number
 ---@field hasChocobo boolean
 ---@field hasGoobbue boolean
 ---@field homepoint number
 ---@field homepointInn number
----@field isGM boolean
 ---@field isZoneChanging boolean
 ---@field lastPlayTimeUpdate number
 ---@field mountState number
@@ -1109,6 +1142,7 @@ local __Pet = {}
 ---@field SNpcNickname string
 ---@field SNpcPersonality number
 ---@field SNpcSkin number
+---@field isGM boolean
 local __Player = {}
 ---@param questId number
 ---@return boolean
@@ -1264,6 +1298,8 @@ function __Player:GetEquipment() end
 function __Player:GetFreeGuildleveSlot() end
 ---@return number
 function __Player:GetFreeQuestSlot() end
+---@return number
+function __Player:GetGMLevel() end
 ---@param classId number
 ---@return InventoryItem[]
 function __Player:GetGearset(classId) end
@@ -1538,6 +1574,8 @@ function __Player:SetDCFlag(flag) end
 ---@param enabled boolean
 ---@param type number
 function __Player:SetEventStatus(actor, conditionName, enabled, type) end
+---@param level number
+function __Player:SetGMLevel(level) end
 ---@param aetheryteId number
 function __Player:SetHomePoint(aetheryteId) end
 ---@param townId number
@@ -1825,12 +1863,16 @@ function __WorldMaster:GetSpawnPackets() end
 local __CommandProcessor = {}
 
 ---@class ConfigConstants
+---@field CHORD_VALIDATOR ChordMode
+---@field COLLISION_PATH string
 ---@field DATABASE_HOST string
 ---@field DATABASE_NAME string
 ---@field DATABASE_PASSWORD string
 ---@field DATABASE_PORT string
 ---@field DATABASE_USERNAME string
 ---@field DATABASE_WORLDID number
+---@field NAVMESH_ENABLED boolean
+---@field NAVMESH_PATH string
 ---@field OPTIONS_BINDIP string
 ---@field OPTIONS_PORT string
 ---@field OPTIONS_SCRIPTPATH string
@@ -1840,6 +1882,9 @@ local __ConfigConstants = {}
 function __ConfigConstants.ApplyLaunchArgs(launchArgs) end
 ---@return boolean
 function __ConfigConstants.Load() end
+
+---@enum ChordMode
+__ChordMode = {}
 
 ---@class AccessoryItem : EquipmentItem
 ---@field power number
@@ -2526,6 +2571,9 @@ function __Database.SetDealingInfo(item) end
 ---@param exp number
 function __Database.SetExp(player, classId, exp) end
 ---@param player Player
+---@param gmLevel number
+function __Database.SetGmLevel(player, gmLevel) end
+---@param player Player
 ---@param classId number
 ---@param level number
 function __Database.SetLevel(player, classId, level) end
@@ -2856,6 +2904,7 @@ function __WorldManager:LoadBattleNpcModifiers(tableName, primaryKey, list) end
 function __WorldManager:LoadBattleNpcs() end
 function __WorldManager:LoadBattleTraits() end
 function __WorldManager:LoadENPCs() end
+function __WorldManager:LoadNavMeshes() end
 function __WorldManager:LoadSeamlessBoundryList() end
 function __WorldManager:LoadStatusEffects() end
 function __WorldManager:LoadZoneList() end
@@ -3050,11 +3099,8 @@ function __PrivateAreaContent:GetContentDirector() end
 local __SpawnLocation = {}
 
 ---@class Zone : Area
----@field navMeshQuery any
----@field pathCallTime number
----@field pathCalls number
----@field prevPathCalls number
----@field tiledNavMesh any
+---@field navMesh ZoneNavMesh
+---@field navWorld any
 local __Zone = {}
 ---@param pa PrivateArea
 function __Zone:AddPrivateArea(pa) end
@@ -3163,7 +3209,7 @@ function __SubState:setWaste(waste) end
 function __SubState:toggleBreak(index, toggle) end
 
 ---@class AIContainer
----@field pathFind PathFind
+---@field mover Mover
 local __AIContainer = {}
 ---@param target Character
 ---@param abilityId number
@@ -3381,8 +3427,53 @@ __BattleCommandValidUser = {}
 ---@field name string
 local __BattleTrait = {}
 
+---@class ChordResult
+---@field Length number
+---@field Reason Why
+---@field S number
+---@field Ok boolean
+local __ChordResult = {}
+
+---@enum Why
+__Why = {}
+
+---@class ChordValidator
+---@field ABOVE_MESH number
+---@field BELOW_MESH number
+---@field EDGE_TOLERANCE number
+---@field FLOOR_TOLERANCE number
+---@field FloorTolerance number
+---@field LEDGE_DROP number
+---@field LEDGE_GAP number
+---@field MARGIN number
+---@field MAX_BIAS number
+---@field MIN_MOVE number
+---@field SIDE_RADIUS number
+---@field SIDE_SLOPE number
+---@field START_SLOP number
+local __ChordValidator = {}
+---@param world IChordWorld
+---@param c any
+---@param t any
+---@param speed number
+---@param hover number
+---@param lastTarget? any?
+---@return ChordResult
+function __ChordValidator.Check(world, c, t, speed, hover, lastTarget) end
+---@param world IChordWorld
+---@param c any
+---@param t any
+---@param speed number
+---@param hover number
+---@param hop any
+---@return boolean
+function __ChordValidator.Recover(world, c, t, speed, hover, hop) end
+
 ---@enum CommandType
 __CommandType = {}
+
+---@enum GroundAnswer
+__GroundAnswer = {}
 
 ---@class HateContainer
 local __HateContainer = {}
@@ -3408,39 +3499,316 @@ function __HateContainer:UpdateHate(target, damage) end
 ---@field volatileEnmity number
 local __HateEntry = {}
 
+---@class IChordWorld
+local __IChordWorld = {}
+---@param p any
+---@param max number
+---@return number
+function __IChordWorld:MeshDistance(p, max) end
+---@param x number
+---@param yNear number
+---@param z number
+---@param y number
+---@param under boolean
+---@return boolean
+function __IChordWorld:NavHeight(x, yNear, z, y, under) end
+---@param x number
+---@param z number
+---@param top number
+---@param bottom number
+---@param y number
+---@return GroundAnswer
+function __IChordWorld:RayDown(x, z, top, bottom, y) end
+---@param a any
+---@param b any
+---@param lateral number
+---@return number
+function __IChordWorld:Walk(a, b, lateral) end
+
 ---@enum KnockbackType
 __KnockbackType = {}
 
----@class PathFind
-local __PathFind = {}
----@param point? any
----@return boolean
-function __PathFind:AtPoint(point) end
-function __PathFind:Clear() end
-function __PathFind:FollowPath() end
----@return boolean
-function __PathFind:IsFollowingPath() end
----@return boolean
-function __PathFind:IsFollowingScriptedPath() end
----@overload fun(self: PathFind, x: number, y: number, z: number, minRange: number, maxRange?: number): nil
----@param dest any
----@param minRange number
----@param maxRange number
-function __PathFind:PathInRange(dest, minRange, maxRange) end
----@overload fun(self: PathFind, x: number, y: number, z: number, stepSize?: number, maxPath?: number, polyRadius?: number): nil
----@param dest any
----@param stepSize? number
----@param maxPath? number
----@param polyRadius? number
-function __PathFind:PreparePath(dest, stepSize, maxPath, polyRadius) end
----@param flags PathFindFlags
-function __PathFind:SetPathFlags(flags) end
+---@class MoveCadence
+---@field ACCEL_SECONDS number
+---@field BEHIND_SLACK number
+---@field CHASE_RETARGET number
+---@field CORNER_DEGREES number
+---@field CORNER_SKIP number
+---@field DRIFT number
+---@field FOLLOW_RESEND number
+---@field FOLLOW_SPAN number
+---@field HOLD_START number
+---@field HOLD_TICKS number
+---@field HOP_SECONDS number
+---@field HoldHop any
+---@field LEAD_SECONDS number
+---@field MAX_HOP number
+---@field MIN_HOP number
+---@field RETARGET number
+---@field SHORTEN_BACK number
+---@field STOP_DELAY number
+---@field THROUGH_GAIN number
+---@field THROUGH_LANE number
+---@field Active boolean
+---@field Corner boolean
+---@field Final boolean
+---@field From any
+---@field SentAt number
+---@field Speed number
+---@field State number
+---@field Target any
+---@field WalkStart number
+local __MoveCadence = {}
+---@param a any
+---@param b any
+---@param dist number
+---@return any
+function __MoveCadence.Along(a, b, dist) end
+---@return number
+function __MoveCadence:ArrivesAt() end
+---@param y0 number
+---@param y1 number
+---@param lo number
+---@param hi number
+---@return number
+function __MoveCadence.BandExit(y0, y1, lo, hi) end
+---@param p any
+---@param c any
+---@param a any
+---@param b any
+---@return number
+function __MoveCadence.Behind(p, c, a, b) end
+---@param now number
+---@param serverPos any
+---@param speed number
+---@param state number
+---@param tickDt number
+---@param routeGoesOn boolean
+---@param targetOffRoute number
+---@return Reason
+function __MoveCadence:Check(now, serverPos, speed, state, tickDt, routeGoesOn, targetOffRoute) end
+---@param now number
+---@return any
+function __MoveCadence:ClientPos(now) end
 ---@param point any
----@param run? boolean
-function __PathFind:StepTo(point, run) end
+---@param pos any
+---@param points any[]
+---@param index number
+---@return number
+function __MoveCadence.DistanceToRoute(point, pos, points, index) end
+---@param p any
+---@param a any
+---@param b any
+---@return number
+function __MoveCadence.DistanceToSegment(p, a, b) end
+---@param speed number
+---@param tickDt number
+---@return number
+function __MoveCadence.LeadDistance(speed, tickDt) end
+---@param speed number
+---@param walk boolean
+---@return number
+function __MoveCadence.MaxHop(speed, walk) end
+---@param pos any
+---@param points any[]
+---@param index number
+---@param maxLength number
+---@param maxDy number
+---@param end_ HopEnd
+---@param corners? boolean
+---@return any
+function __MoveCadence.NextHop(pos, points, index, maxLength, maxDy, end_, corners) end
+---@param pos any
+---@param points any[]
+---@param index number
+---@param maxLength number
+---@param maxDy number
+---@param end_ HopEnd
+---@return any
+function __MoveCadence.NextHopOrEnd(pos, points, index, maxLength, maxDy, end_) end
+---@param now number
+---@param pos any
+---@param points any[]
+---@param index number
+---@param done boolean
+---@param truncated boolean
+---@param speed number
+---@param state number
+---@param walk boolean
+---@param tickDt number
+---@param maxDy? number
+---@param lineClear? any
+---@param minResend? number
+---@param chord? any
+---@param clientAt? any
+---@return Hop
+function __MoveCadence:Plan(now, pos, points, index, done, truncated, speed, state, walk, tickDt, maxDy, lineClear, minResend, chord, clientAt) end
+---@param speed number
+---@param t number
+---@return number
+function __MoveCadence.Ramp(speed, t) end
+function __MoveCadence:Reset() end
+---@param points any[]
+---@param index number
+---@param pos any
+---@param point any
+---@return number
+function __MoveCadence.SegmentAfter(points, index, pos, point) end
+---@param from any
+---@param target any
+---@param speed number
+---@param state number
+---@param now number
+---@param final boolean
+---@param corner? boolean
+function __MoveCadence:Sent(from, target, speed, state, now, final, corner) end
+---@param hop Hop
+---@param c any
+---@param length number
+---@param pointAt any
+---@param chord any
+---@return boolean
+function __MoveCadence.Shorten(hop, c, length, pointAt, chord) end
+---@param speed number
+---@param t0 number
+---@param t1 number
+---@return number
+function __MoveCadence.Step(speed, t0, t1) end
+---@param hop Hop
+---@param c any
+---@param origin any
+---@param points any[]
+---@param index number
+---@param maxLength number
+---@param maxDy number
+---@param chord any
+---@param routeEnd boolean
+---@return boolean
+function __MoveCadence.ThroughCorners(hop, c, origin, points, index, maxLength, maxDy, chord, routeEnd) end
+---@param from any
+---@param to any
+---@param fallback number
+---@return number
+function __MoveCadence.Yaw(from, to, fallback) end
 
----@enum PathFindFlags
-__PathFindFlags = {}
+---@class ChaseLead
+---@field Moving boolean
+local __ChaseLead = {}
+---@param target any
+---@param now number
+---@param maxSpeed number
+---@return any
+function __ChaseLead:Lead(target, now, maxSpeed) end
+function __ChaseLead:Rebase() end
+function __ChaseLead:Reset() end
+
+---@class GoalTracker
+---@field MOVING_SPEED number
+---@field Moving boolean
+---@field VelX number
+---@field VelZ number
+local __GoalTracker = {}
+---@param p any
+---@param seconds number
+---@return any
+function __GoalTracker:Lead(p, seconds) end
+function __GoalTracker:Reset() end
+---@param p any
+---@param now number
+---@param maxSpeed number
+function __GoalTracker:Track(p, now, maxSpeed) end
+
+---@class Hop
+---@field Blocked boolean
+---@field Check ChordResult
+---@field Checked boolean
+---@field Final boolean
+---@field FirstFail ChordResult
+---@field Send boolean
+---@field Shortened number
+---@field Target any
+---@field Why Reason
+local __Hop = {}
+
+---@enum HopEnd
+__HopEnd = {}
+
+---@enum Reason
+__Reason = {}
+
+---@class Mover
+---@field DEFAULT_REPATH_DISTANCE number
+---@field MOVE_STATE_ACTIVE number
+---@field MOVE_STATE_RUN number
+---@field MOVE_STATE_STOP number
+---@field MOVE_STATE_WALK number
+---@field Scripted boolean
+---@field ChaseTargetMoving boolean
+---@field Failed boolean
+---@field Goal any
+---@field IsMoving boolean
+---@field LastOutcome Outcome
+---@field LastPathResult PathResult
+---@field Route any[]
+local __Mover = {}
+---@param dest any
+---@param moveState number
+---@param stopShort number
+---@param crowded? any
+---@return boolean
+function __Mover:Chase(dest, moveState, stopShort, crowded) end
+---@return string
+function __Mover:Describe() end
+---@param dest any
+---@param moveState number
+---@param stopShort? number
+---@param repathDistance? number
+---@param onDone? any
+---@param ignoreNav? boolean
+---@return boolean
+function __Mover:MoveTo(dest, moveState, stopShort, repathDistance, onDone, ignoreNav) end
+function __Mover:Stop() end
+---@param pos any
+---@param rotation number
+function __Mover:Teleport(pos, rotation) end
+---@param tick any
+function __Mover:Update(tick) end
+---@param dest any
+---@return any
+function __Mover:WatchChase(dest) end
+
+---@enum Outcome
+__Outcome = {}
+
+---@class MoverMath
+local __MoverMath = {}
+---@param pos any
+---@param points any[]
+---@param index number
+---@param budget number
+---@param travelled number
+---@return any
+function __MoverMath.Advance(pos, points, index, budget, travelled) end
+---@param speed number
+---@param dt number
+---@return number
+function __MoverMath.Budget(speed, dt) end
+---@param points any[]
+---@param from? number
+---@return number
+function __MoverMath.PathLength(points, from) end
+---@param u number
+---@param min number
+---@param max number
+---@return number
+function __MoverMath.RingRadius(u, min, max) end
+---@param points any[]
+---@param cut number
+function __MoverMath.TrimEnd(points, cut) end
+---@param a any
+---@param b any
+---@return number
+function __MoverMath.XZDistance(a, b) end
 
 ---@class StatusEffect
 ---@field script any
@@ -4683,6 +5051,339 @@ function __LuaEngine.SendError(player, message) end
 ---@field typeID number
 ---@field value any
 local __LuaParam = {}
+
+---@class AreaChordWorld
+local __AreaChordWorld = {}
+---@param p any
+---@param max number
+---@return number
+function __AreaChordWorld:MeshDistance(p, max) end
+---@param x number
+---@param yNear number
+---@param z number
+---@param y number
+---@param under boolean
+---@return boolean
+function __AreaChordWorld:NavHeight(x, yNear, z, y, under) end
+---@param x number
+---@param z number
+---@param top number
+---@param bottom number
+---@param y number
+---@return GroundAnswer
+function __AreaChordWorld:RayDown(x, z, top, bottom, y) end
+---@param a any
+---@param b any
+---@param lateral number
+---@return number
+function __AreaChordWorld:Walk(a, b, lateral) end
+
+---@class CollisionManager
+---@field UNLOAD_AFTER any
+---@field Entries Entry[]
+---@field Loaded any[]
+---@field Root string
+local __CollisionManager = {}
+---@param zones Zone[]
+function __CollisionManager.FindForZones(zones) end
+---@param zoneName string
+---@return any
+function __CollisionManager.Get(zoneName) end
+---@param zoneName string
+---@return boolean
+function __CollisionManager.Has(zoneName) end
+---@param zoneName string
+---@param x number
+---@param z number
+---@param yFrom number
+---@param gates any
+---@param y number
+---@param complete boolean
+---@return ProbeResult
+function __CollisionManager.Probe(zoneName, x, z, yFrom, gates, y, complete) end
+---@param zoneName string
+---@param x number
+---@param z number
+---@param top number
+---@param bottom number
+---@param gates any
+---@param y number
+---@param complete boolean
+---@return ProbeResult
+function __CollisionManager.RayDown(zoneName, x, z, top, bottom, gates, y, complete) end
+---@param e Entry
+---@return any
+function __CollisionManager.TryGet(e) end
+
+---@class Entry
+---@field Dir string
+---@field Failed boolean
+---@field LastUsedMs number
+---@field Loads number
+---@field Max any
+---@field Min any
+---@field Name string
+---@field World any
+---@field Loading boolean
+local __Entry = {}
+---@param x number
+---@param z number
+---@return boolean
+function __Entry:Covers(x, z) end
+
+---@enum ProbeResult
+__ProbeResult = {}
+
+---@class IZoneNav
+---@field Instance any
+---@field Name string
+---@field PolyCount number
+---@field TileCount number
+local __IZoneNav = {}
+---@param pos any
+---@return string
+function __IZoneNav:Describe(pos) end
+---@param from any
+---@param to any
+---@return boolean
+function __IZoneNav:HasLineOfSight(from, to) end
+---@param from any
+---@param to any
+---@return boolean
+function __IZoneNav:IsReachable(from, to) end
+---@param x number
+---@param y number
+---@param z number
+---@param snapped any
+---@return SpawnCheck
+function __IZoneNav:ProjectSpawn(x, y, z, snapped) end
+---@param from any
+---@param dirX number[]
+---@param dirZ number[]
+---@param maxDist number[]
+---@param dist number[]
+---@return boolean
+function __IZoneNav:TryClearance(from, dirX, dirZ, maxDist, dist) end
+---@param start any
+---@param end_ any
+---@param stepSize number
+---@param maxPoints number
+---@param endRandomRadius number
+---@param output any[]
+---@param result PathResult
+---@return boolean
+function __IZoneNav:TryFindPath(start, end_, stepSize, maxPoints, endRandomRadius, output, result) end
+---@param p any
+---@param ground any
+---@return boolean
+function __IZoneNav:TryProject(p, ground) end
+---@param center any
+---@param radius number
+---@param point any
+---@return boolean
+function __IZoneNav:TryRandomPointAround(center, radius, point) end
+---@param center any
+---@param minRadius number
+---@param maxRadius number
+---@param point any
+---@return boolean
+function __IZoneNav:TryRandomPointInRing(center, minRadius, maxRadius, point) end
+---@param x number
+---@param y number
+---@param z number
+---@param snapped any
+---@return boolean
+function __IZoneNav:TrySnapToGround(x, y, z, snapped) end
+
+---@class MsetNavMeshLoader
+local __MsetNavMeshLoader = {}
+---@param path string
+---@param tileCount number
+---@param polyCount number
+---@return any
+function __MsetNavMeshLoader.Load(path, tileCount, polyCount) end
+
+---@class NavInstanceMesh
+---@field Instance any
+---@field Name string
+---@field PolyCount number
+---@field TileCount number
+local __NavInstanceMesh = {}
+---@param pos any
+---@return string
+function __NavInstanceMesh:Describe(pos) end
+---@return string
+function __NavInstanceMesh:DescribeGates() end
+---@param from any
+---@param to any
+---@return boolean
+function __NavInstanceMesh:HasLineOfSight(from, to) end
+---@param from any
+---@param to any
+---@return boolean
+function __NavInstanceMesh:IsReachable(from, to) end
+---@param v any
+---@return any
+function __NavInstanceMesh.M(v) end
+---@param v any
+---@return any
+function __NavInstanceMesh.N(v) end
+---@param x number
+---@param y number
+---@param z number
+---@param snapped any
+---@return SpawnCheck
+function __NavInstanceMesh:ProjectSpawn(x, y, z, snapped) end
+---@param r any
+---@return PathResult
+function __NavInstanceMesh.ToPathResult(r) end
+---@param from any
+---@param dirX number[]
+---@param dirZ number[]
+---@param maxDist number[]
+---@param dist number[]
+---@return boolean
+function __NavInstanceMesh:TryClearance(from, dirX, dirZ, maxDist, dist) end
+---@param start any
+---@param end_ any
+---@param stepSize number
+---@param maxPoints number
+---@param endRandomRadius number
+---@param output any[]
+---@param result PathResult
+---@return boolean
+function __NavInstanceMesh:TryFindPath(start, end_, stepSize, maxPoints, endRandomRadius, output, result) end
+---@param p any
+---@param ground any
+---@return boolean
+function __NavInstanceMesh:TryProject(p, ground) end
+---@param center any
+---@param radius number
+---@param point any
+---@return boolean
+function __NavInstanceMesh:TryRandomPointAround(center, radius, point) end
+---@param center any
+---@param minRadius number
+---@param maxRadius number
+---@param point any
+---@return boolean
+function __NavInstanceMesh:TryRandomPointInRing(center, minRadius, maxRadius, point) end
+---@param x number
+---@param y number
+---@param z number
+---@param snapped any
+---@return boolean
+function __NavInstanceMesh:TrySnapToGround(x, y, z, snapped) end
+
+---@class NavMeshManager
+---@field MANIFEST string
+---@field Worlds any[]
+local __NavMeshManager = {}
+---@param fileName string
+---@return ZoneNavMesh
+function __NavMeshManager.Get(fileName) end
+---@param zones Zone[]
+function __NavMeshManager.LoadForZones(zones) end
+
+---@class NavStats
+---@field NO_MESH string
+---@field Meshes any[]
+---@field Since any
+local __NavStats = {}
+---@param r PathResult
+---@return boolean
+function __NavStats.IsFailure(r) end
+---@param mesh string
+---@param result PathResult
+---@param elapsedTicks number
+function __NavStats.Record(mesh, result, elapsedTicks) end
+function __NavStats.Reset() end
+---@param ticks number
+---@return number
+function __NavStats.ToMicroseconds(ticks) end
+
+---@class Counters
+---@field Calls number
+---@field MaxTicks number
+---@field Results number[]
+---@field Ticks number
+local __Counters = {}
+
+---@enum PathResult
+__PathResult = {}
+
+---@enum SpawnCheck
+__SpawnCheck = {}
+
+---@class ZoneNavMesh
+---@field FilePath string
+---@field IslandCount number
+---@field Instance any
+---@field Name string
+---@field PolyCount number
+---@field TileCount number
+local __ZoneNavMesh = {}
+---@param pos any
+---@return string
+function __ZoneNavMesh:Describe(pos) end
+---@param from any
+---@param to any
+---@return boolean
+function __ZoneNavMesh:HasLineOfSight(from, to) end
+---@param from any
+---@param to any
+---@return boolean
+function __ZoneNavMesh:IsReachable(from, to) end
+---@param x number
+---@param y number
+---@param z number
+---@param snapped any
+---@return SpawnCheck
+function __ZoneNavMesh:ProjectSpawn(x, y, z, snapped) end
+---@param from any
+---@param dirX number[]
+---@param dirZ number[]
+---@param maxDist number[]
+---@param dist number[]
+---@return boolean
+function __ZoneNavMesh:TryClearance(from, dirX, dirZ, maxDist, dist) end
+---@overload fun(self: ZoneNavMesh, start: any, end_: any, stepSize: number, maxPoints: number, endRandomRadius: number, output: any[], result: PathResult): boolean
+---@param start any
+---@param end_ any
+---@param stepSize number
+---@param maxPoints number
+---@param endRandomRadius number
+---@param output any[]
+---@return boolean
+function __ZoneNavMesh:TryFindPath(start, end_, stepSize, maxPoints, endRandomRadius, output) end
+---@param p any
+---@param ground any
+---@return boolean
+function __ZoneNavMesh:TryProject(p, ground) end
+---@param center any
+---@param radius number
+---@param point any
+---@return boolean
+function __ZoneNavMesh:TryRandomPointAround(center, radius, point) end
+---@param center any
+---@param minRadius number
+---@param maxRadius number
+---@param point any
+---@return boolean
+function __ZoneNavMesh:TryRandomPointInRing(center, minRadius, maxRadius, point) end
+---@param x number
+---@param y number
+---@param z number
+---@param snapped any
+---@return boolean
+function __ZoneNavMesh:TrySnapToGround(x, y, z, snapped) end
+
+---@class QueryContext
+---@field Corners any[]
+---@field Polys number[]
+---@field Query any
+---@field Rand any
+local __QueryContext = {}
 
 ---@class ErrorPacket
 ---@field errorCode number
@@ -6833,7 +7534,10 @@ local __FaceInfo = {}
 
 ---@class NavmeshUtils
 local __NavmeshUtils = {}
----@param zone Zone
+---@param chara Character
+---@return any
+function __NavmeshUtils.AgentFor(chara) end
+---@param area Area
 ---@param x1 number
 ---@param y1 number
 ---@param z1 number
@@ -6841,14 +7545,28 @@ local __NavmeshUtils = {}
 ---@param y2 number
 ---@param z2 number
 ---@return boolean
-function __NavmeshUtils.CanSee(zone, x1, y1, z1, x2, y2, z2) end
----@param x number
----@param y number
----@param z number
+function __NavmeshUtils.CanSee(area, x1, y1, z1, x2, y2, z2) end
+---@param area Area
+---@param from any
+---@param dirX number[]
+---@param dirZ number[]
+---@param maxDist number[]
+---@param dist number[]
+function __NavmeshUtils.Clearance(area, from, dirX, dirZ, maxDist, dist) end
+---@param area Area
+---@param from any
+---@param to any
+---@return number
+function __NavmeshUtils.ClearanceTowards(area, from, to) end
+---@param area Area
 ---@return any
-function __NavmeshUtils.GamePosToNavmeshPos(x, y, z) end
----@overload fun(zone: Zone, x: number, y: number, z: number, targetX: number, targetY: number, targetZ: number, stepSize?: number, pathSize?: number, polyRadius?: number, skipToTarget?: boolean): any[]
----@param zone Zone
+function __NavmeshUtils.GetNavInstance(area) end
+---@param area Area
+---@return IZoneNav
+function __NavmeshUtils.GetNavMesh(area) end
+---@overload fun(area: Area, startVec: any, endVec: any, result: PathResult, stepSize?: number, pathSize?: number, polyRadius?: number, skipToTarget?: boolean): any[]
+---@overload fun(area: Area, x: number, y: number, z: number, targetX: number, targetY: number, targetZ: number, stepSize?: number, pathSize?: number, polyRadius?: number, skipToTarget?: boolean): any[]
+---@param area Area
 ---@param startVec any
 ---@param endVec any
 ---@param stepSize? number
@@ -6856,16 +7574,13 @@ function __NavmeshUtils.GamePosToNavmeshPos(x, y, z) end
 ---@param polyRadius? number
 ---@param skipToTarget? boolean
 ---@return any[]
-function __NavmeshUtils.GetPath(zone, startVec, endVec, stepSize, pathSize, polyRadius, skipToTarget) end
----@param navmesh any
----@param filePath string
----@return any
-function __NavmeshUtils.LoadNavmesh(navmesh, filePath) end
+function __NavmeshUtils.GetPath(area, startVec, endVec, stepSize, pathSize, polyRadius, skipToTarget) end
+---@param area Area
 ---@param x number
 ---@param y number
 ---@param z number
 ---@return any
-function __NavmeshUtils.NavmeshPosToGamePos(x, y, z) end
+function __NavmeshUtils.SnapToGround(area, x, y, z) end
 
 ---@class SQLGeneration
 local __SQLGeneration = {}

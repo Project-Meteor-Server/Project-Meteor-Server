@@ -35,31 +35,14 @@ namespace Meteor.Map.actors.area
         Dictionary<string, List<PrivateAreaContent>> contentAreas = new Dictionary<string, List<PrivateAreaContent>>();
         Object contentAreasLock = new Object();
 
-        public SharpNav.TiledNavMesh tiledNavMesh;
-        public SharpNav.NavMeshQuery navMeshQuery;
+        // Set by NavMeshManager. A zone has at most one of them.
+        public navigation.ZoneNavMesh navMesh;
+        public Meteor.Navigation.NavWorld navWorld;
 
-        public Int64 pathCalls;
-        public Int64 prevPathCalls = 0;
-        public Int64 pathCallTime;
-
+        // loadNavMesh is unused: every zone with a file in the navmesh folder gets one.
         public Zone(uint id, string zoneName, ushort regionId, string classPath, ushort bgmDay, ushort bgmNight, ushort bgmBattle, bool isIsolated, bool isInn, bool canRideChocobo, bool canStealth, bool isInstanceRaid, bool loadNavMesh = false)
             : base(id, zoneName, regionId, classPath, bgmDay, bgmNight, bgmBattle, isIsolated, isInn, canRideChocobo, canStealth, isInstanceRaid)
         {
-            if (loadNavMesh)
-            {
-                try
-                {
-                    tiledNavMesh = utils.NavmeshUtils.LoadNavmesh(tiledNavMesh, zoneName + ".snb");
-                    navMeshQuery = new SharpNav.NavMeshQuery(tiledNavMesh, 100);
-
-                    if (tiledNavMesh != null && tiledNavMesh.Tiles[0].PolyCount > 0)
-                        Program.Log.Info($"Loaded navmesh for {zoneName}");
-                }
-                catch (Exception e)
-                {
-                    Program.Log.Error(e.Message);
-                }
-            }
         }
 
         public void AddPrivateArea(PrivateArea pa)
@@ -204,19 +187,6 @@ namespace Meteor.Map.actors.area
             foreach (var a in contentAreas.Values)
                 foreach (var b in a)
                     b.Update(tick);
-
-            // todo: again, this is retarded but debug stuff
-            var diffTime = tick - lastUpdate;
-            
-            if (diffTime.TotalSeconds >= 10)
-            {
-                if (this.pathCalls > 0)
-                {
-                    Program.Log.Debug("Number of pathfinding calls {0} average time {1}ms. {2} this tick", pathCalls, (float)(pathCallTime / pathCalls), pathCalls - prevPathCalls);
-                    prevPathCalls = pathCalls;
-                }
-                lastUpdate = tick;
-            }
         }
     }
 }

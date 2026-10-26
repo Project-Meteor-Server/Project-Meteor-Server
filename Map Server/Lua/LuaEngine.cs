@@ -721,12 +721,15 @@ namespace Meteor.Map.lua
                         catch (Exception e) { LuaScript.Log.Error("LuaEngine.RunGMCommand: " + e.Message); return; }
                     }
 
-                    // if this isnt a console command, make sure player exists
-                    if (player != null)
+                    if (!playerNull)
                     {
-                        if (permissions > 0 && !player.isGM)
+                        if (player.gmLevel < permissions)
                         {
-                            Program.Log.Info("LuaEngine.RunGMCommand: {0}'s GM level is too low to use command {1}.", player.Name, cmd);
+                            if (!help)
+                            {
+                                Program.Log.Info("LuaEngine.RunGMCommand: {0}'s GM level is too low to use command {1}.", player.Name, cmd);
+                                player.SendMessage(SendMessagePacket.MESSAGE_TYPE_SYSTEM_ERROR, "", String.Format("You do not have permission to use !{0}.", cmd));
+                            }
                             return;
                         }
                         // i hate to do this, but cant think of a better way to keep !help

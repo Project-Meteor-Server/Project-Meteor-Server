@@ -18,24 +18,24 @@
   <ItemGroup>
     <ProjectReference Include="..\Common Class Lib\Common Class Lib.csproj" />
     <ProjectReference Include="..\ThirdParty\XLua\XLua.csproj" />
+    <ProjectReference Include="..\Navigation\Meteor.Navigation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotRecast.Detour" Version="2026.3.1" />
     <PackageReference Include="MySql.Data" Version="$(MySqlDataVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="NLog" Version="6.2.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="SharpNav">
-      <HintPath>navmesh\SharpNav.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="NLog.config" CopyToOutputDirectory="PreserveNewest" />
     <!-- Runtime data the map server reads from its working directory. -->
     <None Include="..\Data\scripts\**\*" Link="scripts\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Built from game data, so kept out of git. -->
+    <None Include="..\Data\navmesh\*.bin;..\Data\navmesh\*.nav" Link="navmesh\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Data\navmesh\manifest.json" Link="navmesh\manifest.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\Data\navmesh\manifest.json')" />
+    <None Include="..\Data\collision\**\*.xcol;..\Data\collision\**\*.json" Link="collision\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\Data\staticactors.bin" Link="staticactors.bin" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\Data\staticactors.bin')" />
   </ItemGroup>
 
