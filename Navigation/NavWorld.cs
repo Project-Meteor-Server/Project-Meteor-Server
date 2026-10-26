@@ -65,10 +65,8 @@ namespace Meteor.Navigation
         }
     }
 
-    /// <summary>
-    /// One loaded .nav file, shared by every area that uses it. Read-only after load; gate state comes
-    /// from the caller's NavInstance.
-    /// </summary>
+    // One loaded .nav file, shared by every area that uses it. Read-only after load; gate state comes
+    // from the caller's NavInstance.
     public sealed class NavWorld
     {
         public const float WIDE_VERTICAL = 64.0f;
@@ -87,11 +85,11 @@ namespace Meteor.Navigation
         public readonly int TileCount;
         public readonly int PolyCount;
         public readonly string ValidationJson;
-        /// <summary>Problems that didn't stop the file loading.</summary>
+        // Problems that didn't stop the file loading.
         public readonly IReadOnlyList<string> Warnings;
         public readonly NavStats Stats = new NavStats();
 
-        /// <summary>Wider agents get their route corners pushed out.</summary>
+        // Wider agents get their route corners pushed out.
         public float BakedRadius => Meta.WalkableRadius;
 
         internal readonly float[] DefaultCosts = new float[NavArea.MAX];
@@ -393,7 +391,7 @@ namespace Meteor.Navigation
             return false;
         }
 
-        /// <summary>Also handles points right on a poly's edge.</summary>
+        // Also handles points right on a poly's edge.
         internal bool GroundAlong(NavQueryContext ctx, long[] corridor, int count, ref int index, float x, float z, out float h)
         {
             if (HeightAlong(corridor, count, ref index, x, z, out h))
@@ -418,8 +416,8 @@ namespace Meteor.Navigation
 
         #region Queries (gate state passed in; NavInstance is the public face)
 
-        /// <summary>With every gate open, so a closed gate shows up as a blocked route, not as a snap
-        /// to somewhere else.</summary>
+        // With every gate open, so a closed gate shows up as a blocked route, not as a snap
+        // to somewhere else.
         private IDtQueryFilter Physical(NavQueryContext ctx, NavAgent agent)
         {
             ctx.Other.Set(this, agent, AllOpen);
@@ -455,8 +453,8 @@ namespace Meteor.Navigation
             }
         }
 
-        /// <summary>Walks along the mesh, so a walker in a tunnel never lands on the ground above it.
-        /// Partial when it ends more than slack from `to`.</summary>
+        // Walks along the mesh, so a walker in a tunnel never lands on the ground above it.
+        // Partial when it ends more than slack from `to`.
         internal NavPoint FollowFloor(long fromPoly, Vector3 from, Vector3 to, NavAgent agent, float slack)
         {
             long t0 = NavStats.Now();
@@ -483,7 +481,7 @@ namespace Meteor.Navigation
             }
         }
 
-        /// <summary>For a spawn or teleport. Never picks a floor overhead, such as a tunnel's roof or a bridge.</summary>
+        // For a spawn or teleport. Never picks a floor overhead, such as a tunnel's roof or a bridge.
         internal NavPoint AcquireFloor(Vector3 p, NavAgent agent, float above, float maxVertical, float searchRadius)
         {
             long t0 = NavStats.Now();
@@ -522,8 +520,8 @@ namespace Meteor.Navigation
         private static readonly float[] SnapRadii = { 4.0f, 12.0f, 32.0f, 64.0f, 128.0f };
         private const float COLUMN_HALF_HEIGHT = 2000.0f;
 
-        /// <summary>Y = 0 means the height is unknown: takes the highest ground there. Otherwise the
-        /// nearest ground, searching further out if needed.</summary>
+        // Y = 0 means the height is unknown: takes the highest ground there. Otherwise the
+        // nearest ground, searching further out if needed.
         internal NavPoint Snap(Vector3 p, NavAgent agent, GateState gates)
         {
             long t0 = NavStats.Now();
@@ -570,7 +568,7 @@ namespace Meteor.Navigation
             return found;
         }
 
-        /// <summary>knownStart: the mover's floor from NavFloor, if it has one.</summary>
+        // knownStart: the mover's floor from NavFloor, if it has one.
         internal NavRoute PlanRoute(NavInstance instance, Vector3 from, Vector3 to, NavAgent agent, RouteOpts opts, NavPoint? knownStart = null)
         {
             long t0 = NavStats.Now();
@@ -759,7 +757,7 @@ namespace Meteor.Navigation
             }
         }
 
-        /// <summary>For meshes without a graph.</summary>
+        // For meshes without a graph.
         private bool OpenPathExists(NavQueryContext ctx, NavPoint start, NavPoint end, NavAgent agent)
         {
             ctx.Other.Set(this, agent, AllOpen);
@@ -779,7 +777,7 @@ namespace Meteor.Navigation
             return HeightOn(last, goal.Position.X, goal.Position.Z, out float h) && Math.Abs(h - goal.Position.Y) <= agent.Climb + 0.25f;
         }
 
-        /// <summary>Pushes corners out for wide agents and adds points every SampleStep at ground height.</summary>
+        // Pushes corners out for wide agents and adds points every SampleStep at ground height.
         private void Emit(NavQueryContext ctx, NavRoute route, long[] corridor, int corridorCount, int cornerCount, bool offset)
         {
             float extra = route.Agent.Radius - BakedRadius;
@@ -897,10 +895,8 @@ namespace Meteor.Navigation
             }
         }
 
-        /// <summary>
-        /// A mesh edge blocks sight unless the ground carries on below it (looking over a ledge). Tried both
-        /// ways so looking up a cliff works too. Closed gates block. Points off the mesh count as visible.
-        /// </summary>
+        // A mesh edge blocks sight unless the ground carries on below it (looking over a ledge). Tried both
+        // ways so looking up a cliff works too. Closed gates block. Points off the mesh count as visible.
         internal bool CanSee(Vector3 eye, Vector3 target, GateState gates)
         {
             long t0 = NavStats.Now();
@@ -1113,7 +1109,7 @@ namespace Meteor.Navigation
             return (e.Flags & (int)agent.Exclude) == 0;
         }
 
-        /// <summary>Cached per gate state.</summary>
+        // Cached per gate state.
         internal bool InReach(int a, int b, NavAgent agent, GateState gates)
         {
             if (a == b)

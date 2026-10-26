@@ -51,14 +51,14 @@ namespace Meteor.Navigation
         public int Index;
         public string Zone;
         public XcolGroup Source;
-        /// <summary>-1 for groups that never switch.</summary>
+        // -1 for groups that never switch.
         public int DynamicSlot = -1;
 
         public string Name => Source.Name;
         public override string ToString() => Zone + ":" + Name;
     }
 
-    /// <summary>Which switchable groups are present. A change makes a new state, so readers never lock.</summary>
+    // Which switchable groups are present. A change makes a new state, so readers never lock.
     public sealed class CollisionState
     {
         public readonly int Version;
@@ -89,10 +89,8 @@ namespace Meteor.Navigation
         internal ulong[] Bits => present;
     }
 
-    /// <summary>
-    /// The surfaces the client's ground probe sees (ClientProbe), indexed for vertical rays. Switchable
-    /// groups drop out while absent, as in the client. Thread-safe; one per zone, shared by its areas.
-    /// </summary>
+    // The surfaces the client's ground probe sees (ClientProbe), indexed for vertical rays. Switchable
+    // groups drop out while absent, as in the client. Thread-safe; one per zone, shared by its areas.
     public sealed class CollisionWorld
     {
         private const int LEAF_SIZE = 8;
@@ -106,7 +104,7 @@ namespace Meteor.Navigation
         public readonly IReadOnlyList<CollisionGroup> Groups;
         public readonly IReadOnlyList<CollisionGroup> DynamicGroups;
         public readonly CollisionState Defaults;
-        /// <summary>Before dropping the ones the probe can't see.</summary>
+        // Before dropping the ones the probe can't see.
         public readonly int SourceTriangles;
 
         private readonly float[] verts;     // x, y, z
@@ -131,7 +129,7 @@ namespace Meteor.Navigation
         public int NodeCount => nodeData.Length / 2;
         public long MemoryBytes => verts.Length * 4L + tris.Length * 4L + triGroup.Length * 2L + nodeBox.Length * 4L + nodeData.Length * 4L;
 
-        /// <summary>Own zone first, then the zones next to it.</summary>
+        // Own zone first, then the zones next to it.
         public static CollisionWorld LoadZones(string name, params string[] zoneDirs)
         {
             var sources = new List<(string, XcolFile)>();
@@ -218,7 +216,7 @@ namespace Meteor.Navigation
 
         #region Queries
 
-        /// <summary>On a miss the client keeps the actor's height.</summary>
+        // On a miss the client keeps the actor's height.
         public ProbeHit Probe(float x, float z, float yFrom, CollisionState state = null)
         {
             // Same float math as the client, so edge cases hit the same way.
@@ -230,7 +228,7 @@ namespace Meteor.Navigation
         public bool Headroom(float x, float z, float floorY, float h, CollisionState state = null) =>
             !RayDown(x, z, floorY + h, floorY + HEADROOM_EPSILON, state).Hit;
 
-        /// <summary>Highest first. Triangles meeting at the point count once.</summary>
+        // Highest first. Triangles meeting at the point count once.
         public List<ProbeHit> Floors(float x, float z, CollisionState state = null)
         {
             var hits = new List<ProbeHit>();
@@ -324,10 +322,8 @@ namespace Meteor.Navigation
 
         public CollisionState StateFor(NavInstance instance) => instance == null ? Defaults : StateFor(instance.World, instance.Gates);
 
-        /// <summary>
-        /// A switchable group follows its navmesh gate: an open gate removes a blocking group and shows a
-        /// walkway. Groups with no gate keep their default.
-        /// </summary>
+        // A switchable group follows its navmesh gate: an open gate removes a blocking group and shows a
+        // walkway. Groups with no gate keep their default.
         public CollisionState StateFor(NavWorld nav, GateState gates)
         {
             if (nav == null || gates == null || DynamicGroups.Count == 0)

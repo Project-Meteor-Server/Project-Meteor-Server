@@ -316,9 +316,7 @@ namespace Meteor.Map.packets.send.actor.battle
         public byte param;                      //Which side the battle action is coming from
         public byte hitNum;                     //Which hit in a sequence of hits this is
 
-        /// <summary>
-        /// these fields are not actually part of the packet struct
-        /// </summary>
+        // these fields are not actually part of the packet struct
         public uint animation;
         public CommandType commandType;         //What type of command was used (ie weaponskill, ability, etc)
         public ActionProperty actionProperty;   //Damage type of the action

@@ -25,19 +25,19 @@ using Meteor.Navigation;
 
 namespace Meteor.Map.navigation
 {
-    /// <summary>SmallIsland: the only ground is stray geometry no path leaves (old meshes).
-    /// VerticalMismatch: the nearest ground is far above or below the point (.nav worlds).</summary>
+    // SmallIsland: the only ground is stray geometry no path leaves (old meshes).
+    // VerticalMismatch: the nearest ground is far above or below the point (.nav worlds).
     enum SpawnCheck { Ok, SmallIsland, NotFound, VerticalMismatch }
 
-    /// <summary>An area's navigation, on an old MSET mesh (ZoneNavMesh, no gates) or a .nav world
-    /// (NavInstanceMesh).</summary>
+    // An area's navigation, on an old MSET mesh (ZoneNavMesh, no gates) or a .nav world
+    // (NavInstanceMesh).
     interface IZoneNav
     {
         string Name { get; }
         int TileCount { get; }
         int PolyCount { get; }
 
-        /// <summary>Null on an old mesh.</summary>
+        // Null on an old mesh.
         NavInstance Instance { get; }
 
         bool TrySnapToGround(float x, float y, float z, out Vector3 snapped);

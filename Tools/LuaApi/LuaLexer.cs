@@ -10,8 +10,8 @@ sealed record Token(TokKind Kind, string Text, int Start, int Line)
     public bool Is(string op) => (Kind == TokKind.Op || Kind == TokKind.Keyword) && Text == op;
 }
 
-/// <summary>Splits Lua source into words, numbers, strings, symbols and comments, remembering where
-/// each one starts so the linter can rewrite the file in place.</summary>
+// Splits Lua source into words, numbers, strings, symbols and comments, remembering where
+// each one starts so the linter can rewrite the file in place.
 static class LuaLexer
 {
     static readonly HashSet<string> Keywords = new()
@@ -100,7 +100,7 @@ static class LuaLexer
         return toks;
     }
 
-    /// <summary>The same list without comments.</summary>
+    // The same list without comments.
     public static List<Token> Code(List<Token> toks) => toks.Where(t => t.Kind != TokKind.Comment).ToList();
 
     static char At(string s, int i) => i < s.Length ? s[i] : '\0';

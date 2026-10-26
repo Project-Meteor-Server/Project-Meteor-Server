@@ -50,16 +50,16 @@ namespace Meteor.Navigation
         public int Index;
         public string Id;
         public string Kind;
-        /// <summary>"open", "closed" or "unknown" (treated as open).</summary>
+        // "open", "closed" or "unknown" (treated as open).
         public string Default;
-        /// <summary>Arrays are joined with ','.</summary>
+        // Arrays are joined with ','.
         public Dictionary<string, string> Driver = new Dictionary<string, string>(StringComparer.Ordinal);
         public string DriverJson;
         public long[] Polys = Array.Empty<long>();
         public int[] Links = Array.Empty<int>();
-        /// <summary>"block" (in the way when shown), "surface" (a walkway when shown) or "both".</summary>
+        // "block" (in the way when shown), "surface" (a walkway when shown) or "both".
         public string Role = "block";
-        /// <summary>Whether the gate is passable after each timeline plays.</summary>
+        // Whether the gate is passable after each timeline plays.
         public Dictionary<string, bool> Passable = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         public string Group;
 
@@ -106,7 +106,7 @@ namespace Meteor.Navigation
         public float CellSize;
         public NavGraphNode[] Nodes;
         public NavGraphEdge[] Edges;
-        /// <summary>-1 for pruned polys.</summary>
+        // -1 for pruned polys.
         public int[] PolyNode;
     }
 
@@ -119,7 +119,7 @@ namespace Meteor.Navigation
         public float WalkableHeight = 2.0f, WalkableClimb = 0.75f, WalkableRadius;
     }
 
-    /// <summary>Unknown sections are skipped.</summary>
+    // Unknown sections are skipped.
     public sealed class NavFile
     {
         public const int VERSION = 1;

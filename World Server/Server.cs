@@ -434,10 +434,7 @@ namespace Meteor.World
             }
         }
 
-        /// <summary>
-        /// Receive Callback. Reads in incoming data, converting them to base packets. Base packets are sent to be parsed. If not enough data at the end to build a basepacket, move to the beginning and prepend.
-        /// </summary>
-        /// <param name="result"></param>
+        // Receive Callback. Reads in incoming data, converting them to base packets. Base packets are sent to be parsed. If not enough data at the end to build a basepacket, move to the beginning and prepend.
         private void ReceiveCallback(IAsyncResult result)
         {
             ClientConnection conn = (ClientConnection)result.AsyncState;

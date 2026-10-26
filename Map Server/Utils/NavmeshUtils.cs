@@ -30,7 +30,7 @@ using NavInstance = Meteor.Navigation.NavInstance;
 
 namespace Meteor.Map.utils
 {
-    /// <summary>Every call also works on zones without a navmesh, as straight lines.</summary>
+    // Every call also works on zones without a navmesh, as straight lines.
     class NavmeshUtils
     {
         public static IZoneNav GetNavMesh(Area area)
@@ -47,8 +47,8 @@ namespace Meteor.Map.utils
 
         public static NavInstance GetNavInstance(Area area) => area?.GetNavInstance();
 
-        /// <summary>Which ground an actor may walk: monsters stay off lifts and player-only ground,
-        /// escorted npcs don't take drops, allies and pets go where the party goes.</summary>
+        // Which ground an actor may walk: monsters stay off lifts and player-only ground,
+        // escorted npcs don't take drops, allies and pets go where the party goes.
         public static NavAgent AgentFor(Character chara)
         {
             if (chara is Player)
@@ -68,7 +68,7 @@ namespace Meteor.Map.utils
             return navMesh == null || navMesh.HasLineOfSight(new Vector3(x1, y1, z1), new Vector3(x2, y2, z2));
         }
 
-        /// <summary>Without a navmesh, or off it, every direction is fully clear.</summary>
+        // Without a navmesh, or off it, every direction is fully clear.
         public static void Clearance(Area area, Vector3 from, float[] dirX, float[] dirZ, float[] maxDist, float[] dist)
         {
             var navMesh = GetNavMesh(area);
@@ -87,7 +87,7 @@ namespace Meteor.Map.utils
             return dist[0];
         }
 
-        /// <summary>Returns the position unchanged when there is no ground near it.</summary>
+        // Returns the position unchanged when there is no ground near it.
         public static Vector3 SnapToGround(Area area, float x, float y, float z)
         {
             var navMesh = GetNavMesh(area);
@@ -101,7 +101,7 @@ namespace Meteor.Map.utils
             return GetPath(area, new Vector3(x, y, z), new Vector3(targetX, targetY, targetZ), stepSize, pathSize, polyRadius, skipToTarget);
         }
 
-        /// <summary>Null when the end can't be reached or is the start. Without a navmesh, just the end.</summary>
+        // Null when the end can't be reached or is the start. Without a navmesh, just the end.
         public static List<Vector3> GetPath(Area area, Vector3 startVec, Vector3 endVec, float stepSize = 0.70f, int pathSize = 45, float polyRadius = 0.0f, bool skipToTarget = false)
         {
             return GetPath(area, startVec, endVec, out _, stepSize, pathSize, polyRadius, skipToTarget);

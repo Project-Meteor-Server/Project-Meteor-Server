@@ -4,11 +4,9 @@ using Xunit;
 
 namespace Meteor.Map.Tests
 {
-    /// <summary>
-    /// Checks values passed between scripts and the server, and plain Lua arithmetic, text and
-    /// library functions, against fixed answers. The script side is scripts/__tests/probe.lua: each
-    /// check there produces "check = result".
-    /// </summary>
+    // Checks values passed between scripts and the server, and plain Lua arithmetic, text and
+    // library functions, against fixed answers. The script side is scripts/__tests/probe.lua: each
+    // check there produces "check = result".
     [Collection("engines")]
     public sealed class ScriptValueTests
     {

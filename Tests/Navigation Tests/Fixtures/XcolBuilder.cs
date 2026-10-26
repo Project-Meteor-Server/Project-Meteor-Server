@@ -38,7 +38,7 @@ namespace Meteor.Navigation.Tests.Fixtures
             this.kind.Add(kind);
         }
 
-        /// <summary>Horizontal rectangle at y, wound counter-clockwise seen from above (or from below with flip).</summary>
+        // Horizontal rectangle at y, wound counter-clockwise seen from above (or from below with flip).
         public void Quad(float x0, float z0, float x1, float z1, float y, int group = 0, byte material = 0, byte kind = 1, bool flip = false)
         {
             var a = new Vector3(x0, y, z0); var b = new Vector3(x1, y, z0);
@@ -55,7 +55,7 @@ namespace Meteor.Navigation.Tests.Fixtures
             }
         }
 
-        /// <summary>Vertical wall along x = x0 from z0 to z1.</summary>
+        // Vertical wall along x = x0 from z0 to z1.
         public void WallX(float x0, float z0, float z1, float y0, float y1, int group = 0)
         {
             Tri(new Vector3(x0, y0, z0), new Vector3(x0, y0, z1), new Vector3(x0, y1, z1), group);

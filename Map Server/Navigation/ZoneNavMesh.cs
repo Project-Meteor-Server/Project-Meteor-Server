@@ -29,7 +29,7 @@ using Meteor.Common;
 
 namespace Meteor.Map.navigation
 {
-    /// <summary>An old MSET navmesh. Read-only once loaded; queries take a pooled context so any thread can run them.</summary>
+    // An old MSET navmesh. Read-only once loaded; queries take a pooled context so any thread can run them.
     class ZoneNavMesh : IZoneNav
     {
         private static readonly RcVec3f NearExtents = new RcVec3f(2.0f, 4.0f, 2.0f);
@@ -76,7 +76,7 @@ namespace Meteor.Map.navigation
 
         #region Public queries (game coordinates: X east, Y up, Z south)
 
-        /// <summary>Tries near the given height, then straight up and down, then further out.</summary>
+        // Tries near the given height, then straight up and down, then further out.
         public bool TrySnapToGround(float x, float y, float z, out Vector3 snapped)
         {
             return Snap(x, y, z, out snapped, out _);
@@ -147,7 +147,7 @@ namespace Meteor.Map.navigation
             finally { Return(ctx); }
         }
 
-        /// <summary>At most maxPoints long; callers plan again when they run out.</summary>
+        // At most maxPoints long; callers plan again when they run out.
         public bool TryFindPath(Vector3 start, Vector3 end, float stepSize, int maxPoints, float endRandomRadius, List<Vector3> output)
         {
             return TryFindPath(start, end, stepSize, maxPoints, endRandomRadius, output, out _);
@@ -205,7 +205,7 @@ namespace Meteor.Map.navigation
             finally { Return(ctx); }
         }
 
-        /// <summary>Points off the mesh count as visible.</summary>
+        // Points off the mesh count as visible.
         public bool HasLineOfSight(Vector3 from, Vector3 to)
         {
             var ctx = Rent();
@@ -222,8 +222,8 @@ namespace Meteor.Map.navigation
             finally { Return(ctx); }
         }
 
-        /// <summary>How far one can walk straight from 'from' in each direction, up to maxDist[i].
-        /// False when 'from' is off the mesh.</summary>
+        // How far one can walk straight from 'from' in each direction, up to maxDist[i].
+        // False when 'from' is off the mesh.
         public bool TryClearance(Vector3 from, float[] dirX, float[] dirZ, float[] maxDist, float[] dist)
         {
             var ctx = Rent();
@@ -260,7 +260,7 @@ namespace Meteor.Map.navigation
             finally { Return(ctx); }
         }
 
-        /// <summary>Retries because Detour can return a point outside the radius on a large poly.</summary>
+        // Retries because Detour can return a point outside the radius on a large poly.
         public bool TryRandomPointInRing(Vector3 center, float minRadius, float maxRadius, out Vector3 point)
         {
             for (int attempt = 0; attempt < 8; attempt++)
@@ -330,7 +330,7 @@ namespace Meteor.Map.navigation
             return islandOf[tile.index][poly.index];
         }
 
-        /// <summary>Prefers ground on a large island, then the highest.</summary>
+        // Prefers ground on a large island, then the highest.
         private bool TryColumn(float x, float z, out float height, out bool foundMain)
         {
             height = 0;

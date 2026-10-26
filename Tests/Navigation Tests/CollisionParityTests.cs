@@ -8,12 +8,10 @@ using Xunit.Abstractions;
 
 namespace Meteor.Navigation.Tests
 {
-    /// <summary>
-    /// Compares CollisionWorld with recorded client probe results on real collision.
-    /// METEOR_PROBE_PARITY names a JSON of {zones: [...], queries: [{x, z, y, hit}]}; collision is read
-    /// from METEOR_COLLISION (or collision/ beside the repo). Skipped without them, since that data is
-    /// never committed.
-    /// </summary>
+    // Compares CollisionWorld with recorded client probe results on real collision.
+    // METEOR_PROBE_PARITY names a JSON of {zones: [...], queries: [{x, z, y, hit}]}; collision is read
+    // from METEOR_COLLISION (or collision/ beside the repo). Skipped without them, since that data is
+    // never committed.
     public class CollisionParityTests
     {
         private readonly ITestOutputHelper output;

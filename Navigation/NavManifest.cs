@@ -26,7 +26,7 @@ using System.Text.Json;
 
 namespace Meteor.Navigation
 {
-    /// <summary>manifest.json: which .nav file each zone uses. Zone names are case-insensitive.</summary>
+    // manifest.json: which .nav file each zone uses. Zone names are case-insensitive.
     public sealed class NavManifest
     {
         public sealed class Entry
@@ -77,7 +77,7 @@ namespace Meteor.Navigation
             return m;
         }
 
-        /// <summary>Version 1 is the old list of .bin meshes.</summary>
+        // Version 1 is the old list of .bin meshes.
         public static int PeekVersion(string path)
         {
             using (var doc = JsonDocument.Parse(File.ReadAllText(path)))
@@ -89,7 +89,7 @@ namespace Meteor.Navigation
             }
         }
 
-        /// <summary>Follows sameAs to the zone that owns the file.</summary>
+        // Follows sameAs to the zone that owns the file.
         public Entry Resolve(string zone)
         {
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

@@ -35,7 +35,7 @@ namespace Meteor.Navigation
         public const int LINK = 8;
         public const int LIFT = 9;
         public const int DROP = 10;
-        /// <summary>Players may walk it, but the client would draw server-moved actors wrong there.</summary>
+        // Players may walk it, but the client would draw server-moved actors wrong there.
         public const int NPC_UNSAFE = 11;
         public const int MAX = 64;
     }
@@ -51,9 +51,9 @@ namespace Meteor.Navigation
         Lift = 0x0010,
         Drop = 0x0020,
         Link = 0x0040,
-        /// <summary>Past the zone line: walkable, but it belongs to the next zone.</summary>
+        // Past the zone line: walkable, but it belongs to the next zone.
         Seam = 0x0080,
-        /// <summary>The client would draw a server-moved actor somewhere else here.</summary>
+        // The client would draw a server-moved actor somewhere else here.
         NpcUnsafe = 0x0100,
         Pruned = 0x8000,
     }
@@ -92,7 +92,7 @@ namespace Meteor.Navigation
     public readonly struct RayHit
     {
         public readonly NavReason Reason;
-        /// <summary>1 = clear.</summary>
+        // 1 = clear.
         public readonly float T;
         public readonly Vector3 Point;
         public readonly Vector3 Normal;
@@ -122,13 +122,13 @@ namespace Meteor.Navigation
 
         public float MaxVertical = 4.0f;
         public float SearchRadius = 4.0f;
-        /// <summary>Trips up to this long try a straight line first.</summary>
+        // Trips up to this long try a straight line first.
         public float StraightMaxDistance = 24.0f;
-        /// <summary>0 = corners only.</summary>
+        // 0 = corners only.
         public float SampleStep = 2.0f;
-        /// <summary>How many graph cells around the start one part of the route covers.</summary>
+        // How many graph cells around the start one part of the route covers.
         public int WindowCells = 2;
-        /// <summary>Spreads out a pack of chasers.</summary>
+        // Spreads out a pack of chasers.
         public float EndRandomRadius = 0.0f;
     }
 

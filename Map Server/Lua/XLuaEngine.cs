@@ -26,18 +26,16 @@ using XLua;
 
 namespace Meteor.Map.lua
 {
-    /// <summary>
-    /// Runs scripts on LuaJIT through xLua. One Lua instance serves every script. Each loaded script
-    /// gets its own set of globals; anything it doesn't set itself (the standard Lua libraries and the
-    /// server functions such as GetWorldManager) is looked up in a shared set. A script file is
-    /// compiled once and reused until the file changes on disk.
-    /// Lua can only run one thing at a time, and scripts are started from several threads (zone
-    /// updates, incoming packets, the wait timer), so every method here takes the Sync lock first.
-    /// Sync is the world's zone lock: the zone update already holds it while it runs mob scripts,
-    /// and a script often asks the world for a zone or actor, which takes that same lock. With two
-    /// separate locks, a script on one thread and a zone update on another could each end up
-    /// waiting for the other's lock forever.
-    /// </summary>
+    // Runs scripts on LuaJIT through xLua. One Lua instance serves every script. Each loaded script
+    // gets its own set of globals; anything it doesn't set itself (the standard Lua libraries and the
+    // server functions such as GetWorldManager) is looked up in a shared set. A script file is
+    // compiled once and reused until the file changes on disk.
+    // Lua can only run one thing at a time, and scripts are started from several threads (zone
+    // updates, incoming packets, the wait timer), so every method here takes the Sync lock first.
+    // Sync is the world's zone lock: the zone update already holds it while it runs mob scripts,
+    // and a script often asks the world for a zone or actor, which takes that same lock. With two
+    // separate locks, a script on one thread and a zone update on another could each end up
+    // waiting for the other's lock forever.
     sealed class XLuaEngine : ScriptEngine
     {
         internal object Sync => WorldManager.ZoneLock;
@@ -207,8 +205,8 @@ return base,
             }
         }
 
-        /// <summary>Frees Lua values whose C# handles have been garbage collected. LuaEngine's timer
-        /// calls this every 50 ms.</summary>
+        // Frees Lua values whose C# handles have been garbage collected. LuaEngine's timer
+        // calls this every 50 ms.
         public void Tick()
         {
             lock (Sync)
@@ -247,8 +245,8 @@ return base,
             return coResume.Call(callArgs);
         }
 
-        /// <summary>Converts a value from Lua into the form described on ScriptEngine. Lua tables and
-        /// functions are copied or replaced, and xLua's handle to them is freed.</summary>
+        // Converts a value from Lua into the form described on ScriptEngine. Lua tables and
+        // functions are copied or replaced, and xLua's handle to them is freed.
         internal static object ToClr(object v, int depth = 0)
         {
             switch (v)
@@ -281,7 +279,7 @@ return base,
             }
         }
 
-        /// <summary>Frees xLua's handles among values that are not needed.</summary>
+        // Frees xLua's handles among values that are not needed.
         internal static void Release(object[] values)
         {
             foreach (object v in values)

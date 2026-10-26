@@ -515,7 +515,7 @@ namespace Meteor.Map
                 z.SpawnAllActors(true);
         }
 
-        /// <summary>Call after LoadZoneList.</summary>
+        // Call after LoadZoneList.
         public void LoadNavMeshes()
         {
             NavMeshManager.LoadForZones(zoneList.Values);
