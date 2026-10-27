@@ -6718,6 +6718,11 @@
           ]
         },
         {
+          "name": "OnZoneInComplete",
+          "returns": "nil",
+          "params": []
+        },
+        {
           "name": "PartyDisband",
           "returns": "nil",
           "params": []
@@ -7826,6 +7831,16 @@
             {
               "name": "npc",
               "type": "Npc"
+            }
+          ]
+        },
+        {
+          "name": "OnZoneInComplete",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "caller",
+              "type": "Player"
             }
           ]
         },
@@ -20962,6 +20977,16 @@
           ]
         },
         {
+          "name": "OnZoneInComplete",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "player",
+              "type": "Player"
+            }
+          ]
+        },
+        {
           "name": "RemoveMember",
           "returns": "nil",
           "params": [
@@ -21014,11 +21039,6 @@
         },
         {
           "name": "CORPSE_SECONDS",
-          "type": "number",
-          "static": true
-        },
-        {
-          "name": "ROSTER_RESEND_SECONDS",
           "type": "number",
           "static": true
         },
@@ -21189,6 +21209,16 @@
             {
               "name": "killer",
               "type": "Character"
+            }
+          ]
+        },
+        {
+          "name": "OnZoneInComplete",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "p",
+              "type": "Player"
             }
           ]
         },
@@ -25486,17 +25516,22 @@
       "fullName": "Meteor.Map.packets.receive.ZoneInCompletePacket",
       "members": [
         {
+          "name": "CODE_COMPLETE",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "code",
+          "type": "number",
+          "writable": true
+        },
+        {
           "name": "invalidPacket",
           "type": "boolean",
           "writable": true
         },
         {
           "name": "timestamp",
-          "type": "number",
-          "writable": true
-        },
-        {
-          "name": "unknown",
           "type": "number",
           "writable": true
         }
