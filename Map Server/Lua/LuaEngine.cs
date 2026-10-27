@@ -58,6 +58,15 @@ namespace Meteor.Map.lua
         private Dictionary<LuaCoroutine, ulong> sleepingOnTime = new Dictionary<LuaCoroutine, ulong>();
         private Dictionary<string, List<LuaCoroutine>> sleepingOnSignal = new Dictionary<string, List<LuaCoroutine>>();
         private Dictionary<uint, LuaCoroutine> sleepingOnPlayerEvent = new Dictionary<uint, LuaCoroutine>();
+        private Dictionary<LuaCoroutine, KeyValuePair<string, ulong>> signalDeadlines = new Dictionary<LuaCoroutine, KeyValuePair<string, ulong>>();
+        private Dictionary<uint, KickWait> sleepingOnPlayerKick = new Dictionary<uint, KickWait>();
+
+        private class KickWait
+        {
+            public LuaCoroutine coroutine;
+            public uint ownerId;
+            public string eventName;
+        }
         // The three wait lists above are read by the timer thread and changed by the zone and network
         // threads, so they are only touched while holding this lock. Scripts are resumed after
         // letting go of it.
@@ -100,14 +109,63 @@ namespace Meteor.Map.lua
                 sleepingOnTime.Add(coroutine, time);
         }
 
-        public void AddWaitSignalCoroutine(LuaCoroutine coroutine, string signal)
+        public void AddWaitSignalCoroutine(LuaCoroutine coroutine, string signal, float timeoutSeconds = 0)
         {
             lock (waitLock)
             {
                 if (!sleepingOnSignal.ContainsKey(signal))
                     sleepingOnSignal.Add(signal, new List<LuaCoroutine>());
                 sleepingOnSignal[signal].Add(coroutine);
+                if (timeoutSeconds > 0)
+                    signalDeadlines[coroutine] = new KeyValuePair<string, ulong>(signal, Utils.MilisUnixTimeStampUTC() + (ulong)(timeoutSeconds * 1000));
             }
+        }
+
+        // Drops this player's event waits when the session ends; otherwise the next login's first event
+        // would resume the old script with the old Player.
+        public void CancelPlayerEvent(Player player)
+        {
+            if (player == null)
+                return;
+            lock (waitLock)
+            {
+                sleepingOnPlayerEvent.Remove(player.Id);
+                sleepingOnPlayerKick.Remove(player.Id);
+            }
+        }
+
+        public void AddWaitKickCoroutine(Player player, LuaCoroutine coroutine, uint ownerId, string eventName)
+        {
+            lock (waitLock)
+            {
+                if (!sleepingOnPlayerKick.ContainsKey(player.Id))
+                    sleepingOnPlayerKick.Add(player.Id, new KickWait { coroutine = coroutine, ownerId = ownerId, eventName = eventName ?? "" });
+            }
+        }
+
+        private void PulseSignalTimeouts(ulong currentTime)
+        {
+            List<LuaCoroutine> expired = new List<LuaCoroutine>();
+            lock (waitLock)
+            {
+                foreach (var entry in signalDeadlines)
+                {
+                    if (entry.Value.Value > currentTime)
+                        continue;
+                    expired.Add(entry.Key);
+                    if (sleepingOnSignal.TryGetValue(entry.Value.Key, out var waiters))
+                    {
+                        waiters.Remove(entry.Key);
+                        if (waiters.Count == 0)
+                            sleepingOnSignal.Remove(entry.Value.Key);
+                    }
+                }
+                foreach (LuaCoroutine key in expired)
+                    signalDeadlines.Remove(key);
+            }
+
+            foreach (LuaCoroutine key in expired)
+                ResumeLogged(null, key);
         }
 
         public void AddWaitEventCoroutine(Player player, LuaCoroutine coroutine)
@@ -131,6 +189,40 @@ namespace Meteor.Map.lua
             }
         }
 
+        private LuaCoroutine TakeUpdateWait(Player player)
+        {
+            LuaCoroutine coroutine = TakeEventWait(player);
+            if (coroutine != null)
+                return coroutine;
+            lock (waitLock)
+            {
+                if (sleepingOnPlayerKick.TryGetValue(player.Id, out KickWait kick))
+                {
+                    sleepingOnPlayerKick.Remove(player.Id);
+                    return kick.coroutine;
+                }
+            }
+            return null;
+        }
+
+        private LuaCoroutine TakeStartWait(Player player, EventStartPacket eventStart)
+        {
+            lock (waitLock)
+            {
+                if (sleepingOnPlayerKick.TryGetValue(player.Id, out KickWait kick))
+                {
+                    if (kick.ownerId == eventStart.ownerActorID && kick.eventName.Equals(eventStart.eventName))
+                    {
+                        sleepingOnPlayerKick.Remove(player.Id);
+                        return kick.coroutine;
+                    }
+                    Program.Log.Debug("LuaEngine: EventStart {0:X}/{1} is not the kicked {2:X}/{3}; running it as a new event.",
+                        eventStart.ownerActorID, eventStart.eventName, kick.ownerId, kick.eventName);
+                }
+            }
+            return TakeEventWait(player);
+        }
+
         public void PulseSleepingOnTime(object state)
         {
             ulong currentTime = Utils.MilisUnixTimeStampUTC();
@@ -149,6 +241,8 @@ namespace Meteor.Map.lua
 
             foreach (LuaCoroutine key in toAwake)
                 ResumeLogged(null, key);
+
+            PulseSignalTimeouts(currentTime);
 
             (ScriptEngine.Instance as XLuaEngine)?.Tick();
         }
@@ -178,15 +272,17 @@ namespace Meteor.Map.lua
                     toAwake.AddRange(sleepingOnSignal[signal]);
                     sleepingOnSignal.Remove(signal);
                 }
+                foreach (LuaCoroutine key in toAwake)
+                    signalDeadlines.Remove(key);
             }
 
             foreach (LuaCoroutine key in toAwake)
-                ResumeLogged(null, key, args);
+                ResumeLogged(null, key, args.Length == 0 ? new object[] { true } : args);
         }
 
         public void OnEventUpdate(Player player, List<LuaParam> args)
         {
-            LuaCoroutine coroutine = TakeEventWait(player);
+            LuaCoroutine coroutine = TakeUpdateWait(player);
             if (coroutine != null)
             {
                 try
@@ -604,7 +700,9 @@ namespace Meteor.Map.lua
             lparams.AddRange(eventStart.luaParams);
             lparams.Insert(0, new LuaParam(0, eventStart.eventType));
             lparams.Insert(1, new LuaParam(2, eventStart.eventName));
-            LuaCoroutine coroutine = TakeEventWait(player);
+            LuaCoroutine coroutine = TakeStartWait(player, eventStart);
+            Program.Log.Debug("LuaEngine: EventStart {0:X}/{1} type {2}: {3}.", eventStart.ownerActorID, eventStart.eventName, eventStart.eventType,
+                coroutine != null ? "resumes a waiting script" : "runs onEventStarted on " + (target?.GetName() ?? "null"));
             if (coroutine != null)
             {
                 try
@@ -646,10 +744,14 @@ namespace Meteor.Map.lua
                     GetInstance().AddWaitCoroutine(coroutine, (float)(value[1] is double seconds ? seconds : 0));
                     break;
                 case "_WAIT_SIGNAL":
-                    GetInstance().AddWaitSignalCoroutine(coroutine, value[1] as string);
+                    float timeout = value.Count >= 3 && value[2] is IConvertible t ? Convert.ToSingle(t) : 0;
+                    GetInstance().AddWaitSignalCoroutine(coroutine, value[1] as string, timeout);
                     break;
                 case "_WAIT_EVENT":
-                    GetInstance().AddWaitEventCoroutine((Player)value[1], coroutine);
+                    if (value.Count >= 4 && value[2] is IConvertible owner && value[3] is string eventName)
+                        GetInstance().AddWaitKickCoroutine((Player)value[1], coroutine, Convert.ToUInt32(owner), eventName);
+                    else
+                        GetInstance().AddWaitEventCoroutine((Player)value[1], coroutine);
                     break;
             }
             return value;
@@ -805,6 +907,16 @@ namespace Meteor.Map.lua
         }
         #endregion
         
+        public bool ScriptDeclares(Actor target, string globalName)
+        {
+            string errorMsg = "";
+            string path = GetScriptPath(target);
+            if (string.IsNullOrEmpty(path))
+                return false;
+            object value = LoadScript(path, ref errorMsg)?.GetGlobal(globalName);
+            return value != null && !(value is bool b && !b);
+        }
+
         public static LuaScript LoadScript(string path, ref string errorMsg)
         {
             return ScriptEngine.Instance.Load(path);

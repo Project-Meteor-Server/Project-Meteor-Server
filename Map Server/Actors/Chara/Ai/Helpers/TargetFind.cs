@@ -370,11 +370,12 @@ namespace Meteor.Map.actors.chara.ai
                 return false;
 
             //This skill can't be used on party members and target is a party member
-            if ((validTarget & ValidTarget.Party) == 0 && target.currentParty == owner.currentParty)
+            // Characters without a party (story allies, monsters) are never in the same party.
+            if ((validTarget & ValidTarget.Party) == 0 && owner.currentParty != null && target.currentParty == owner.currentParty)
                 return false;
 
             //This skill must be used on party members and target is not a party member
-            if ((validTarget & ValidTarget.PartyOnly) != 0 && target.currentParty != owner.currentParty)
+            if ((validTarget & ValidTarget.PartyOnly) != 0 && (owner.currentParty == null || target.currentParty != owner.currentParty))
                 return false;
 
             //This skill can't be used on NPCs and target is an npc
@@ -400,11 +401,11 @@ namespace Meteor.Map.actors.chara.ai
                 return false;
 
             //This skill can't be used on main target's party members and target is a party member of main target
-            if ((validTarget & ValidTarget.MainTargetParty) == 0 && target.currentParty == mainTarget.currentParty)
+            if ((validTarget & ValidTarget.MainTargetParty) == 0 && mainTarget.currentParty != null && target.currentParty == mainTarget.currentParty)
                 return false;
 
             //This skill must be used on main target's party members  and target is not a party member of main target
-            if ((validTarget & ValidTarget.MainTargetPartyOnly) != 0 && target.currentParty != mainTarget.currentParty)
+            if ((validTarget & ValidTarget.MainTargetPartyOnly) != 0 && (mainTarget.currentParty == null || target.currentParty != mainTarget.currentParty))
                 return false;
 
 

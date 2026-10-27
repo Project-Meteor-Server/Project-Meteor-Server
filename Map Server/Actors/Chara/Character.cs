@@ -254,6 +254,7 @@ namespace Meteor.Map.Actors
         public void DoBattleAction(ushort commandId, uint animationId, CommandResult result)
         {
             CurrentArea.BroadcastPacketAroundActor(this, CommandResultX01Packet.BuildPacket(Id, animationId, commandId, result));
+            FlushDeathEnmityClears(new[] { result });
         }
 
         public void DoBattleAction(ushort commandId, uint animationId, CommandResult[] results)
@@ -274,6 +275,7 @@ namespace Meteor.Map.Actors
                 else
                     break;
             }
+            FlushDeathEnmityClears(results);
         }
 
         public void DoBattleAction(ushort commandId, uint animationId, List<CommandResult> results)
@@ -298,7 +300,22 @@ namespace Meteor.Map.Actors
                 //animationId = 0; //If more than one packet is sent out, only send the animation once to avoid double playing.
                 //commandId = 0;
                 //sourceActorId = 0;
-            }            
+            }
+            FlushDeathEnmityClears(results);
+        }
+
+        private void FlushDeathEnmityClears(IEnumerable<CommandResult> results)
+        {
+            if (results == null || CurrentArea == null)
+                return;
+            HashSet<uint> seen = new HashSet<uint>();
+            foreach (CommandResult result in results)
+            {
+                if (result == null || !seen.Add(result.targetId))
+                    continue;
+                if (CurrentArea.FindActorInArea<BattleNpc>(result.targetId) is BattleNpc mob)
+                    mob.FlushPendingEnmityClear();
+            }
         }
 
         #region ai stuff
@@ -705,6 +722,8 @@ namespace Meteor.Map.Actors
 
         public void AddTP(int tp)
         {
+            if (this is Ally)
+                return;
             if (IsAlive() && tp != 0)
             {
                 var addTp = charaWork.parameterTemp.tp + tp;

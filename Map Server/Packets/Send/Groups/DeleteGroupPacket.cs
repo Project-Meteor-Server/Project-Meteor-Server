@@ -56,5 +56,22 @@ namespace Meteor.Map.packets.send.groups
 
             return new SubPacket(OPCODE, playerActorID, data);
         }
+            // The delete retail sends for monster and content groups: zero up to +0x18, then the group
+        // id. Player groups use the 3/id/0/id shape above.
+        public static SubPacket buildMonsterGroupPacket(uint playerActorID, ulong groupId)
+        {
+            byte[] data = new byte[PACKET_SIZE - 0x20];
+
+            using (MemoryStream mem = new MemoryStream(data))
+            {
+                using (BinaryWriter binWriter = new BinaryWriter(mem))
+                {
+                    binWriter.Seek(0x18, SeekOrigin.Begin);
+                    binWriter.Write((UInt64)groupId);
+                }
+            }
+
+            return new SubPacket(OPCODE, playerActorID, data);
+        }
     }
 }

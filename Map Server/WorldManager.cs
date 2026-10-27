@@ -432,7 +432,7 @@ namespace Meteor.Map
                         {
                             while (reader.Read())
                             {
-                                int actorId = zone.GetActorCount() + 1;
+                                int actorId = zone.AllocateActorNumber();
 
                                 // todo: add to private areas, set up immunity, mob linking,
                                 // - load skill/spell/drop lists, set detection icon, load pool/family/group mods
@@ -558,7 +558,7 @@ namespace Meteor.Map
                         while (reader.Read())
                         {
                             area = area ?? Server.GetWorldManager().GetArea(reader.GetUInt16("zoneId"));
-                            int actorId = area.GetActorCount() + 1;
+                            int actorId = area.AllocateActorNumber();
                             bnpc = area.GetBattleNpcById(id);
 
                             if (bnpc != null)
@@ -682,6 +682,102 @@ namespace Meteor.Map
                 }
             }
             return bnpc;
+        }
+
+        public BattleNpc CreateBattleNpcFromPool(uint poolId, Area area, float x, float y, float z, float rot, int level, bool ally)
+        {
+            BattleNpc battleNpc = null;
+            using (MySqlConnection conn = new MySqlConnection(String.Format("Server={0}; Port={1}; Database={2}; UID={3}; Password={4}", ConfigConstants.DATABASE_HOST, ConfigConstants.DATABASE_PORT, ConfigConstants.DATABASE_NAME, ConfigConstants.DATABASE_USERNAME, ConfigConstants.DATABASE_PASSWORD)))
+            {
+                try
+                {
+                    conn.Open();
+                    var query = @"
+                    SELECT bpo.poolId, bpo.name, bpo.genusId, bpo.actorClassId, bpo.currentJob, bpo.aggroType, bpo.skillListId, bpo.spellListId,
+                    bge.speed, bge.kindredId, bge.detection, bge.hpp, bge.mpp, bge.tpp, bge.str, bge.vit, bge.dex,
+                    bge.int, bge.mnd, bge.pie, bge.att, bge.acc, bge.def, bge.eva
+                    FROM server_battlenpc_pools bpo
+                    INNER JOIN server_battlenpc_genus bge ON bpo.genusId = bge.genusId
+                    WHERE bpo.poolId = @poolId;
+                    ";
+
+                    MySqlCommand cmd = new MySqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@poolId", poolId);
+
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (!reader.Read())
+                        {
+                            Program.Log.Error("Battle npc pool {0} not found.", poolId);
+                            return null;
+                        }
+
+                        ActorClass actorClass = GetActorClass(reader.GetUInt32("actorClassId"));
+                        if (actorClass == null)
+                        {
+                            Program.Log.Error("Battle npc pool {0}: actor class {1} is not loaded.", poolId, reader.GetUInt32("actorClassId"));
+                            return null;
+                        }
+
+                        int actorNumber = area.AllocateActorNumber();
+                        string name = reader.GetString("name");
+                        if (ally)
+                            battleNpc = new Ally(actorNumber, actorClass, name, area, x, y, z, rot, 0, 0, null);
+                        else
+                            battleNpc = new BattleNpc(actorNumber, actorClass, name, area, x, y, z, rot, 0, 0, null);
+
+                        // The Mover walks at these speeds; this constructor leaves them at 0.
+                        battleNpc.ResetMoveSpeeds();
+                        battleNpc.allegiance = ally ? CharacterTargetingAllegiance.Player : CharacterTargetingAllegiance.BattleNpcs;
+                        battleNpc.SetMod((uint)Modifier.MovementSpeed, reader.GetByte("speed"));
+                        battleNpc.neutral = reader.GetByte("aggroType") == 0;
+                        battleNpc.poolId = poolId;
+                        battleNpc.genusId = reader.GetUInt32("genusId");
+                        battleNpcPoolMods.TryGetValue(battleNpc.poolId, out battleNpc.poolMods);
+                        battleNpcGenusMods.TryGetValue(battleNpc.genusId, out battleNpc.genusMods);
+
+                        battleNpc.SetDetectionType(reader.GetUInt32("detection"));
+                        battleNpc.kindredType = (KindredType)reader.GetUInt32("kindredId");
+                        battleNpc.charaWork.parameterSave.state_mainSkill[0] = reader.GetByte("currentJob");
+                        battleNpc.charaWork.parameterSave.state_mainSkillLevel = (short)Math.Max(1, level);
+
+                        battleNpc.SetMod((uint)Modifier.HpPercent, reader.GetUInt32("hpp"));
+                        battleNpc.SetMod((uint)Modifier.MpPercent, reader.GetUInt32("mpp"));
+                        battleNpc.SetMod((uint)Modifier.TpPercent, reader.GetUInt32("tpp"));
+                        battleNpc.SetMod((uint)Modifier.Strength, reader.GetUInt32("str"));
+                        battleNpc.SetMod((uint)Modifier.Vitality, reader.GetUInt32("vit"));
+                        battleNpc.SetMod((uint)Modifier.Dexterity, reader.GetUInt32("dex"));
+                        battleNpc.SetMod((uint)Modifier.Intelligence, reader.GetUInt32("int"));
+                        battleNpc.SetMod((uint)Modifier.Mind, reader.GetUInt32("mnd"));
+                        battleNpc.SetMod((uint)Modifier.Piety, reader.GetUInt32("pie"));
+                        battleNpc.SetMod((uint)Modifier.Attack, reader.GetUInt32("att"));
+                        battleNpc.SetMod((uint)Modifier.Accuracy, reader.GetUInt32("acc"));
+                        battleNpc.SetMod((uint)Modifier.Defense, reader.GetUInt32("def"));
+                        battleNpc.SetMod((uint)Modifier.Evasion, reader.GetUInt32("eva"));
+
+                        foreach (ModifierList mods in new[] { battleNpc.poolMods, battleNpc.genusMods })
+                        {
+                            if (mods == null)
+                                continue;
+                            foreach (var a in mods.mobModList)
+                                battleNpc.SetMobMod(a.Value.id, (long)a.Value.value);
+                            foreach (var a in mods.modList)
+                                battleNpc.SetMod(a.Key, (long)a.Value.value);
+                        }
+
+                        battleNpc.spellListId = reader.GetUInt32("spellListId");
+                        battleNpc.skillListId = reader.GetUInt32("skillListId");
+                        battleNpc.CalculateBaseStats();
+                        battleNpc.RecalculateStats();
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Program.Log.Error(e.ToString());
+                    return null;
+                }
+            }
+            return battleNpc;
         }
 
         public void LoadBattleNpcModifiers(string tableName, string primaryKey, Dictionary<uint, ModifierList> list)
@@ -1661,6 +1757,12 @@ namespace Meteor.Map
                 mTradeGroups[groupId].SendInitWorkValues(session);
                 return true;
             }
+            MonsterParty monsterParty = MonsterParty.Find(groupId);
+            if (monsterParty != null)
+            {
+                monsterParty.SendInitWorkValues(session);
+                return true;
+            }
             return false;
         }
         
@@ -1853,6 +1955,12 @@ namespace Meteor.Map
                 }
             }
             return null;
+        }
+
+        public Zone GetZone(uint zoneId)
+        {
+            lock (ZoneLock)
+                return zoneList.TryGetValue(zoneId, out Zone zone) ? zone : null;
         }
 
         public Area GetArea(uint zoneId, string privateAreaName = "", int privateAreaType = 0)

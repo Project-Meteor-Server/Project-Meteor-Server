@@ -210,6 +210,8 @@ __ActorUpdateFlags = {}
 local __Area = {}
 ---@param actor Actor
 function __Area:AddActorToZone(actor) end
+---@return number
+function __Area:AllocateActorNumber() end
 ---@param actor Actor
 ---@param packet any
 function __Area:BroadcastPacketAroundActor(actor, packet) end
@@ -302,6 +304,9 @@ function __Area:GetPrivateAreaType() end
 function __Area:GetSpawnPackets() end
 ---@return Director
 function __Area:GetWeatherDirector() end
+---@param id number
+---@return boolean
+function __Area:HasActorId(id) end
 ---@param gateId string
 ---@return boolean?
 function __Area:IsGateOpen(gateId) end
@@ -330,6 +335,16 @@ function __Area:SnapToGround(x, y, z) end
 ---@overload fun(self: Area, classId: number, uniqueId: string, x: number, y: number, z: number, rot?: number, state?: number, animId?: number, isMob?: boolean): Npc
 ---@param location SpawnLocation
 function __Area:SpawnActor(location) end
+---@param poolId number
+---@param level number
+---@param x number
+---@param y number
+---@param z number
+---@param rot number
+---@param ally boolean
+---@param duty DutyEncounter
+---@return BattleNpc
+function __Area:SpawnDutyBattleNpc(poolId, level, x, y, z, rot, ally, duty) end
 ---@param tick any
 function __Area:Update(tick) end
 ---@param actor Actor
@@ -338,6 +353,7 @@ function __Area:UpdateActorPosition(actor) end
 ---@class BattleNpc : Npc
 ---@field detectionType DetectionType
 ---@field dropListId number
+---@field duty DutyEncounter
 ---@field genusId number
 ---@field genusMods ModifierList
 ---@field hateContainer HateContainer
@@ -360,18 +376,29 @@ function __BattleNpc:CanAttack() end
 ---@param error? CommandResult
 ---@return boolean
 function __BattleNpc:CanUse(target, spell, error) end
+function __BattleNpc:ClearEnmityIndicator() end
 ---@param tick any
 function __BattleNpc:Despawn(tick) end
 ---@param tick any
 ---@param actionContainer? CommandResultContainer
 function __BattleNpc:Die(tick, actionContainer) end
+function __BattleNpc:FlushPendingEnmityClear() end
 function __BattleNpc:ForceRespawn() end
 ---@return number
 function __BattleNpc:GetBattleNpcId() end
+---@overload fun(chara: Character): number
+---@return number
+function __BattleNpc:GetClaimPartyGroupId() end
+---@param chara Character
+---@return Character
+function __BattleNpc.GetCreditOwner(chara) end
 ---@return number
 function __BattleNpc:GetDespawnTime() end
 ---@return number
 function __BattleNpc:GetDetectionType() end
+---@param viewer Player
+---@return any
+function __BattleNpc:GetEnmityIndicatorPacket(viewer) end
 ---@param player Player
 ---@return any
 function __BattleNpc:GetHateTypePacket(player) end
@@ -379,6 +406,8 @@ function __BattleNpc:GetHateTypePacket(player) end
 ---@param mobMod MobModifier
 ---@return number
 function __BattleNpc:GetMobMod(mobMod) end
+---@return MonsterParty
+function __BattleNpc:GetMonsterParty() end
 ---@return number
 function __BattleNpc:GetRespawnTime() end
 ---@param player Player
@@ -386,7 +415,12 @@ function __BattleNpc:GetRespawnTime() end
 ---@return any[]
 function __BattleNpc:GetSpawnPackets(player, spawnType) end
 ---@return boolean
+function __BattleNpc:HasMonsterParty() end
+---@return boolean
 function __BattleNpc:IsCloseToSpawn() end
+---@param viewer Player
+---@return boolean
+function __BattleNpc:IsEngagedWithSideOf(viewer) end
 ---@param state State
 ---@param actions CommandResult[]
 ---@param ability BattleCommand
@@ -408,6 +442,9 @@ function __BattleNpc:OnCast(state, actions, spell, errors) end
 function __BattleNpc:OnDamageTaken(attacker, skill, action, actionContainer) end
 function __BattleNpc:OnDeath() end
 function __BattleNpc:OnDespawn() end
+---@param target Character
+function __BattleNpc:OnHateAdded(target) end
+function __BattleNpc:OnHateListEmptied() end
 ---@param tick any
 function __BattleNpc:OnRoam(tick) end
 function __BattleNpc:OnSpawn() end
@@ -419,6 +456,8 @@ function __BattleNpc:OnWeaponSkill(state, actions, skill, errors) end
 ---@param tick any
 ---@param packets? any[]
 function __BattleNpc:PostUpdate(tick, packets) end
+---@param hateType number
+function __BattleNpc:ReleaseClaim(hateType) end
 ---@param id number
 function __BattleNpc:SetBattleNpcId(id) end
 ---@param seconds number
@@ -434,6 +473,8 @@ function __BattleNpc:SetRespawnTime(seconds) end
 function __BattleNpc:Spawn(tick) end
 ---@param tick any
 function __BattleNpc:Update(tick) end
+---@param newTarget Character
+function __BattleNpc:UpdateEnmityIndicator(newTarget) end
 
 ---@class AetheryteWork
 ---@field clearTime number
@@ -534,9 +575,10 @@ local __EventSave = {}
 local __EventTemp = {}
 
 ---@class NpcWork
+---@field HATE_TYPE_CLAIMED number
+---@field HATE_TYPE_DEAD number
 ---@field HATE_TYPE_ENGAGED number
----@field HATE_TYPE_ENGAGED_PARTY number
----@field HATE_TYPE_NONE number
+---@field HATE_TYPE_UNCLAIMED number
 ---@field hateType number
 ---@field pushCommand number
 ---@field pushCommandPriority number
@@ -1275,6 +1317,8 @@ function __Player:ForceQuestStateUpdate() end
 ---@param actorId number
 ---@return Actor
 function __Player:GetActorInInstance(actorId) end
+---@return number
+function __Player:GetAttackRange() end
 ---@return Recipe[]
 function __Player:GetAwardedRecipes() end
 ---@param classId number
@@ -1328,6 +1372,9 @@ function __Player:GetPlayTime(doUpdate) end
 ---@param name string
 ---@return Quest
 function __Player:GetQuest(name) end
+---@param globalName string
+---@return Quest
+function __Player:GetQuestDeclaring(globalName) end
 ---@overload fun(self: Player, id: number): number
 ---@param quest Quest
 ---@return number
@@ -1539,6 +1586,7 @@ function __Player:SendInstanceUpdate(force) end
 ---@param message string
 function __Player:SendMessage(logType, sender, message) end
 function __Player:SendMountAppearance() end
+function __Player:SendOwnPartyOccupancy() end
 ---@param path string
 function __Player:SendPacket(path) end
 function __Player:SendSeamlessZoneInPackets() end
@@ -2211,6 +2259,7 @@ function __MateriaData:GetBonusValue(bonus, grade) end
 
 ---@class QuestGameData
 ---@field ClassName string
+---@field HasScript boolean
 ---@field Id number
 ---@field MinGCRank number
 ---@field MinLevel number
@@ -2781,6 +2830,16 @@ function __WorldManager:CheckPosInBounds(x, y, x1, y1, x2, y2) end
 ---@param p1 Player
 ---@param p2 Player
 function __WorldManager:CompleteTrade(p1, p2) end
+---@param poolId number
+---@param area Area
+---@param x number
+---@param y number
+---@param z number
+---@param rot number
+---@param level number
+---@param ally boolean
+---@return BattleNpc
+function __WorldManager:CreateBattleNpcFromPool(poolId, area, x, y, z, rot, level, ally) end
 ---@overload fun(self: WorldManager, director: Director, actors: Actor[]): ContentGroup
 ---@param director Director
 ---@param ... Actor
@@ -2891,6 +2950,9 @@ function __WorldManager:GetStatusEffect(id) end
 ---@param actorId number
 ---@return TradeGroup
 function __WorldManager:GetTradeGroup(actorId) end
+---@param zoneId number
+---@return Zone
+function __WorldManager:GetZone(zoneId) end
 ---@param player Player
 ---@param groupType number
 ---@param result number
@@ -4037,6 +4099,11 @@ __ValidTarget = {}
 
 ---@class AllyController : BattleNpcController
 local __AllyController = {}
+function __AllyController:Disengage() end
+---@return Player
+function __AllyController:GetLeader() end
+---@param tick any
+function __AllyController:Update(tick) end
 
 ---@class BattleNpcController : Controller
 local __BattleNpcController = {}
@@ -4508,7 +4575,15 @@ function __BattleUtils.TryStatus(caster, target, skill, action, results, isAddit
 local __ActorClass = {}
 
 ---@class Ally : BattleNpc
+---@field escortFollow Character
+---@field escortFollowGap number
+---@field followLeader boolean
+---@field passive boolean
 local __Ally = {}
+---@return Player
+function __Ally:GetLeader() end
+---@param value boolean
+function __Ally:SetFollowLeader(value) end
 
 ---@enum MobModifier
 __MobModifier = {}
@@ -4636,6 +4711,9 @@ function __ItemPackage:StartSendUpdate() end
 local __Director = {}
 ---@param actor Actor
 function __Director:AddMember(actor) end
+---@param contentArea Area
+---@return DutyEncounter
+function __Director:CreateDuty(contentArea) end
 ---@return any
 function __Director:CreateScriptBindPacket() end
 function __Director:EndDirector() end
@@ -4643,6 +4721,8 @@ function __Director:EndDirector() end
 function __Director:GenerateActorName(actorNumber) end
 ---@return ContentGroup
 function __Director:GetContentGroup() end
+---@return DutyEncounter
+function __Director:GetDuty() end
 ---@return any[]
 function __Director:GetInitPackets() end
 ---@return Actor[]
@@ -4677,6 +4757,119 @@ function __Director:StartContentGroup() end
 ---@param spawnImmediate boolean
 ---@param ... any
 function __Director:StartDirector(spawnImmediate, ...) end
+
+---@class DutyEncounter
+---@field ALLY_ASSIST_RANGE number
+---@field ARRIVAL_GRACE_SECONDS number
+---@field CONTENT_GROUP_CAPACITY number
+---@field CORPSE_SECONDS number
+---@field T_ALL_LEFT number
+---@field T_PARTY_DEFEATED number
+---@field T_TIME_MINUTES number
+---@field T_TIME_SECONDS number
+---@field WAVE_DELAY_SECONDS number
+local __DutyEncounter = {}
+function __DutyEncounter:AddDirectorPlayers() end
+---@param player Player
+function __DutyEncounter:AddPlayer(player) end
+---@param wave number
+---@param poolId number
+---@param level number
+---@param x number
+---@param y number
+---@param z number
+---@param rot number
+function __DutyEncounter:AddWaveEnemy(wave, poolId, level, x, y, z, rot) end
+function __DutyEncounter:End() end
+---@param reason string
+function __DutyEncounter:Fail(reason) end
+---@return BattleNpc[]
+function __DutyEncounter:GetAllies() end
+---@return Area
+function __DutyEncounter:GetArea() end
+---@return Director
+function __DutyEncounter:GetDirector() end
+---@return BattleNpc[]
+function __DutyEncounter:GetEnemies() end
+---@return number
+function __DutyEncounter:GetEnemiesLeft() end
+---@return Player[]
+function __DutyEncounter:GetPlayers() end
+---@return string
+function __DutyEncounter:GetResult() end
+---@return number
+function __DutyEncounter:GetSecondsLeft() end
+---@return number
+function __DutyEncounter:GetWave() end
+---@return boolean
+function __DutyEncounter:IsOver() end
+---@return boolean
+function __DutyEncounter:IsRunning() end
+---@return boolean
+function __DutyEncounter:IsSuccess() end
+---@param npc BattleNpc
+---@param killer Character
+function __DutyEncounter:OnMobDeath(npc, killer) end
+---@param value boolean
+function __DutyEncounter:SetAllyAggressive(value) end
+---@param escort BattleNpc
+---@param leader Character
+---@param gap number
+function __DutyEncounter:SetEscortFollow(escort, leader, gap) end
+---@param mob BattleNpc
+---@param required boolean
+function __DutyEncounter:SetRequired(mob, required) end
+---@param seconds number
+function __DutyEncounter:SetTimeLimit(seconds) end
+---@param value boolean
+function __DutyEncounter:SetWinOnClear(value) end
+---@param poolId number
+---@param level number
+---@param x number
+---@param y number
+---@param z number
+---@param rot number
+---@return BattleNpc
+function __DutyEncounter:SpawnAlly(poolId, level, x, y, z, rot) end
+---@param poolId number
+---@param level number
+---@param x number
+---@param y number
+---@param z number
+---@param rot number
+---@return BattleNpc
+function __DutyEncounter:SpawnEnemy(poolId, level, x, y, z, rot) end
+---@param poolId number
+---@param level number
+---@param x number
+---@param y number
+---@param z number
+---@param rot number
+---@return BattleNpc
+function __DutyEncounter:SpawnEscort(poolId, level, x, y, z, rot) end
+function __DutyEncounter:Start() end
+function __DutyEncounter:Succeed() end
+---@param tick any
+function __DutyEncounter:Tick(tick) end
+
+---@enum DutyState
+__DutyState = {}
+
+---@class Meteor.Map.actors.director.DutyEncounter.Entry
+---@field ally boolean
+---@field escort boolean
+---@field npc BattleNpc
+---@field required boolean
+local __Meteor_Map_actors_director_DutyEncounter_Entry = {}
+
+---@class Pending
+---@field level number
+---@field poolId number
+---@field rot number
+---@field x number
+---@field y number
+---@field z number
+local __Pending = {}
 
 ---@class GuildleveDirector : Director
 ---@field completionTime number
@@ -4818,21 +5011,46 @@ function __Group:SendGroupPacketsAll(ids) end
 function __Group:SendInitWorkValues(session) end
 
 ---@class MonsterParty : Group
+---@field GROUP_ID_BASE number
+---@field occupancyGroupId number
+---@field partyGroupWork PartyWork
 local __MonsterParty = {}
----@param memberId number
-function __MonsterParty:AddMember(memberId) end
+---@param playerActorId number
+---@return any
+function __MonsterParty:BuildDeletePacket(playerActorId) end
 ---@param id number
 ---@return GroupMember[]
 function __MonsterParty:BuildMemberList(id) end
+---@param playerActorId number
+---@param occupyingGroupId number
+---@return any
+function __MonsterParty:BuildOccupancyPacket(playerActorId, occupyingGroupId) end
+---@param playerActorId number
+---@param locationCode number
+---@return any[]
+function __MonsterParty:BuildSpawnPackets(playerActorId, locationCode) end
+---@param monsterActorId number
+---@return MonsterParty
+function __MonsterParty.Create(monsterActorId) end
+---@param groupId number
+---@return MonsterParty
+function __MonsterParty.Find(groupId) end
+---@return number
+function __MonsterParty:GetMemberCount() end
+---@return number[]
+function __MonsterParty:GetMembers() end
 ---@return number
 function __MonsterParty:GetTypeId() end
----@param memberId number
-function __MonsterParty:RemoveMember(memberId) end
+---@param session Session
+function __MonsterParty:SendGroupPackets(session) end
 ---@param session Session
 function __MonsterParty:SendInitWorkValues(session) end
+---@param group MonsterParty
+function __MonsterParty.Unregister(group) end
 
 ---@class Party : Group
 ---@field members number[]
+---@field npcMembers Character[]
 ---@field partyGroupWork PartyWork
 local __Party = {}
 ---@param memberId number
@@ -4854,8 +5072,12 @@ function __Party:GetTypeId() end
 function __Party:IsInParty(charaId) end
 ---@param memberId number
 function __Party:RemoveMember(memberId) end
+---@param session Session
+function __Party:SendGroupPackets(session) end
 ---@param actorId number
 function __Party:SetLeader(actorId) end
+---@param npcs Character[]
+function __Party:SetNpcMembers(npcs) end
 
 ---@class RelationGroup : Group
 ---@field work RelationWork
@@ -4962,9 +5184,15 @@ function __LuaEngine:AddWaitCoroutine(coroutine, seconds) end
 ---@param player Player
 ---@param coroutine any
 function __LuaEngine:AddWaitEventCoroutine(player, coroutine) end
+---@param player Player
+---@param coroutine any
+---@param ownerId number
+---@param eventName string
+function __LuaEngine:AddWaitKickCoroutine(player, coroutine, ownerId, eventName) end
 ---@param coroutine any
 ---@param signal string
-function __LuaEngine:AddWaitSignalCoroutine(coroutine, signal) end
+---@param timeoutSeconds? number
+function __LuaEngine:AddWaitSignalCoroutine(coroutine, signal, timeoutSeconds) end
 ---@param actor Character
 ---@param command BattleCommand
 ---@param folder string
@@ -5008,6 +5236,8 @@ function __LuaEngine.CallLuaScriptFileFunctionForInt(path, functionName, default
 ---@return number
 function __LuaEngine.CallLuaStatusEffectFunction(actor, effect, functionName, ...) end
 ---@param player Player
+function __LuaEngine:CancelPlayerEvent(player) end
+---@param player Player
 ---@param target Actor
 ---@param eventStart EventStartPacket
 function __LuaEngine:EventStarted(player, target, eventStart) end
@@ -5043,9 +5273,19 @@ function __LuaEngine:ResolveResume(player, coroutine, value) end
 ---@param param string[]
 ---@param help? boolean
 function __LuaEngine.RunGMCommand(player, cmd, param, help) end
+---@param target Actor
+---@param globalName string
+---@return boolean
+function __LuaEngine:ScriptDeclares(target, globalName) end
 ---@param player Player
 ---@param message string
 function __LuaEngine.SendError(player, message) end
+
+---@class KickWait
+---@field coroutine any
+---@field eventName string
+---@field ownerId number
+local __KickWait = {}
 
 ---@class LuaParam
 ---@field typeID number
@@ -5080,7 +5320,7 @@ function __AreaChordWorld:Walk(a, b, lateral) end
 
 ---@class CollisionManager
 ---@field UNLOAD_AFTER any
----@field Entries Entry[]
+---@field Entries Meteor.Map.navigation.CollisionManager.Entry[]
 ---@field Loaded any[]
 ---@field Root string
 local __CollisionManager = {}
@@ -5111,11 +5351,11 @@ function __CollisionManager.Probe(zoneName, x, z, yFrom, gates, y, complete) end
 ---@param complete boolean
 ---@return ProbeResult
 function __CollisionManager.RayDown(zoneName, x, z, top, bottom, gates, y, complete) end
----@param e Entry
+---@param e Meteor.Map.navigation.CollisionManager.Entry
 ---@return any
 function __CollisionManager.TryGet(e) end
 
----@class Entry
+---@class Meteor.Map.navigation.CollisionManager.Entry
 ---@field Dir string
 ---@field Failed boolean
 ---@field LastUsedMs number
@@ -5125,11 +5365,11 @@ function __CollisionManager.TryGet(e) end
 ---@field Name string
 ---@field World any
 ---@field Loading boolean
-local __Entry = {}
+local __Meteor_Map_navigation_CollisionManager_Entry = {}
 ---@param x number
 ---@param z number
 ---@return boolean
-function __Entry:Covers(x, z) end
+function __Meteor_Map_navigation_CollisionManager_Entry:Covers(x, z) end
 
 ---@enum ProbeResult
 __ProbeResult = {}
@@ -6294,15 +6534,20 @@ __ActionType = {}
 ---@field amountMitigated number
 ---@field animation number
 ---@field blockRate number
+---@field blockReduction number
 ---@field commandType CommandType
+---@field critMultiplier number
 ---@field critRate number
 ---@field effectId number
 ---@field enmity number
 ---@field hitNum number
 ---@field hitRate number
 ---@field hitType HitType
+---@field mitigationFromScript boolean
 ---@field param number
 ---@field parryRate number
+---@field parryReduction number
+---@field ratesFromScript boolean
 ---@field resistRate number
 ---@field targetId number
 ---@field worldMasterTextId number
@@ -6435,6 +6680,20 @@ __HitEffect = {}
 
 ---@enum HitType
 __HitType = {}
+
+---@class SetEnmityIndicatorPacket
+---@field FLAG_ENGAGED number
+---@field FLAG_NONE number
+---@field NO_TARGET number
+---@field OPCODE number
+---@field PACKET_SIZE number
+local __SetEnmityIndicatorPacket = {}
+---@param monsterActorId number
+---@param playerActorId number
+---@param targetActorId number
+---@param flag number
+---@return any
+function __SetEnmityIndicatorPacket.BuildPacket(monsterActorId, playerActorId, targetActorId, flag) end
 
 ---@class SetEmoteEventCondition
 ---@field OPCODE number
@@ -6751,6 +7010,13 @@ local __ContentMembersX08Packet = {}
 ---@param playerActorID number
 ---@param locationCode number
 ---@param sequenceId number
+---@param actorIds number[]
+---@param unknown number
+---@return any
+function __ContentMembersX08Packet.buildCompactPacket(playerActorID, locationCode, sequenceId, actorIds, unknown) end
+---@param playerActorID number
+---@param locationCode number
+---@param sequenceId number
 ---@param entries GroupMember[]
 ---@param offset number
 ---@return any
@@ -6818,6 +7084,12 @@ function __CreateNamedGroupMultiple.buildPacket(playerActorID, groups, offset) e
 ---@field TYPEID_PARTY number
 ---@field TYPEID_RETAINER number
 local __GroupHeaderPacket = {}
+---@param playerActorID number
+---@param locationCode number
+---@param sequenceId number
+---@param group Group
+---@return any
+function __GroupHeaderPacket.buildMonsterPartyPacket(playerActorID, locationCode, sequenceId, group) end
 ---@param playerActorID number
 ---@param locationCode number
 ---@param sequenceId number
@@ -6908,11 +7180,40 @@ function __GroupMembersX64Packet.buildPacket(playerActorID, locationCode, sequen
 ---@field OPCODE number
 ---@field PACKET_SIZE number
 local __DeleteGroupPacket = {}
+---@param playerActorID number
+---@param groupId number
+---@return any
+function __DeleteGroupPacket.buildMonsterGroupPacket(playerActorID, groupId) end
 ---@overload fun(playerActorID: number, groupId: number): any
 ---@param playerActorID number
 ---@param group Group
 ---@return any
 function __DeleteGroupPacket.buildPacket(playerActorID, group) end
+
+---@class SetGroupLayoutIdPacket
+---@field OPCODE number
+---@field PACKET_SIZE number
+local __SetGroupLayoutIdPacket = {}
+---@param playerActorId number
+---@param groupId number
+---@param memberActorId number
+---@param displayNameId number
+---@param layoutId number
+---@param flag1 boolean
+---@param name string
+---@return any
+function __SetGroupLayoutIdPacket.BuildPacket(playerActorId, groupId, memberActorId, displayNameId, layoutId, flag1, name) end
+
+---@class SetOccupancyGroupPacket
+---@field OPCODE number
+---@field PACKET_SIZE number
+local __SetOccupancyGroupPacket = {}
+---@param playerActorId number
+---@param occupiedGroupId number
+---@param occupiedGroupType number
+---@param occupyingGroupId number
+---@return any
+function __SetOccupancyGroupPacket.BuildPacket(playerActorId, occupiedGroupId, occupiedGroupType, occupyingGroupId) end
 
 ---@class SynchGroupWorkValuesPacket
 ---@field OPCODE number

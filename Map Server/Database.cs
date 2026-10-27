@@ -608,11 +608,12 @@ namespace Meteor.Map
 
                     query = @"
                     INSERT INTO characters_quest_scenario 
-                    (characterId, slot, questId, sequence, flags, counter1, counter2, counter3)
+                    (characterId, slot, questId, sequence, flags, counter1, counter2, counter3, counter4, npcLsFrom, npcLsMsgStep)
                     VALUES
-                    (@charaId, @slot, @questId, @sequence, @flags, @counter1, @counter2, @counter3)
+                    (@charaId, @slot, @questId, @sequence, @flags, @counter1, @counter2, @counter3, @counter4, @npcLsFrom, @npcLsMsgStep)
                     ON DUPLICATE KEY UPDATE
-                    questId = @questId, sequence = @sequence, flags = @flags, counter1 = @counter1, counter2 = @counter2, counter3 = @counter3
+                    questId = @questId, sequence = @sequence, flags = @flags, counter1 = @counter1, counter2 = @counter2, counter3 = @counter3,
+                    counter4 = @counter4, npcLsFrom = @npcLsFrom, npcLsMsgStep = @npcLsMsgStep
                     ";
 
                     cmd = new MySqlCommand(query, conn);
@@ -621,13 +622,13 @@ namespace Meteor.Map
                     cmd.Parameters.AddWithValue("@questId", 0xFFFFF & quest.Id);
                     cmd.Parameters.AddWithValue("@sequence", quest.GetSequence());
 
-                    if (qData != null)
-                    {
-                        cmd.Parameters.AddWithValue("@flags", qData.GetFlags());
-                        cmd.Parameters.AddWithValue("@counter1", qData.GetCounter(1));
-                        cmd.Parameters.AddWithValue("@counter2", qData.GetCounter(2));
-                        cmd.Parameters.AddWithValue("@counter3", qData.GetCounter(3));
-                    }
+                    cmd.Parameters.AddWithValue("@flags", qData?.GetFlags() ?? 0);
+                    cmd.Parameters.AddWithValue("@counter1", qData?.GetCounter(0) ?? 0);
+                    cmd.Parameters.AddWithValue("@counter2", qData?.GetCounter(1) ?? 0);
+                    cmd.Parameters.AddWithValue("@counter3", qData?.GetCounter(2) ?? 0);
+                    cmd.Parameters.AddWithValue("@counter4", qData?.GetCounter(3) ?? 0);
+                    cmd.Parameters.AddWithValue("@npcLsFrom", qData?.GetNpcLsFrom() ?? 0);
+                    cmd.Parameters.AddWithValue("@npcLsMsgStep", qData?.GetMsgStep() ?? 0);
 
                     cmd.ExecuteNonQuery();
                 }
@@ -667,10 +668,10 @@ namespace Meteor.Map
                     cmd.Parameters.AddWithValue("@sequence", quest.GetSequence());
 
                     cmd.Parameters.AddWithValue("@flags", qData.GetFlags());
-                    cmd.Parameters.AddWithValue("@counter1", qData.GetCounter(1));
-                    cmd.Parameters.AddWithValue("@counter2", qData.GetCounter(2));
-                    cmd.Parameters.AddWithValue("@counter3", qData.GetCounter(3));
-                    cmd.Parameters.AddWithValue("@counter4", qData.GetCounter(4));
+                    cmd.Parameters.AddWithValue("@counter1", qData.GetCounter(0));
+                    cmd.Parameters.AddWithValue("@counter2", qData.GetCounter(1));
+                    cmd.Parameters.AddWithValue("@counter3", qData.GetCounter(2));
+                    cmd.Parameters.AddWithValue("@counter4", qData.GetCounter(3));
                     cmd.Parameters.AddWithValue("@npcLsFrom", qData.GetNpcLsFrom());
                     cmd.Parameters.AddWithValue("@npcLsMsgStep", qData.GetMsgStep());
                     
@@ -845,7 +846,7 @@ namespace Meteor.Map
                     (characterId, completedQuests)
                     VALUES
                     (@charaId, @completedQuests)
-                    ON DUPLICATE KEY UPDATE completedQuests=completedQuests
+                    ON DUPLICATE KEY UPDATE completedQuests = VALUES(completedQuests)
                     ";
 
                     cmd = new MySqlCommand(query, conn);
@@ -2248,7 +2249,7 @@ namespace Meteor.Map
 
                     string query = @"
                                     INSERT INTO server_linkshells
-                                    (name, master, crest)
+                                    (name, master, crestIcon)
                                     VALUES
                                     (@lsName, @master, @crest)
                                     ;

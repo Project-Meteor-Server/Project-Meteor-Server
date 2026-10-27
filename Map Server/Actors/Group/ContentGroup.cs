@@ -52,7 +52,9 @@ namespace Meteor.Map.actors.group
             }
 
             this.director = director;
-            contentGroupWork._globalTemp.director = (ulong)director.Id << 32;
+            // Actor id in the high word plus the 0xB36F92 member tag (as Party sends for its owner); with a
+            // 0 low word the client does not resolve the group's director.
+            contentGroupWork._globalTemp.director = ((ulong)director.Id << 32) | 0xB36F92;
         }
 
         public void Start()

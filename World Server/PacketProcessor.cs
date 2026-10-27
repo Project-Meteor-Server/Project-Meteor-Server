@@ -142,7 +142,7 @@ namespace Meteor.World
                                     session.routing1 = Server.GetServer().GetWorldManager().GetZoneServer(endConfirmPacket.destinationZone);
                                     session.routing1.SendSessionStart(session);
                                 }
-                                else
+                                else if (!mServer.ConsumeDisconnectEnd(endConfirmPacket.sessionId))
                                 {                                    
                                     mServer.RemoveSession(Session.Channel.ZONE, endConfirmPacket.sessionId);
                                     mServer.RemoveSession(Session.Channel.CHAT, endConfirmPacket.sessionId);

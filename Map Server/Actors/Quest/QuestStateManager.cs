@@ -48,7 +48,8 @@ namespace Meteor.Map.Actors.QuestNS
             // Init MinLv
             QuestGameData[] minLvl = Server.GetQuestGamedataByMaxLvl(player.GetHighestLevel(), true);
             foreach (var questData in minLvl)
-                MinLevelBitfield.Set(questData.Id - SCENARIO_START);
+                if (questData.HasScript)
+                    MinLevelBitfield.Set(questData.Id - SCENARIO_START);
 
             // Init Prereq
             CompletedQuestsBitfield.SetTo(completedQuests);
@@ -67,7 +68,8 @@ namespace Meteor.Map.Actors.QuestNS
         {
             QuestGameData[] updated = Server.GetQuestGamedataByMaxLvl(level);
             foreach (var questData in updated)
-                MinLevelBitfield.Set(questData.Id - SCENARIO_START);
+                if (questData.HasScript)
+                    MinLevelBitfield.Set(questData.Id - SCENARIO_START);
             ComputeAvailable();
         }
 

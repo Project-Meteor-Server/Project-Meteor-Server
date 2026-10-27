@@ -64,7 +64,7 @@ namespace Meteor.Map.Actors.QuestNS
         {
             QuestENpc instanceUpdated = null;
 
-            if (OldENPCs.ContainsKey(classId))
+            if (OldENPCs != null && OldENPCs.ContainsKey(classId))
             {
                 if (OldENPCs[classId].IsChanged(flagType, isTalkEnabled, isPushEnabled, isEmoteEnabled, isSpawned))
                 {

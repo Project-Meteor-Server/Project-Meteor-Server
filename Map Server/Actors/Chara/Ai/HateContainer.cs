@@ -55,7 +55,12 @@ namespace Meteor.Map.actors.chara.ai
         public void AddBaseHate(Character target)
         {
             if (!HasHateForTarget(target))
+            {
                 hateList.Add(target, new HateEntry(target, 1, 0, true));
+
+                if (owner is BattleNpc bnpc)
+                    bnpc.OnHateAdded(target);
+            }
         }
 
         public void UpdateHate(Character target, int damage)
@@ -71,6 +76,9 @@ namespace Meteor.Map.actors.chara.ai
                 hateList.Remove(target);
             else
                 hateList.Clear();
+
+            if (hateList.Count == 0 && owner is BattleNpc bnpc)
+                bnpc.OnHateListEmptied();
         }
 
         private void UpdateHate(HateEntry entry)

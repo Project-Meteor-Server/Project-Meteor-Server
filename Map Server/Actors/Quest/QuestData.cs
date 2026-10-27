@@ -48,6 +48,7 @@ namespace Meteor.Map.Actors.QuestNS
         public void ClearData()
         {
             time = flags = counter1 = counter2 = counter3 = counter4 = 0;
+            Dirty = true;
         }
 
         public void SetFlag(int index)

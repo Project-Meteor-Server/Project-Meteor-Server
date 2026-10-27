@@ -23,13 +23,17 @@ namespace Meteor.Map.Actors.Chara
 {
     class NpcWork
     {
-        public static byte HATE_TYPE_NONE = 0;
-        public static byte HATE_TYPE_ENGAGED = 2;
-        public static byte HATE_TYPE_ENGAGED_PARTY = 3;
+        // npcWork.hateType, read by DepictionJudge:judgeNameplate.
+        // 1 pale yellow, 2 orange; any other value means claimed: red if the mob's MonsterParty
+        // occupancy group (0x0187) contains the viewer, purple otherwise. 0 is not "none" (purple).
+        public const byte HATE_TYPE_UNCLAIMED = 1;
+        public const byte HATE_TYPE_ENGAGED = 2;    // engaged without a claim (no claimer party)
+        public const byte HATE_TYPE_CLAIMED = 3;
+        public const byte HATE_TYPE_DEAD = 4;       // retail sends it with the death
 
         public ushort pushCommand;
         public int pushCommandSub;
         public byte pushCommandPriority;
-        public byte hateType = 1;                
+        public byte hateType = HATE_TYPE_UNCLAIMED;                
     }
 }

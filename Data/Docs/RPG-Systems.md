@@ -1,6 +1,6 @@
 # RPG systems: sources
 
-Where the numbers for race, stats, attribute points, levels and EXP come from.
+Where the numbers for race, stats, attribute points, levels, EXP and physical damage come from.
 
 ## Citing a source
 
@@ -29,6 +29,9 @@ The private ones (marked *private*) are retail captures held by the project and 
 - **Player test**: a player's own measurement.
 - **Fan wiki**: community pages, often unsourced.
 - **Our guess**: nothing settles it, so we chose.
+
+**Tests.** `Tests/Map Server Tests/Formulas/` checks the formulas against these sources. Each
+expected value names its source id, and a test fails if a cited id has no entry below.
 
 Source ids in the tables ([`[PN119-B]`](#pn119-b), [`[T-36412]`](#t-36412), …) link to their full entry under
 [Sources](#sources).
@@ -59,10 +62,10 @@ Source ids in the tables ([`[PN119-B]`](#pn119-b), [`[T-36412]`](#t-36412), …)
 | What | Source | Trust | Our part |
 |---|---|---|---|
 | Lv8 Pugilist STR 35, attack 74; Lv9 STR 37, attack 77 (no gear) | [`[T-37927]`](#t-37927) | Player test | — |
-| Lv50 Pugilist STR 246 / INT 263 and STR 267 / INT 242 | [`[BG-171]`](#bg-171) | Player test | That these are near-naked values |
+| Lv50 Pugilist STR 246 / INT 263 and STR 267 / INT 242 | [`[BG-171]`](#bg-171) | Player test | That these are near-naked values. The Lv40–50 attribute growth is fit to them |
 | Lv50 Lancer STR 255 / PIE 244, attack 532 (no armour) | [`[T-36412]`](#t-36412) | Player test | — |
 | Lv50 Paladin MND 232 | Thread 50479 (Paladin stat caps). **Exact post not recorded.** | Player test | — |
-| HP and MP at Lv26, 27, 31 and 50 | [`[CAP-HPMP]`](#cap-hpmp) | Capture | — |
+| HP and MP at Lv26, 27, 31 and 50 | [`[CAP-HPMP]`](#cap-hpmp) | Capture | They are geared, so naked HP and MP stay at or below them |
 | Lv50 Conjurer MP 971 → 2885 after patch 1.20 | [`[T-32893]`](#t-32893) | Player test | That other Lv50 casters are close |
 | Which two attributes each class favours | [`[PN120-B]`](#pn120-b), ≪Parameters and Their Effects≫ ("Damage dealt by … arms") | Official | How strongly; Thaumaturge gets INT as its top attribute |
 | Growth between those points, class HP/MP factors | — | — | Our guess |
@@ -73,7 +76,7 @@ Source ids in the tables ([`[PN119-B]`](#pn119-b), [`[T-36412]`](#t-36412), …)
 |---|---|---|
 | 1 VIT = 1 HP, 1 PIE = 1 MP | [`[T-28942]`](#t-28942) (status-menu readings, patch 1.19); [`[DEV-26648]`](#dev-26648) names the stats each attribute drives | Player test |
 | 4 INT, MND or PIE = 1 point of a magic stat | [`[T-28942]`](#t-28942) | Player test |
-| 3 STR = 2 attack | [`[KAN-III]`](#kan-iii) (cites earlier 1.18 and 1.20 tests) | Player test |
+| 3 STR = 2 attack, for STR from points and gear (the naked value is in the attack curve) | [`[KAN-III]`](#kan-iii) (cites earlier 1.18 and 1.20 tests) | Player test |
 | 4 VIT = 1 enhancing magic | [`[T-41900]`](#t-41900) | Fan guide. [`[T-39570]`](#t-39570) says every 5th VIT instead |
 
 ## Attribute points
@@ -81,7 +84,7 @@ Source ids in the tables ([`[PN119-B]`](#pn119-b), [`[T-36412]`](#t-36412), …)
 | What | Source | Trust | Our part |
 |---|---|---|---|
 | 5 at level 10, then 1 more per level | [`[PN120-B]`](#pn120-b) [dev1228] | Official | — |
-| At most 3 + (level − 10) / 2 in one attribute | [`[PN120-B]`](#pn120-b) [dev1228], level / allotment cap table | Official | — |
+| At most 3 + (level − 9) / 2 in one attribute (3 at Lv10, +1 at each odd level) | [`[PN120-B]`](#pn120-b) [dev1228], level / allotment cap table | Official | — |
 | Per class; jobs use their class's points | [`[PN120-B]`](#pn120-b) [dev1228] "handled by class"; [`[PN121-B]`](#pn121-b) [dev1033] "carried over to the associated job" | Official | — |
 | Unspent until the player allots them | [`[CL-BONUS]`](#cl-bonus) | Game files | — |
 
@@ -118,7 +121,9 @@ Source ids in the tables ([`[PN119-B]`](#pn119-b), [`[T-36412]`](#t-36412), …)
 | Family multipliers for families with no capture, MP | Another server's database: migrations `20260918_000044` and `20260717_000006`, which cite captures we can't open | Second-hand | — |
 | Attributes | — | — | Our guess |
 
-HP anchors for `stats.MOB_HP_BASE` (anchor = value seen ÷ family multiplier):
+HP anchors for `stats.MOB_HP_BASE` (anchor = value seen ÷ family multiplier). The server floors
+anchor × multiplier, so an anchor seen under two multipliers is the value that floors to both:
+Lv41 1621.7 gives 1621 at 1.0 and 1946 at 1.2; Lv67 9101.1 gives 8373 at 0.92.
 
 | Anchor | Capture | Frame | Mob, multiplier | HP seen |
 |---|---|---|---|---|
@@ -131,10 +136,10 @@ HP anchors for `stats.MOB_HP_BASE` (anchor = value seen ÷ family multiplier):
 | Lv26 603 | `combat_autoattack` | f123 | slug, 1.0 | 603 |
 | | `login` (*private*, 1.19a) | f23 | jellyfish, 1.0 | 603 |
 | Lv32 897 | `party_battle_leve` | f3458 | crab, 1.0 | 897 |
-| Lv41 1622 | `whole_login` (*private*, 1.20) | f26 | petitghost, 1.0 | 1621 |
+| Lv41 1621.7 | `whole_login` (*private*, 1.20) | f26 | petitghost, 1.0 | 1621 |
 | | `teleport_to_camp_nine_ivies` | f86 | glirulus, 1.2 | 1946 |
 | Lv47 2356 | `whole_login` (*private*, 1.20) | f25 | gigantoad, 1.0 | 2356 |
-| Lv67 9101 | `teleport_to_camp_nine_ivies` | f87 | goblin, 0.92 | 8373 |
+| Lv67 9101.1 | `teleport_to_camp_nine_ivies` | f87 | goblin, 0.92 | 8373 |
 | Lv76 10693 | `war_quest_update2` | f642 | bomb, 1.0 | 10693 |
 | Lv78 11703 | `war_quest_update2` | f641, f643 | bomb, cactus, 1.0 | 11703 |
 | Lv88 17918 | `war_quest_update2` | f645 | Amalj'aa pugilist, 1.2 | 21501 |
@@ -142,10 +147,32 @@ HP anchors for `stats.MOB_HP_BASE` (anchor = value seen ÷ family multiplier):
 Lv26 603 also shows in `party_battle_leve` f927, `war_quest_update2` f640 and
 `gridania_to_coerthas` f1331.
 
+## Physical damage
+
+`battle/formulas.lua`, called by `battle/actions.lua`. An auto-attack is
+`1.6 × weapon Damage × (delay ÷ 3)^0.55 × stat ratio × level factor × (1 − DEF cut)`, ±8%.
+
+| What | Source | Trust | Our part |
+|---|---|---|---|
+| Auto-attacks follow weapon Damage, weaponskills DPS | Player tests (Mocchi, Kaeko) | Player test | — |
+| 1.6 per Damage, the delay exponents, the level factor slopes | Fit to [CAP-AA](#cap-aa) | Capture | The fit is ours |
+| DEF cut: a level-typical defender takes 25% less | Kaeko's Lv50 subtraction (about 27% of a hit) | Player test | Ratio form is ours |
+| Stat ratio weights 0.8 / 0.68 / 0.38 | Seiken and Kaeko, 1.21 | Player test | — |
+| Hit, crit, parry, block rates and crit damage | Captured hit and parry counts, player tests | Mixed | Bases and slopes are ours |
+| Monster "weapon" Damage 7 + level at 4.2 s | Fit to [CAP-AA](#cap-aa) | Capture | The fit is ours |
+
 ## Sources
 
 ### Captures
 
+- <a id="cap-mobhp"></a>**CAP-MOBHP**: monster max HP, the captures and frames in the
+  [Monsters](#monsters) HP anchor table.
+- <a id="cap-aa"></a>**CAP-AA**: auto-attack hits in `party_battle_leve` (public), 0x0139 results
+  with command 22104 against Lv30 piranhas (`PiranhaSandyStandard`). Lv26 Marauder 43723073 with a
+  Damage 46, 4.2 s axe: normal hits 42–53, mostly 44–51. Lv27 Gladiator 43722707 with a 2.5 s
+  sword (Damage about 26): 18–22. The piranhas' command 23005 hits on the Gladiator: 56–63 when
+  not blocked. The levels and weapons are from the project's battle research notes; the hit
+  values can be read from the capture.
 - <a id="cap-hpmp"></a>**CAP-HPMP**: player max HP / MP, all public.
 
   | Who | Capture | Frame | Actor | hpMax / mpMax |

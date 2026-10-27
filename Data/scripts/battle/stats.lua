@@ -1,15 +1,3 @@
---[[
-
-Stats Script
-
-Attributes, HP/MP and derived stats for players and monsters.
-
-Notes:
-
-Where every number comes from, and which ones are guesses: Data/Docs/RPG-Systems.md.
-
---]]
-
 require("modifiers")
 
 stats = stats or {}
@@ -18,6 +6,35 @@ stats.CLASS = { PGL = 2, GLA = 3, MRD = 4, ARC = 7, LNC = 8, THM = 22, CNJ = 23 
 stats.JOB_TO_CLASS = { [15] = 2, [16] = 3, [17] = 4, [18] = 7, [19] = 8, [26] = 22, [27] = 23 }
 
 local M = modifiersGlobal
+
+stats.MOB_HP_BASE = {
+    {1, 67}, {5, 102}, {10, 175}, {16, 317}, {26, 603}, {32, 897}, {41, 1621.7}, {47, 2356},
+    {67, 9101.1}, {76, 10693}, {78, 11703}, {88, 17918},
+}
+stats.MOB_HP_SCALE = 1.0
+
+-- By server_battlenpc_genus.genusId. Unlisted families are 1.0.
+stats.MOB_HP_FAMILY = {
+    [11] = 1.2,    -- Mole (snapping shrew)
+    [12] = 1.2,    -- Rodent (hare, marmot, squirrel, dormouse, glirulus)
+    [14] = 1.2,    -- Funguar
+    [15] = 1.2,    -- Flying-trap (roselets, toadtrap)
+    [60] = 1.2,    -- Ogre
+    [23] = 1.2,    -- Amalj'aa
+    [42] = 1.2,    -- Dodo
+    [3]  = 0.92,   -- Wolf
+    [43] = 0.92,   -- Bat
+    [35] = 0.92,   -- Diremite
+    [26] = 0.92,   -- Goblin
+    [1002] = 0.85, -- Firefly
+}
+
+stats.MOB_MP_BASE = {
+    {1, 110}, {10, 200}, {20, 400}, {30, 800}, {40, 1500}, {50, 2800},
+    {60, 4800}, {70, 8000}, {80, 13000}, {90, 18000},
+}
+stats.MOB_MP_CASTER_MULT = 5
+stats.MOB_MP_MAX = 32767
 
 local function interp(anchors, level)
     if level <= anchors[1][1] then return anchors[1][2] end
@@ -33,8 +50,8 @@ local function interp(anchors, level)
 end
 stats.interp = interp
 
--- Attributes before class multiplier and points.
-stats.ATTR_CURVE = { {1, 21}, {8, 34}, {9, 36}, {20, 62}, {30, 98}, {40, 148}, {50, 205} }
+-- Attributes before class multiplier and points. Monsters above 50 grow slower than the Lv40-50 slope.
+stats.ATTR_CURVE = { {1, 21}, {8, 34}, {9, 36}, {20, 62}, {30, 98}, {40, 148}, {50, 226}, {90, 433} }
 
 -- primary/secondary: where the automatic point split goes.
 stats.CLASS_PROFILE = {
@@ -49,7 +66,7 @@ stats.CLASS_PROFILE = {
 local DEFAULT_PROFILE = { str = 1, vit = 1, dex = 1, int = 1, mnd = 1, pie = 1, primary = M.Strength, secondary = M.Vitality, hp = 1, mp = 1 }
 
 -- HP = HP_CURVE * class hp + VIT.
-stats.HP_CURVE = { {1, 100}, {10, 250}, {20, 470}, {26, 656}, {31, 906}, {40, 1400}, {50, 2100} }
+stats.HP_CURVE = { {1, 100}, {10, 250}, {20, 470}, {27, 655}, {31, 850}, {40, 1400}, {50, 2100} }
 
 -- MP = MP_CURVE * class mp + PIE.
 stats.MP_CURVE = { {1, 30}, {10, 70}, {20, 130}, {26, 172}, {30, 230}, {40, 700}, {50, 1650} }
@@ -67,7 +84,7 @@ end
 
 function stats.bonusPointCap(level)
     if level < 10 then return 0 end
-    return 3 + math.floor((level - 10) / 2)
+    return 3 + math.floor((level - 9) / 2)
 end
 
 -- For a typical character (no player): half to primary, half to secondary, the rest to VIT first.
@@ -341,9 +358,11 @@ function stats.applyPlayerBaseStats(player)
     setBase(player, M.Hp, hp)
     setBase(player, M.Mp, mp)
 
+    -- The attack curve already holds the naked STR, so only points and gear add to it.
+    local addedStr = (stats.bonusFor(classId, level, player)[M.Strength] or 0) + (gear.mods[M.Strength] or 0)
     local magicBase = stats.MAGIC_BASE_PER_LEVEL * level
     local derived = {
-        [M.Attack]                  = interp(stats.ATK_BASE_CURVE, level) + gear.atk + (gear.mods[M.Attack] or 0),
+        [M.Attack]                  = interp(stats.ATK_BASE_CURVE, level) + addedStr * 2 / 3 + gear.atk + (gear.mods[M.Attack] or 0),
         [M.Accuracy]                = interp(stats.ATK_BASE_CURVE, level) + gear.acc + (gear.mods[M.Accuracy] or 0),
         [M.Defense]                 = gear.def + (gear.mods[M.Defense] or 0),
         [M.Evasion]                 = interp(stats.ATK_BASE_CURVE, level) + gear.eva + (gear.mods[M.Evasion] or 0),
@@ -374,30 +393,6 @@ end
 -- Monsters
 ------------------------------------------------------------------------------
 
--- Monster HP = MOB_HP_BASE x family multiplier, geometric between anchors.
--- MOB_HP_SCALE is a playtest knob; keep it 1.0 unless playtests say otherwise.
-stats.MOB_HP_BASE = {
-    {1, 67}, {5, 102}, {10, 175}, {16, 317}, {26, 603}, {32, 897}, {41, 1622}, {47, 2356},
-    {67, 9101}, {76, 10693}, {78, 11703}, {88, 17918},
-}
-stats.MOB_HP_SCALE = 1.0
-
--- By server_battlenpc_genus.genusId. Unlisted families are 1.0.
-stats.MOB_HP_FAMILY = {
-    [11] = 1.2,    -- Mole (snapping shrew)
-    [12] = 1.2,    -- Rodent (hare, marmot, squirrel, dormouse, glirulus)
-    [14] = 1.2,    -- Funguar
-    [15] = 1.2,    -- Flying-trap (roselets, toadtrap)
-    [60] = 1.2,    -- Ogre
-    [23] = 1.2,    -- Amalj'aa
-    [42] = 1.2,    -- Dodo
-    [3]  = 0.92,   -- Wolf
-    [43] = 0.92,   -- Bat
-    [35] = 0.92,   -- Diremite
-    [26] = 0.92,   -- Goblin
-    [1002] = 0.85, -- Firefly
-}
-
 -- Geometric between {level, value} anchors.
 local function interpGeo(anchors, level)
     if level <= anchors[1][1] then return anchors[1][2] end
@@ -417,16 +412,9 @@ function stats.mobFamilyHpMult(genusId)
 end
 
 function stats.mobHp(level, mult)
-    return math.floor(interpGeo(stats.MOB_HP_BASE, level) * (mult or 1) * stats.MOB_HP_SCALE)
+    -- The nudge keeps float error from flooring an exact anchor to one less.
+    return math.floor(interpGeo(stats.MOB_HP_BASE, level) * (mult or 1) * stats.MOB_HP_SCALE + 1e-6)
 end
-
--- Casters get MOB_MP_CASTER_MULT x the table. Mob spells cost no MP yet.
-stats.MOB_MP_BASE = {
-    {1, 110}, {10, 200}, {20, 400}, {30, 800}, {40, 1500}, {50, 2800},
-    {60, 4800}, {70, 8000}, {80, 13000}, {90, 18000},
-}
-stats.MOB_MP_CASTER_MULT = 5
-stats.MOB_MP_MAX = 32767
 
 -- Seed pools carry currentJob 0, so a spell list also counts as a caster.
 function stats.mobIsCaster(mob)
@@ -447,7 +435,6 @@ function stats.mobExpected(level)
     return stats.expected(0, level)
 end
 
--- HP/MP from level when the group row leaves them at 0.
 function stats.applyMobBaseStats(mob)
     local level = mob:GetLevel()
     if level == nil or level <= 0 then return 0 end

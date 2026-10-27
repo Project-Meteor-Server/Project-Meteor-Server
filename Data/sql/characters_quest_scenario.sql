@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS `characters_quest_scenario` (
   `counter1` smallint(5) unsigned NOT NULL DEFAULT '0',
   `counter2` smallint(5) unsigned NOT NULL DEFAULT '0',
   `counter3` smallint(5) unsigned NOT NULL DEFAULT '0',
+  `counter4` smallint(5) unsigned NOT NULL DEFAULT '0',
+  `time` int(10) unsigned NOT NULL DEFAULT '0',
+  `npcLsFrom` smallint(5) unsigned NOT NULL DEFAULT '0',
+  `npcLsMsgStep` tinyint(3) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`characterId`,`slot`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
