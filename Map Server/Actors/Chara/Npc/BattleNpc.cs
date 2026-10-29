@@ -443,6 +443,11 @@ namespace Meteor.Map.Actors
                 propPacketUtil.AddProperty("charaWork.battleTemp.castGauge_speed[1]");
                 packets.AddRange(propPacketUtil.Done());
             }
+            if (IsDead())
+            {
+                cadenceTarget = null;
+                updateFlags &= ~ActorUpdateFlags.Position;
+            }
             base.PostUpdate(tick, packets);
         }
 

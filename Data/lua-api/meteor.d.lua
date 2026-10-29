@@ -1521,6 +1521,7 @@ function __Player:OnWeaponSkill(state, actions, skill, errors) end
 ---@param from? number
 ---@param to? number
 function __Player:OnWorkSyncRequest(propertyName, from, to) end
+function __Player:OnZoneInComplete() end
 function __Player:PartyDisband() end
 function __Player:PartyLeave() end
 ---@overload fun(self: Player, actorId: number): nil
@@ -1758,6 +1759,8 @@ function __Quest:OnPush(caller, npc, triggerName) end
 ---@param caller Player
 ---@param npc Npc
 function __Quest:OnTalk(caller, npc) end
+---@param caller Player
+function __Quest:OnZoneInComplete(caller) end
 function __Quest:ReadNpcLsMsg() end
 ---@param classId number
 ---@param flagType? number
@@ -4822,6 +4825,8 @@ function __Director:OnEventStart(player, args) end
 ---@param player Player
 ---@param npc Npc
 function __Director:OnTalkEvent(player, npc) end
+---@param player Player
+function __Director:OnZoneInComplete(player) end
 ---@param actor Actor
 function __Director:RemoveMember(actor) end
 function __Director:StartContentGroup() end
@@ -4834,7 +4839,6 @@ function __Director:StartDirector(spawnImmediate, ...) end
 ---@field ARRIVAL_GRACE_SECONDS number
 ---@field CONTENT_GROUP_CAPACITY number
 ---@field CORPSE_SECONDS number
----@field ROSTER_RESEND_SECONDS number
 ---@field TANK_PULL_ENMITY number
 ---@field T_ALL_LEFT number
 ---@field T_PARTY_DEFEATED number
@@ -4883,6 +4887,8 @@ function __DutyEncounter:IsSuccess() end
 ---@param npc BattleNpc
 ---@param killer Character
 function __DutyEncounter:OnMobDeath(npc, killer) end
+---@param p Player
+function __DutyEncounter:OnZoneInComplete(p) end
 ---@param value boolean
 function __DutyEncounter:SetAllyAggressive(value) end
 ---@param escort BattleNpc
@@ -5977,9 +5983,10 @@ local __UpdatePlayerPositionPacket = {}
 local __WorkSyncRequestPacket = {}
 
 ---@class ZoneInCompletePacket
+---@field CODE_COMPLETE number
+---@field code number
 ---@field invalidPacket boolean
 ---@field timestamp number
----@field unknown number
 local __ZoneInCompletePacket = {}
 
 ---@class _0x02ReceivePacket

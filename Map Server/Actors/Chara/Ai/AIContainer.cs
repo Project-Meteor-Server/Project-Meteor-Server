@@ -377,6 +377,8 @@ namespace Meteor.Map.actors.chara.ai
         public void InternalDie(DateTime tick, uint fadeoutTimerSeconds)
         {
             mover?.Stop();
+            owner.ClearPositionUpdates();
+            owner.cadenceTarget = null;
             ClearStates();
             ForceChangeState(new DeathState(owner, tick, fadeoutTimerSeconds));
         }

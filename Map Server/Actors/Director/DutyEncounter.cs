@@ -41,7 +41,6 @@ namespace Meteor.Map.actors.director
         public const int CORPSE_SECONDS = 12;
         public const int ARRIVAL_GRACE_SECONDS = 60;
         public const float ALLY_ASSIST_RANGE = 40f;
-        public const int ROSTER_RESEND_SECONDS = 3;
         public const uint TANK_PULL_ENMITY = 5000;
         public const int CONTENT_GROUP_CAPACITY = 24;
 
@@ -69,7 +68,6 @@ namespace Meteor.Map.actors.director
 
         private readonly Dictionary<uint, Player> participants = new Dictionary<uint, Player>();
         private readonly HashSet<uint> arrived = new HashSet<uint>();
-        private readonly Dictionary<uint, DateTime> rosterResendAt = new Dictionary<uint, DateTime>();
         private readonly List<Entry> entries = new List<Entry>();
         private readonly SortedDictionary<int, List<Pending>> waves = new SortedDictionary<int, List<Pending>>();
         private readonly Dictionary<BattleNpc, DateTime> deathTimes = new Dictionary<BattleNpc, DateTime>();
@@ -235,7 +233,6 @@ namespace Meteor.Map.actors.director
             if (state != DutyState.Running)
                 return;
 
-            ResendRosters(tick);
             CheckPackAggro(tick);
             CheckTankPull(tick);
             AssistAllies();
@@ -335,8 +332,7 @@ namespace Meteor.Map.actors.director
             {
                 if (p.playerSession != null && p.CurrentArea == area && area.FindActorInArea(p.Id) != null)
                 {
-                    if (arrived.Add(p.Id))
-                        rosterResendAt[p.Id] = tick.AddSeconds(ROSTER_RESEND_SECONDS);
+                    arrived.Add(p.Id);
                     continue;
                 }
                 if (!arrived.Contains(p.Id) && inGrace)
@@ -363,16 +359,13 @@ namespace Meteor.Map.actors.director
             }
         }
 
-        // The ally gauges sent at Start reach the client before it has spawned the allies, so it shows
-        // ??? for them. Send the roster again once the player has been in the area a moment.
-        private void ResendRosters(DateTime tick)
+        // The client drops ally gauges sent before it has loaded the allies, and full-HP allies send no
+        // more until hit.
+        public void OnZoneInComplete(Player p)
         {
-            foreach (var due in rosterResendAt.Where(r => tick >= r.Value).ToList())
-            {
-                rosterResendAt.Remove(due.Key);
-                if (participants.TryGetValue(due.Key, out Player p) && p.playerSession != null && p.currentParty is Party party)
-                    party.SendGroupPackets(p.playerSession);
-            }
+            if (state == DutyState.Running && participants.ContainsKey(p.Id) && p.CurrentArea == area
+                && p.playerSession != null && p.currentParty is Party party)
+                party.SendGroupPackets(p.playerSession);
         }
 
         // The first hit on any enemy pulls the whole pack: the others go for the tank (or that player

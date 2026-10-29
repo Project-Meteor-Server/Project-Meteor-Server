@@ -2,7 +2,6 @@ require ("global")
 require ("modifiers")
 require ("quests/man/man0l1")
 
-TEXT_BOUND_BY_DUTY     = 50011;
 TEXT_PROTECT_FROM_HARM = 51005;
 
 POOL_SISIPU      = 9290007;
@@ -77,7 +76,6 @@ function onEventStarted(player, director, triggerName)
 	player:SetMod(modifiersGlobal.MinimumHpLock, 1);
 
 	player:SendGameMessage(GetWorldMaster(), TEXT_PROTECT_FROM_HARM, 0x20, SISIPU_DISPLAY_ID);
-	player:SendGameMessage(GetWorldMaster(), TEXT_BOUND_BY_DUTY, 0x20);
 	player:SendGameMessage(GetWorldMaster(), 25018, 0x20, ESCORT_TIME_LIMIT / 60);
 	say(player, quest, TEXT_DUTY_START);
 	duty:Start();

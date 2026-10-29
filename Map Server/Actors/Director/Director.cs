@@ -109,6 +109,12 @@ namespace Meteor.Map.actors.director
             LuaEngine.GetInstance().CallLuaFunction(player, this, "onTalkEvent", false, npc);
         }
 
+        public void OnZoneInComplete(Player player)
+        {
+            duty?.OnZoneInComplete(player);
+            LuaEngine.GetInstance().CallLuaFunction(player, this, "onZoneInComplete", true);
+        }
+
         public void OnCommandEvent(Player player, Command command)
         {
             LuaEngine.GetInstance().CallLuaFunction(player, this, "onCommandEvent", false, command);

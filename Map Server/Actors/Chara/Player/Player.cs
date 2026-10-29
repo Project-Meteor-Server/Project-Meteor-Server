@@ -2186,6 +2186,15 @@ namespace Meteor.Map.Actors
             }
         }
 
+        public void OnZoneInComplete()
+        {
+            LuaEngine.GetInstance().CallLuaFunction(this, CurrentArea, "onZoneInComplete", true);
+            foreach (Director director in new List<Director>(ownedDirectors))
+                director.OnZoneInComplete(this);
+            foreach (Quest quest in questScenario)
+                quest?.OnZoneInComplete(this);
+        }
+
         public void SendDirectorPackets(Director director)
         {
             QueuePackets(director.GetSpawnPackets());

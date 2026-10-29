@@ -130,7 +130,6 @@ GIL_FSH_PAID		= 3000;
 
 TEXT_LINKPEARL_TUTORIAL		= 333;
 TEXT_LINKPEARL_MENU_HINT	= 334;
-TEXT_UNBOUND_FROM_DUTY		= 50012;
 
 -- Msg packs for the Npc LS
 NPCLS_MSGS = {
@@ -777,7 +776,6 @@ function startMan0l1Content(player, quest)
 end
 
 function endMan0l1Content(player, duty, contentArea)
-	player:SendGameMessage(GetWorldMaster(), TEXT_UNBOUND_FROM_DUTY, 0x20);
 	player:SetMod(modifiersGlobal.MinimumHpLock, 0);
 	player:EndEvent();
 	if (duty ~= nil) then
