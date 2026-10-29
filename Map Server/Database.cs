@@ -958,6 +958,9 @@ namespace Meteor.Map
                                 privateAreaName = reader.GetString("currentPrivateArea");
                             privateAreaType = reader.GetInt32("currentPrivateAreaType");
                             player.CurrentArea = Server.GetWorldManager().GetArea(zoneId, privateAreaName, privateAreaType);
+                            // A content instance (a duty) is gone once the map restarts: log in to its zone.
+                            if (player.CurrentArea == null && !string.IsNullOrEmpty(privateAreaName))
+                                player.CurrentArea = Server.GetWorldManager().GetArea(zoneId);
                         }
                     }
 

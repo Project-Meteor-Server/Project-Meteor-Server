@@ -41,6 +41,8 @@ namespace Meteor.Map.actors.director
         public const int CORPSE_SECONDS = 12;
         public const int ARRIVAL_GRACE_SECONDS = 60;
         public const float ALLY_ASSIST_RANGE = 40f;
+        public const int ROSTER_RESEND_SECONDS = 3;
+        public const uint TANK_PULL_ENMITY = 5000;
         public const int CONTENT_GROUP_CAPACITY = 24;
 
         public const ushort T_TIME_MINUTES = 25018, T_TIME_SECONDS = 25019, T_PARTY_DEFEATED = 51147, T_ALL_LEFT = 51067;
@@ -67,6 +69,7 @@ namespace Meteor.Map.actors.director
 
         private readonly Dictionary<uint, Player> participants = new Dictionary<uint, Player>();
         private readonly HashSet<uint> arrived = new HashSet<uint>();
+        private readonly Dictionary<uint, DateTime> rosterResendAt = new Dictionary<uint, DateTime>();
         private readonly List<Entry> entries = new List<Entry>();
         private readonly SortedDictionary<int, List<Pending>> waves = new SortedDictionary<int, List<Pending>>();
         private readonly Dictionary<BattleNpc, DateTime> deathTimes = new Dictionary<BattleNpc, DateTime>();
@@ -78,6 +81,10 @@ namespace Meteor.Map.actors.director
         private readonly HashSet<int> timeWarnings = new HashSet<int>();
         private DateTime startTick, endTick;
         private DateTime? nextWaveAt;
+        private bool packAggro;
+        private BattleNpc tank, pulledMob;
+        private double tankPullSeconds;
+        private DateTime? tankPullAt;
 
         public DutyEncounter(Director director, Area area)
         {
@@ -113,6 +120,13 @@ namespace Meteor.Map.actors.director
         public BattleNpc SpawnAlly(uint poolId, int level, float x, float y, float z, float rot)
         {
             return Spawn(poolId, level, x, y, z, rot, true);
+        }
+
+        // The first mob the players pull turns to this ally after the given seconds.
+        public void SetTank(BattleNpc ally, double seconds)
+        {
+            tank = ally;
+            tankPullSeconds = Math.Max(0, seconds);
         }
 
         public BattleNpc SpawnEscort(uint poolId, int level, float x, float y, float z, float rot)
@@ -221,6 +235,9 @@ namespace Meteor.Map.actors.director
             if (state != DutyState.Running)
                 return;
 
+            ResendRosters(tick);
+            CheckPackAggro(tick);
+            CheckTankPull(tick);
             AssistAllies();
 
             if (nextWaveAt == null)
@@ -262,9 +279,28 @@ namespace Meteor.Map.actors.director
                 Callback("onDutyAllyDeath", npc);
                 return;
             }
+            RetargetAllies(npc);
             Callback("onDutyMobDeath", npc, killer);
             if (state == DutyState.Running)
                 CheckWaveCleared();
+        }
+
+        // Allies go straight to the next enemy in the fight, so they stay in battle stance.
+        private void RetargetAllies(BattleNpc dead)
+        {
+            var fighting = entries.Where(x => !x.ally && x.npc != dead && Living(x.npc) && x.npc.hateContainer.GetHateList().Count > 0)
+                .Select(x => x.npc).ToList();
+            foreach (Entry a in entries.Where(x => x.ally && !x.escort && Living(x.npc)))
+            {
+                BattleNpc ally = a.npc;
+                if (ally.hateContainer.HasHateForTarget(dead))
+                    ally.hateContainer.ClearHate(dead);
+                if (ally.hateContainer.GetHateList().Keys.Any(c => c.IsAlive()) || fighting.Count == 0)
+                    continue;
+                BattleNpc next = fighting.FirstOrDefault(m => m.target == ally)
+                    ?? fighting.OrderBy(m => Utils.Distance(ally.GetPosAsVector3(), m.GetPosAsVector3())).First();
+                ally.hateContainer.AddBaseHate(next);
+            }
         }
 
         private void CheckWaveCleared()
@@ -299,7 +335,8 @@ namespace Meteor.Map.actors.director
             {
                 if (p.playerSession != null && p.CurrentArea == area && area.FindActorInArea(p.Id) != null)
                 {
-                    arrived.Add(p.Id);
+                    if (arrived.Add(p.Id))
+                        rosterResendAt[p.Id] = tick.AddSeconds(ROSTER_RESEND_SECONDS);
                     continue;
                 }
                 if (!arrived.Contains(p.Id) && inGrace)
@@ -324,6 +361,62 @@ namespace Meteor.Map.actors.director
                 Broadcast(T_PARTY_DEFEATED);
                 Finish(false, "ko");
             }
+        }
+
+        // The ally gauges sent at Start reach the client before it has spawned the allies, so it shows
+        // ??? for them. Send the roster again once the player has been in the area a moment.
+        private void ResendRosters(DateTime tick)
+        {
+            foreach (var due in rosterResendAt.Where(r => tick >= r.Value).ToList())
+            {
+                rosterResendAt.Remove(due.Key);
+                if (participants.TryGetValue(due.Key, out Player p) && p.playerSession != null && p.currentParty is Party party)
+                    party.SendGroupPackets(p.playerSession);
+            }
+        }
+
+        // The first hit on any enemy pulls the whole pack: the others go for the tank (or that player
+        // when there is none), the one hit stays on the player until the tank pull.
+        private void CheckPackAggro(DateTime tick)
+        {
+            if (packAggro)
+                return;
+            var enemies = entries.Where(e => !e.ally && Living(e.npc)).Select(e => e.npc).ToList();
+            BattleNpc first = enemies.FirstOrDefault(m => m.hateContainer.GetHateList().Keys.Any(c => c is Player));
+            if (first == null)
+                return;
+            packAggro = true;
+            pulledMob = first;
+            Character puller = first.hateContainer.GetHateList().Keys.First(c => c is Player);
+            // Allies' hits must not take the first mob off the player before the tank pull.
+            if (Living(tank))
+                first.hateContainer.GetHateList()[puller].cumulativeEnmity += TANK_PULL_ENMITY;
+            Character linkTarget = Living(tank) ? tank : puller;
+            foreach (BattleNpc mob in enemies.Where(m => m != first))
+            {
+                mob.neutral = false;
+                mob.hateContainer.AddLinkHate(linkTarget);
+                if (linkTarget == tank)
+                    mob.hateContainer.GetHateList()[tank].cumulativeEnmity = TANK_PULL_ENMITY;
+                if (!mob.aiContainer.IsEngaged())
+                    mob.Engage(linkTarget);
+            }
+            if (tank != null)
+                tankPullAt = tick.AddSeconds(tankPullSeconds);
+        }
+
+        private void CheckTankPull(DateTime tick)
+        {
+            if (tankPullAt == null || tick < tankPullAt.Value)
+                return;
+            tankPullAt = null;
+            if (!Living(tank) || !Living(pulledMob))
+                return;
+            uint top = pulledMob.hateContainer.GetHateList().Values.Select(h => h.cumulativeEnmity).DefaultIfEmpty(0u).Max();
+            pulledMob.hateContainer.UpdateHate(tank, (int)(top + TANK_PULL_ENMITY));
+            tank.hateContainer.UpdateHate(pulledMob, (int)TANK_PULL_ENMITY);
+            if (!tank.aiContainer.IsEngaged())
+                tank.Engage(pulledMob);
         }
 
         private void AssistAllies()

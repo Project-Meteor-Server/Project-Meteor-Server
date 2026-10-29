@@ -10,8 +10,8 @@ A quest passes when you can pick it up, play every step, and get the reward.
 
 | ID | Quest | Lv | Starts with | Status | Notes |
 |---|---|---|---|---|---|
-| STORY-01 | Shapeless Melody | 1 | Opening | ⬜ |  |
-| STORY-02 | Treasures of the Main | 1 | Baderon | ⬜ |  |
+| STORY-01 | Shapeless Melody | 1 | Opening | ✅ |  |
+| STORY-02 | Treasures of the Main | 1 | Baderon | ✅ |  |
 | STORY-03 | Legends Adrift | 8 | Baderon | ⬜ |  |
 | STORY-04 | Never the Twain Shall Meet | 13 | Baderon | ⬜ |  |
 

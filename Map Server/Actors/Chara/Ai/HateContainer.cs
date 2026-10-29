@@ -63,8 +63,22 @@ namespace Meteor.Map.actors.chara.ai
             }
         }
 
+        // Hate from a linked pull: the mob fights but stays unclaimed (orange) until it is hit.
+        public void AddLinkHate(Character target)
+        {
+            if (!HasHateForTarget(target))
+            {
+                hateList.Add(target, new HateEntry(target, 1, 0, true));
+
+                if (owner is BattleNpc bnpc)
+                    bnpc.OnLinkHateAdded();
+            }
+        }
+
         public void UpdateHate(Character target, int damage)
         {
+            if (HasHateForTarget(target) && damage > 0 && owner is BattleNpc bnpc)
+                bnpc.OnHateAdded(target);
             AddBaseHate(target);
             //hateList[target].volatileEnmity += (uint)damage;
             hateList[target].cumulativeEnmity += (uint)damage;

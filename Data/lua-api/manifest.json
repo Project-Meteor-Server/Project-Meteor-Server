@@ -1917,6 +1917,11 @@
           "params": []
         },
         {
+          "name": "OnLinkHateAdded",
+          "returns": "nil",
+          "params": []
+        },
+        {
           "name": "OnRoam",
           "returns": "nil",
           "params": [
@@ -6229,6 +6234,11 @@
               "type": "Npc"
             }
           ]
+        },
+        {
+          "name": "GetWeaponBaseHits",
+          "returns": "number",
+          "params": []
         },
         {
           "name": "GraphicChange",
@@ -15248,6 +15258,16 @@
           ]
         },
         {
+          "name": "AddLinkHate",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "target",
+              "type": "Character"
+            }
+          ]
+        },
+        {
           "name": "ClearHate",
           "returns": "nil",
           "params": [
@@ -15430,6 +15450,250 @@
         "DrawIn"
       ],
       "members": [],
+      "methods": []
+    },
+    {
+      "name": "MeleeSpread",
+      "fullName": "Meteor.Map.actors.chara.ai.MeleeSpread",
+      "members": [
+        {
+          "name": "BODY_GAP",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "MAX_SHIFT",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "RANK_STEP",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "SPACING",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "SPACING_MIN",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "STANDING_WEIGHT",
+          "type": "number",
+          "static": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "AngleFor",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "s",
+              "type": "number"
+            },
+            {
+              "name": "ra",
+              "type": "number"
+            },
+            {
+              "name": "rb",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "At",
+          "static": true,
+          "returns": "Stop",
+          "params": [
+            {
+              "name": "tx",
+              "type": "number"
+            },
+            {
+              "name": "tz",
+              "type": "number"
+            },
+            {
+              "name": "id",
+              "type": "number"
+            },
+            {
+              "name": "theta0",
+              "type": "number"
+            },
+            {
+              "name": "theta",
+              "type": "number"
+            },
+            {
+              "name": "radius",
+              "type": "number"
+            },
+            {
+              "name": "rank",
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "Bearing",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "tx",
+              "type": "number"
+            },
+            {
+              "name": "tz",
+              "type": "number"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "z",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Solve",
+          "static": true,
+          "returns": "Stop[]",
+          "params": [
+            {
+              "name": "tx",
+              "type": "number"
+            },
+            {
+              "name": "tz",
+              "type": "number"
+            },
+            {
+              "name": "members",
+              "type": "Member[]"
+            }
+          ]
+        },
+        {
+          "name": "Spacing",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "bodyA",
+              "type": "number"
+            },
+            {
+              "name": "bodyB",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Wrap",
+          "static": true,
+          "returns": "number",
+          "params": [
+            {
+              "name": "a",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Member",
+      "fullName": "Meteor.Map.actors.chara.ai.MeleeSpread.Member",
+      "members": [
+        {
+          "name": "Body",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Id",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "MaxRadius",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Radius",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Standing",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "X",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Z",
+          "type": "number",
+          "writable": true
+        }
+      ],
+      "methods": []
+    },
+    {
+      "name": "Stop",
+      "fullName": "Meteor.Map.actors.chara.ai.MeleeSpread.Stop",
+      "members": [
+        {
+          "name": "Id",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Radius",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "SecondRank",
+          "type": "boolean",
+          "writable": true
+        },
+        {
+          "name": "Theta",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Theta0",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "X",
+          "type": "number",
+          "writable": true
+        },
+        {
+          "name": "Z",
+          "type": "number",
+          "writable": true
+        }
+      ],
       "methods": []
     },
     {
@@ -18076,6 +18340,23 @@
           ]
         }
       ]
+    },
+    {
+      "name": "SpreadSolution",
+      "fullName": "Meteor.Map.actors.chara.ai.controllers.BattleNpcController.SpreadSolution",
+      "members": [
+        {
+          "name": "At",
+          "type": "any",
+          "writable": true
+        },
+        {
+          "name": "Stops",
+          "type": "table\u003Cnumber, Stop\u003E",
+          "writable": true
+        }
+      ],
+      "methods": []
     },
     {
       "name": "Controller",
@@ -20737,6 +21018,16 @@
           "static": true
         },
         {
+          "name": "ROSTER_RESEND_SECONDS",
+          "type": "number",
+          "static": true
+        },
+        {
+          "name": "TANK_PULL_ENMITY",
+          "type": "number",
+          "static": true
+        },
+        {
           "name": "T_ALL_LEFT",
           "type": "number",
           "static": true
@@ -20940,6 +21231,20 @@
             {
               "name": "required",
               "type": "boolean"
+            }
+          ]
+        },
+        {
+          "name": "SetTank",
+          "returns": "nil",
+          "params": [
+            {
+              "name": "ally",
+              "type": "BattleNpc"
+            },
+            {
+              "name": "seconds",
+              "type": "number"
             }
           ]
         },

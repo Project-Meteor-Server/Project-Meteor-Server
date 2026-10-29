@@ -242,6 +242,12 @@ namespace Meteor.Map.Actors
             SetHateType(NpcWork.HATE_TYPE_CLAIMED);
         }
 
+        public void OnLinkHateAdded()
+        {
+            if (HasMonsterParty() && IsAlive() && npcWork.hateType == NpcWork.HATE_TYPE_UNCLAIMED)
+                SetHateType(NpcWork.HATE_TYPE_ENGAGED);
+        }
+
         public void OnHateListEmptied()
         {
             if (!HasMonsterParty() || enmityClearPending)
@@ -699,6 +705,12 @@ namespace Meteor.Map.Actors
                 foreach (Player viewer in GetGroupViewers())
                     viewer.QueuePacket(monsterParty.BuildDeletePacket(viewer.Id));
             base.OnDespawn();
+            // The move home is only for a respawn; without one it slides the corpse to its spawn point.
+            if (respawnTime == 0)
+            {
+                ClearPositionUpdates();
+                updateFlags &= ~ActorUpdateFlags.Position;
+            }
         }
 
         public uint GetBattleNpcId()
