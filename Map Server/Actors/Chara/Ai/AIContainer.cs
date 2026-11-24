@@ -25,6 +25,7 @@ using Meteor.Map.Actors;
 using Meteor.Map.actors.chara.ai.state;
 using Meteor.Map.actors.chara.ai.controllers;
 using Meteor.Map.packets.send.actor;
+using Meteor.Common;
 
 // port of ai code in dsp by kjLotus (https://github.com/DarkstarProject/darkstar/blob/master/src/map/ai)
 namespace Meteor.Map.actors.chara.ai
@@ -48,14 +49,14 @@ namespace Meteor.Map.actors.chara.ai
             this.controller = controller;
             this.mover = mover;
             this.targetFind = targetFind;
-            latestUpdate = DateTime.Now;
+            latestUpdate = GameClock.Now;
             prevUpdate = latestUpdate;
             actionQueue = new ActionQueue(owner);
         }
 
         public void UpdateLastActionTime(uint delay = 0)
         {
-            lastActionTime = DateTime.Now.AddSeconds(delay);
+            lastActionTime = GameClock.Now.AddSeconds(delay);
         }
 
         public DateTime GetLastActionTime()
@@ -173,7 +174,7 @@ namespace Meteor.Map.actors.chara.ai
                 if (states.Count <= 10)
                 {
                     CheckCompletedStates();
-                    states.Push(state);
+                    Push(state);
                 }
                 else
                 {
@@ -182,12 +183,19 @@ namespace Meteor.Map.actors.chara.ai
             }
         }
 
+        private void Push(State state)
+        {
+            states.Push(state);
+            if (Telemetry.On)
+                Telemetry.Emit("ai.state", owner.Id, state.GetTarget()?.Id ?? 0, ("state", state.GetType().Name), ("depth", states.Count));
+        }
+
         public void ForceChangeState(State state)
         {
             if (states.Count <= 10)
             {
                 CheckCompletedStates();
-                states.Push(state);
+                Push(state);
             }
             else
             {
@@ -376,6 +384,8 @@ namespace Meteor.Map.actors.chara.ai
 
         public void InternalDie(DateTime tick, uint fadeoutTimerSeconds)
         {
+            if (Telemetry.On)
+                Telemetry.Emit("death", owner.Id, owner.target?.Id ?? 0, ("fadeout", fadeoutTimerSeconds));
             mover?.Stop();
             owner.ClearPositionUpdates();
             owner.cadenceTarget = null;

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Meteor.Common;
 
 namespace Meteor.Map.Actors.QuestNS
 {
@@ -171,7 +172,7 @@ namespace Meteor.Map.Actors.QuestNS
 
         public void SetTimeNow()
         {
-            time = Utils.UnixTimeStampUTC();
+            time = Utils.UnixTimeStampUTC(GameClock.Now);
             Dirty = true;
         }
 

@@ -20,6 +20,7 @@ along with Project Meteor Server. If not, see <https:www.gnu.org/licenses/>.
 */
 
 using Meteor.Map.Actors;
+using Meteor.Common;
 namespace Meteor.Map.actors.chara.ai.utils
 {
     static class AttackUtils
@@ -34,7 +35,7 @@ namespace Meteor.Map.actors.chara.ai.utils
         public static int CalculateBaseDamage(Character attacker, Character defender)
         {
             // todo: actually calculate damage
-            return Program.Random.Next(10) * 10;
+            return Dice.Shared.Next(10) * 10;
         }
     }
 }
